@@ -6,9 +6,9 @@ LogiFlow remains responsible for logistics operations: drivers, vehicles, delive
 
 ## LogiPeople
 
-LogiPeople is an independent HR and Departamento Pessoal system. In phases 1-7, the foundation, Organization, Core People and a preliminary Time and Attendance foundation are implemented.
+LogiPeople is an independent HR and Departamento Pessoal system. In phases 1-8, the foundation, Organization, Core People, preliminary Time and Attendance and preliminary Payroll foundation are implemented.
 
-### Implemented in phases 1-7
+### Implemented in phases 1-8
 
 - Identity integration boundary.
 - RBAC and ABAC primitives.
@@ -18,6 +18,7 @@ LogiPeople is an independent HR and Departamento Pessoal system. In phases 1-7, 
 - Core People records.
 - Employee history with effective dating.
 - Time and Attendance foundation with work schedules, time entries and preliminary attendance periods.
+- Payroll foundation with cycles, preliminary runs, payroll items and audited reopening requests.
 
 ### Deferred domains
 
@@ -28,7 +29,7 @@ The following domains are documented as future modules and must not be represent
 - Time and Attendance legal/payroll rule validation.
 - Absence and Vacation.
 - Benefits.
-- Payroll.
+- Payroll legal calculation, homologation and payment execution.
 - Payslips.
 - Termination.
 - Government reporting and eSocial.
@@ -44,4 +45,4 @@ Core People defines people and employment records: person, employee, employment,
 
 ## Departamento Pessoal boundary
 
-DP-sensitive records such as contracts, compensation history, documents and time-attendance evidence are modeled with data classification and audit from the beginning, but payroll and legal calculations are not implemented in phases 1-7.
+DP-sensitive records such as contracts, compensation history, documents, time-attendance evidence and preliminary payroll records are modeled with data classification and audit from the beginning, but payroll legal calculations, payment execution and eSocial real submission are not implemented in phases 1-8.

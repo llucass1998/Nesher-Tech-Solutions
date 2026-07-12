@@ -107,6 +107,46 @@ export const createAttendancePeriodSchema = z.object({
   reason: z.string().min(3),
 });
 
+export const createPayrollCycleSchema = z.object({
+  companyId: z.string().uuid(),
+  name: z.string().min(2),
+  referenceMonth: z.number().int().min(1).max(12),
+  referenceYear: z.number().int().min(2000).max(2100),
+  periodStart: z.string().date(),
+  periodEnd: z.string().date(),
+  reason: z.string().min(3),
+});
+
+export const createPayrollRunSchema = z.object({
+  cycleId: z.string().uuid(),
+  companyId: z.string().uuid(),
+  employeeId: z.string().uuid(),
+  grossAmount: z.string().regex(/^\d+(\.\d{1,2})?$/).default('0'),
+  deductionAmount: z.string().regex(/^\d+(\.\d{1,2})?$/).default('0'),
+  netAmount: z.string().regex(/^\d+(\.\d{1,2})?$/).default('0'),
+  currency: z.string().length(3).default('BRL'),
+  reason: z.string().min(3),
+});
+
+export const createPayrollItemSchema = z.object({
+  runId: z.string().uuid(),
+  employeeId: z.string().uuid(),
+  type: z.enum(['EARNING', 'DEDUCTION', 'EMPLOYER_CHARGE', 'INFORMATIONAL']),
+  source: z.enum(['MANUAL', 'IMPORTED', 'ATTENDANCE', 'BENEFITS', 'CONTRACT', 'ADJUSTMENT']).default('MANUAL'),
+  code: z.string().min(1),
+  description: z.string().min(2),
+  quantity: z.string().regex(/^\d+(\.\d{1,4})?$/).optional(),
+  amount: z.string().regex(/^\d+(\.\d{1,2})?$/),
+  currency: z.string().length(3).default('BRL'),
+  taxable: z.boolean().default(false),
+  reason: z.string().min(3),
+});
+
+export const requestPayrollReopeningSchema = z.object({
+  cycleId: z.string().uuid(),
+  reason: z.string().min(10),
+});
+
 export type CreateCompanyInput = z.infer<typeof createCompanySchema>;
 export type CreateDepartmentInput = z.infer<typeof createDepartmentSchema>;
 export type CreatePositionInput = z.infer<typeof createPositionSchema>;
@@ -115,3 +155,7 @@ export type CreateEmployeeInput = z.infer<typeof createEmployeeSchema>;
 export type CreateWorkScheduleInput = z.infer<typeof createWorkScheduleSchema>;
 export type CreateTimeEntryInput = z.infer<typeof createTimeEntrySchema>;
 export type CreateAttendancePeriodInput = z.infer<typeof createAttendancePeriodSchema>;
+export type CreatePayrollCycleInput = z.infer<typeof createPayrollCycleSchema>;
+export type CreatePayrollRunInput = z.infer<typeof createPayrollRunSchema>;
+export type CreatePayrollItemInput = z.infer<typeof createPayrollItemSchema>;
+export type RequestPayrollReopeningInput = z.infer<typeof requestPayrollReopeningSchema>;

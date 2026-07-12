@@ -6,6 +6,7 @@ import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
 import { OrganizationModule } from './modules/organization/organization.module';
+import { PayrollModule } from './modules/payroll/payroll.module';
 import { PeopleModule } from './modules/people/people.module';
 import { TimeAttendanceModule } from './modules/time-attendance/time-attendance.module';
 
@@ -20,6 +21,7 @@ import { TimeAttendanceModule } from './modules/time-attendance/time-attendance.
     OrganizationModule,
     PeopleModule,
     TimeAttendanceModule,
+    PayrollModule,
   ],
 })
 export class AppModule {}

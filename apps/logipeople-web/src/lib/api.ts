@@ -58,6 +58,47 @@ export interface AttendancePeriodSummary {
   employee?: { employeeNumber: string; person?: { fullName: string; preferredName?: string | null } | null } | null;
 }
 
+export interface PayrollCycleSummary {
+  id: string;
+  name: string;
+  referenceMonth: number;
+  referenceYear: number;
+  periodStart: string;
+  periodEnd: string;
+  status: string;
+  legalValidationPending: boolean;
+  company?: { name: string } | null;
+  _count?: { runs: number; reopenings: number };
+}
+
+export interface PayrollRunSummary {
+  id: string;
+  status: string;
+  grossAmount: string;
+  deductionAmount: string;
+  netAmount: string;
+  currency: string;
+  legalValidationPending: boolean;
+  cycle?: { name: string; referenceMonth: number; referenceYear: number } | null;
+  employee?: { employeeNumber: string; person?: { fullName: string; preferredName?: string | null } | null } | null;
+  _count?: { items: number };
+}
+
+export interface PayrollItemSummary {
+  id: string;
+  type: string;
+  source: string;
+  code: string;
+  description: string;
+  quantity?: string | null;
+  amount: string;
+  currency: string;
+  taxable: boolean;
+  legalValidationPending: boolean;
+  run?: { cycle?: { name: string; referenceMonth: number; referenceYear: number } | null } | null;
+  employee?: { employeeNumber: string; person?: { fullName: string; preferredName?: string | null } | null } | null;
+}
+
 export async function getPeopleToken(): Promise<string | null> {
   return null;
 }
