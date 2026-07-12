@@ -23,6 +23,41 @@ export interface CompanySummary {
   positions?: unknown[];
 }
 
+export interface WorkScheduleSummary {
+  id: string;
+  name: string;
+  weeklyMinutes: number;
+  workDays: number;
+  status: string;
+  effectiveFrom: string;
+  effectiveTo?: string | null;
+  company?: { name: string } | null;
+  employee?: { employeeNumber: string; person?: { fullName: string; preferredName?: string | null } | null } | null;
+}
+
+export interface TimeEntrySummary {
+  id: string;
+  kind: string;
+  occurredAt: string;
+  source: string;
+  approvalStatus: string;
+  employee?: { employeeNumber: string; person?: { fullName: string; preferredName?: string | null } | null } | null;
+}
+
+export interface AttendancePeriodSummary {
+  id: string;
+  periodStart: string;
+  periodEnd: string;
+  status: string;
+  plannedMinutes: number;
+  workedMinutes: number;
+  absenceMinutes: number;
+  extraMinutes: number;
+  legalValidationPending: boolean;
+  company?: { name: string } | null;
+  employee?: { employeeNumber: string; person?: { fullName: string; preferredName?: string | null } | null } | null;
+}
+
 export async function getPeopleToken(): Promise<string | null> {
   return null;
 }

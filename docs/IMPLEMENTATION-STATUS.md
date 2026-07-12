@@ -2,7 +2,7 @@
 
 ## Scope for this execution
 
-Only phases 1-6 are in scope:
+Phases 1-7 are in scope:
 
 1. Study and diagnosis.
 2. Reference and license documentation.
@@ -10,6 +10,7 @@ Only phases 1-6 are in scope:
 4. Database and migrations.
 5. LogiIdentity integration boundary.
 6. Organization and Core People.
+7. Time and Attendance foundation.
 
 ## Current status
 
@@ -21,18 +22,19 @@ Only phases 1-6 are in scope:
 | Database | Implemented | A separate LogiPeople Prisma schema, initial migration and seed exist under `databases/logipeople`. |
 | Identity and permissions | Implemented | JWT validation, RBAC, ABAC and field control are implemented as LogiPeople primitives. |
 | Organization/Core People | Implemented | Initial models, services, endpoints and web pages are implemented for phases 1-6. |
+| Time and Attendance foundation | Implemented | Phase 7 adds work schedules, time entries, preliminary attendance periods, API endpoints, tests and a web page. Legal/payroll validation remains pending. |
 
 ## Explicitly not complete
 
 - Payroll is not implemented.
-- Time and attendance is not implemented.
 - Benefits are not implemented.
 - eSocial real submission is not implemented.
 - Legal/tax compliance is not validated.
+- Time and attendance is implemented only as a preliminary foundation and is not legally validated.
 - Real LogiFlow/LogiDesk integration events are not enabled.
 
 ## Known risks
 
 - `pnpm` is not available in the current shell, so validation can use npm workspaces until pnpm is installed.
-- The repository is currently in detached `HEAD`, which prevents agent worktree creation and should be resolved before semantic commits.
-- Existing LogiFlow payment API-key tests appear inconsistent with current route implementation.
+- LogiPeople web still uses a placeholder LogiIdentity token provider, so authenticated pages render the no-credential state until real identity integration is wired.
+- Time and attendance records are preliminary evidence and summaries only; they must not be used for payroll or compliance decisions without legal and DP validation.

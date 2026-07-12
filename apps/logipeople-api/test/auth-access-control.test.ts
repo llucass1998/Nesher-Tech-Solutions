@@ -87,6 +87,17 @@ describe('LogiPeople authentication and access control', () => {
     expect(guard.canActivate(context)).toBe(true);
   });
 
+  it('allows time managers to access time attendance endpoints', () => {
+    const timeManagerPrincipal: AuthenticatedPrincipal = {
+      ...principal,
+      roles: ['TIME_MANAGER'],
+    };
+    const guard = new RbacGuard(new TestReflector(['TIME_MANAGER']) as never);
+    const context = createContext({ principal: timeManagerPrincipal });
+
+    expect(guard.canActivate(context)).toBe(true);
+  });
+
   it('rejects requests when ABAC company scope differs from the body', () => {
     const guard = new AbacGuard(new TestReflector(['COMPANY']) as never);
     const context = createContext({ principal, body: { companyId: 'company-2' }, params: {} });

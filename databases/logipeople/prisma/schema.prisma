@@ -39,6 +39,39 @@ enum EmploymentType {
   TEMPORARY
 }
 
+enum WorkScheduleStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum TimeEntryKind {
+  CLOCK_IN
+  CLOCK_OUT
+  BREAK_START
+  BREAK_END
+  ADJUSTMENT
+}
+
+enum TimeEntrySource {
+  MANUAL
+  IMPORTED
+  MOBILE
+  WEB
+  API
+}
+
+enum TimeEntryApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum AttendancePeriodStatus {
+  OPEN
+  REVIEWED
+  LOCKED
+}
+
 enum PeopleRole {
   SUPER_ADMIN
   PEOPLE_ADMIN
@@ -101,6 +134,8 @@ model Company {
   jobs               Job[]
   positions          Position[]
   employees          Employee[]
+  workSchedules      WorkSchedule[]
+  attendancePeriods  AttendancePeriod[]
   roleAssignments    RoleAssignment[]
   accessScopes       AccessScope[]
   createdAt          DateTime             @default(now())
@@ -268,6 +303,9 @@ model Employee {
   costCenterAssignments CostCenterAssignment[]
   compensationHistory   CompensationHistory[]
   statusHistory         EmployeeStatusHistory[]
+  workSchedules         WorkSchedule[]
+  timeEntries           TimeEntry[]
+  attendancePeriods     AttendancePeriod[]
   roleAssignments       RoleAssignment[]
   accessScopes          AccessScope[]
   fieldPermissions      FieldPermission[]
@@ -459,6 +497,86 @@ model EmployeeStatusHistory {
   recordedBy    String
   reason        String
   source        String
+}
+
+model WorkSchedule {
+  id                  String             @id @default(uuid())
+  companyId           String
+  company             Company            @relation(fields: [companyId], references: [id])
+  employeeId          String?
+  employee            Employee?          @relation(fields: [employeeId], references: [id])
+  name                String
+  weeklyMinutes       Int
+  workDays            Int
+  status              WorkScheduleStatus @default(ACTIVE)
+  effectiveFrom       DateTime
+  effectiveTo         DateTime?
+  recordedAt          DateTime           @default(now())
+  recordedBy          String
+  reason              String
+  source              String
+  dataClassification  DataClassification @default(CONFIDENTIAL)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  @@index([companyId, status])
+  @@index([employeeId, effectiveFrom])
+}
+
+model TimeEntry {
+  id                 String                  @id @default(uuid())
+  employeeId         String
+  employee           Employee                @relation(fields: [employeeId], references: [id])
+  kind               TimeEntryKind
+  occurredAt         DateTime
+  source             TimeEntrySource         @default(MANUAL)
+  approvalStatus     TimeEntryApprovalStatus @default(PENDING)
+  approvedAt         DateTime?
+  approvedBy         String?
+  rejectedAt         DateTime?
+  rejectedBy         String?
+  rejectionReason    String?
+  notes              String?
+  recordedAt         DateTime                @default(now())
+  recordedBy         String
+  reason             String
+  dataClassification DataClassification      @default(CONFIDENTIAL)
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+
+  @@index([employeeId, occurredAt])
+  @@index([approvalStatus, occurredAt])
+}
+
+model AttendancePeriod {
+  id                     String                 @id @default(uuid())
+  companyId              String
+  company                Company                @relation(fields: [companyId], references: [id])
+  employeeId             String
+  employee               Employee               @relation(fields: [employeeId], references: [id])
+  periodStart            DateTime
+  periodEnd              DateTime
+  status                 AttendancePeriodStatus @default(OPEN)
+  plannedMinutes         Int                    @default(0)
+  workedMinutes          Int                    @default(0)
+  absenceMinutes         Int                    @default(0)
+  extraMinutes           Int                    @default(0)
+  lockedAt               DateTime?
+  lockedBy               String?
+  reviewedAt             DateTime?
+  reviewedBy             String?
+  recordedAt             DateTime               @default(now())
+  recordedBy             String
+  reason                 String
+  source                 String
+  legalValidationPending Boolean                @default(true)
+  dataClassification     DataClassification     @default(CONFIDENTIAL)
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+
+  @@unique([employeeId, periodStart, periodEnd])
+  @@index([companyId, periodStart, periodEnd])
+  @@index([status, periodEnd])
 }
 
 model RoleAssignment {

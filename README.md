@@ -163,10 +163,6 @@ npm run logipeople:prisma:migrate   # Aplica migrations locais do LogiPeople
 - `POST /login`
 - `POST /users`
 
-### Dashboard
-
-- `GET /dashboard/metrics`
-
 ### Motoristas
 
 - `GET /drivers`

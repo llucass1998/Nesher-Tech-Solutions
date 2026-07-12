@@ -6,9 +6,9 @@ LogiFlow remains responsible for logistics operations: drivers, vehicles, delive
 
 ## LogiPeople
 
-LogiPeople is an independent HR and Departamento Pessoal system. In phases 1-6, only the foundation, Organization and Core People domains are implemented.
+LogiPeople is an independent HR and Departamento Pessoal system. In phases 1-7, the foundation, Organization, Core People and a preliminary Time and Attendance foundation are implemented.
 
-### Implemented in phases 1-6
+### Implemented in phases 1-7
 
 - Identity integration boundary.
 - RBAC and ABAC primitives.
@@ -17,6 +17,7 @@ LogiPeople is an independent HR and Departamento Pessoal system. In phases 1-6, 
 - Organization structure.
 - Core People records.
 - Employee history with effective dating.
+- Time and Attendance foundation with work schedules, time entries and preliminary attendance periods.
 
 ### Deferred domains
 
@@ -24,7 +25,7 @@ The following domains are documented as future modules and must not be represent
 
 - Recruitment.
 - Onboarding beyond foundation records.
-- Time and Attendance.
+- Time and Attendance legal/payroll rule validation.
 - Absence and Vacation.
 - Benefits.
 - Payroll.
@@ -43,4 +44,4 @@ Core People defines people and employment records: person, employee, employment,
 
 ## Departamento Pessoal boundary
 
-DP-sensitive records such as contracts, compensation history and documents are modeled with data classification and audit from the beginning, but payroll and legal calculations are not implemented in phases 1-6.
+DP-sensitive records such as contracts, compensation history, documents and time-attendance evidence are modeled with data classification and audit from the beginning, but payroll and legal calculations are not implemented in phases 1-7.

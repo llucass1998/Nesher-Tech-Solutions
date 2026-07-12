@@ -75,8 +75,43 @@ export const createEmployeeSchema = z.object({
   hireDate: z.string().date(),
 });
 
+export const createWorkScheduleSchema = z.object({
+  companyId: z.string().uuid(),
+  employeeId: z.string().uuid().optional(),
+  name: z.string().min(2),
+  weeklyMinutes: z.number().int().positive(),
+  workDays: z.number().int().min(1).max(7),
+  effectiveFrom: z.string().date(),
+  effectiveTo: z.string().date().optional(),
+  reason: z.string().min(3),
+});
+
+export const createTimeEntrySchema = z.object({
+  employeeId: z.string().uuid(),
+  kind: z.enum(['CLOCK_IN', 'CLOCK_OUT', 'BREAK_START', 'BREAK_END', 'ADJUSTMENT']),
+  occurredAt: z.string().datetime(),
+  source: z.enum(['MANUAL', 'IMPORTED', 'MOBILE', 'WEB', 'API']).default('MANUAL'),
+  notes: z.string().optional(),
+  reason: z.string().min(3),
+});
+
+export const createAttendancePeriodSchema = z.object({
+  companyId: z.string().uuid(),
+  employeeId: z.string().uuid(),
+  periodStart: z.string().date(),
+  periodEnd: z.string().date(),
+  plannedMinutes: z.number().int().min(0).default(0),
+  workedMinutes: z.number().int().min(0).default(0),
+  absenceMinutes: z.number().int().min(0).default(0),
+  extraMinutes: z.number().int().min(0).default(0),
+  reason: z.string().min(3),
+});
+
 export type CreateCompanyInput = z.infer<typeof createCompanySchema>;
 export type CreateDepartmentInput = z.infer<typeof createDepartmentSchema>;
 export type CreatePositionInput = z.infer<typeof createPositionSchema>;
 export type CreatePersonInput = z.infer<typeof createPersonSchema>;
 export type CreateEmployeeInput = z.infer<typeof createEmployeeSchema>;
+export type CreateWorkScheduleInput = z.infer<typeof createWorkScheduleSchema>;
+export type CreateTimeEntryInput = z.infer<typeof createTimeEntrySchema>;
+export type CreateAttendancePeriodInput = z.infer<typeof createAttendancePeriodSchema>;
