@@ -144,7 +144,7 @@ export default function Map({
   const [pickupPoint, setPickupPoint] = useState<MapPoint>(distributionCenter);
   const [destinationPoint, setDestinationPoint] = useState<MapPoint>(defaultDestination);
   const [routePoints, setRoutePoints] = useState<RoutePoint[]>([]);
-  const [routeSource, setRouteSource] = useState<'driver' | 'pickup'>('pickup');
+  const [routeSource] = useState<'driver' | 'pickup'>('pickup');
   const fixedOriginAddress = pickupAddress || distributionCenter.label;
 
   useEffect(() => {

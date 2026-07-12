@@ -30,7 +30,9 @@ export class UserController {
       });
 
       // 4. Remove a senha do objeto de resposta por segurança
-      const { password: _, ...driverWithoutPassword } = driver;
+      const driverWithoutPassword = Object.fromEntries(
+        Object.entries(driver).filter(([key]) => key !== 'password')
+      );
 
       return res.status(201).json(driverWithoutPassword);
       

@@ -58,7 +58,9 @@ export class DriverController {
         },
       });
 
-      const { password: _, ...driverWithoutPassword } = driver;
+      const driverWithoutPassword = Object.fromEntries(
+        Object.entries(driver).filter(([key]) => key !== 'password')
+      );
       
       return res.status(201).json(driverWithoutPassword);
     } catch (error) {
