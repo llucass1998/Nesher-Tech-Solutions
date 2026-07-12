@@ -1,0 +1,528 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../apps/logipeople-api/src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum DataClassification {
+  PUBLIC
+  INTERNAL
+  CONFIDENTIAL
+  SENSITIVE
+  RESTRICTED
+}
+
+enum PositionStatus {
+  OCCUPIED
+  VACANT
+  FROZEN
+  PLANNED
+  CLOSED
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  ON_LEAVE
+  TERMINATED
+  SUSPENDED
+  PRE_HIRE
+}
+
+enum EmploymentType {
+  EMPLOYEE
+  CONTRACTOR
+  INTERN
+  APPRENTICE
+  TEMPORARY
+}
+
+enum PeopleRole {
+  SUPER_ADMIN
+  PEOPLE_ADMIN
+  HR_MANAGER
+  HR_ANALYST
+  RECRUITER
+  PAYROLL_MANAGER
+  PAYROLL_ANALYST
+  TIME_MANAGER
+  BENEFITS_ANALYST
+  MANAGER
+  EMPLOYEE
+  AUDITOR
+  DPO
+}
+
+enum AccessScopeType {
+  COMPANY
+  LEGAL_ENTITY
+  BRANCH
+  UNIT
+  DEPARTMENT
+  COST_CENTER
+  TEAM
+  SUBORDINATES
+  SELF
+}
+
+enum SensitiveFieldKey {
+  SALARY
+  BANK_ACCOUNTS
+  DOCUMENTS
+  DEPENDENTS
+  MEDICAL_INFORMATION
+  BIOMETRICS
+  CONFIDENTIAL_EVALUATIONS
+  DISCIPLINARY_MEASURES
+}
+
+model BusinessGroup {
+  id        String    @id @default(uuid())
+  name      String
+  companies Company[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Company {
+  id                 String               @id @default(uuid())
+  businessGroupId    String?
+  businessGroup      BusinessGroup?       @relation(fields: [businessGroupId], references: [id])
+  name               String
+  legalName          String
+  registrationNumber String               @unique
+  legalEntities      LegalEntity[]
+  branches           Branch[]
+  departments        Department[]
+  costCenters        CostCenter[]
+  teams              Team[]
+  jobs               Job[]
+  positions          Position[]
+  employees          Employee[]
+  roleAssignments    RoleAssignment[]
+  accessScopes       AccessScope[]
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+}
+
+model LegalEntity {
+  id                 String   @id @default(uuid())
+  companyId          String
+  company            Company  @relation(fields: [companyId], references: [id])
+  name               String
+  registrationNumber String   @unique
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model Branch {
+  id        String   @id @default(uuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id])
+  name      String
+  code      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, code])
+}
+
+model Establishment {
+  id        String   @id @default(uuid())
+  name      String
+  code      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Department {
+  id          String                 @id @default(uuid())
+  companyId   String
+  company     Company                @relation(fields: [companyId], references: [id])
+  name        String
+  code        String
+  positions   Position[]
+  assignments DepartmentAssignment[]
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+
+  @@unique([companyId, code])
+}
+
+model CostCenter {
+  id          String                 @id @default(uuid())
+  companyId   String
+  company     Company                @relation(fields: [companyId], references: [id])
+  name        String
+  code        String
+  assignments CostCenterAssignment[]
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+
+  @@unique([companyId, code])
+}
+
+model Team {
+  id        String   @id @default(uuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id])
+  name      String
+  code      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, code])
+}
+
+model Job {
+  id          String       @id @default(uuid())
+  companyId   String
+  company     Company      @relation(fields: [companyId], references: [id])
+  title       String
+  code        String
+  positions   Position[]
+  salaryBands SalaryBand[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@unique([companyId, code])
+}
+
+model Position {
+  id                  String               @id @default(uuid())
+  companyId           String
+  company             Company              @relation(fields: [companyId], references: [id])
+  departmentId        String
+  department          Department           @relation(fields: [departmentId], references: [id])
+  jobId               String?
+  job                 Job?                 @relation(fields: [jobId], references: [id])
+  title               String
+  status              PositionStatus       @default(VACANT)
+  assignments         PositionAssignment[]
+  employees           Employee[]
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+}
+
+model SalaryBand {
+  id            String   @id @default(uuid())
+  jobId         String
+  job           Job      @relation(fields: [jobId], references: [id])
+  name          String
+  minimumAmount Decimal  @db.Decimal(14, 2)
+  midpointAmount Decimal @db.Decimal(14, 2)
+  maximumAmount Decimal  @db.Decimal(14, 2)
+  currency      String   @default("BRL")
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model WorkLocation {
+  id        String   @id @default(uuid())
+  name      String
+  address   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Person {
+  id                 String             @id @default(uuid())
+  fullName           String
+  preferredName      String?
+  corporateEmail     String             @unique
+  personalEmail      String?
+  phone              String?
+  dataClassification DataClassification @default(CONFIDENTIAL)
+  employee           Employee?
+  addresses          EmployeeAddress[]
+  emergencyContacts  EmergencyContact[]
+  dependents         Dependent[]
+  documents          EmployeeDocument[]
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+}
+
+model Employee {
+  id                    String                   @id @default(uuid())
+  personId              String                   @unique
+  person                Person                   @relation(fields: [personId], references: [id])
+  companyId             String
+  company               Company                  @relation(fields: [companyId], references: [id])
+  positionId            String?
+  position              Position?                @relation(fields: [positionId], references: [id])
+  employeeNumber        String                   @unique
+  status                EmployeeStatus           @default(ACTIVE)
+  hireDate              DateTime
+  profile               EmployeeProfile?
+  employments           Employment[]
+  contracts             EmploymentContract[]
+  histories             EmploymentHistory[]
+  positionAssignments   PositionAssignment[]
+  departmentAssignments DepartmentAssignment[]
+  managerAssignments    ManagerAssignment[]      @relation("EmployeeManagerAssignments")
+  managedAssignments    ManagerAssignment[]      @relation("ManagerAssignments")
+  costCenterAssignments CostCenterAssignment[]
+  compensationHistory   CompensationHistory[]
+  statusHistory         EmployeeStatusHistory[]
+  roleAssignments       RoleAssignment[]
+  accessScopes          AccessScope[]
+  fieldPermissions      FieldPermission[]
+  auditLogs             AuditLog[]
+  dataAccessLogs        DataAccessLog[]
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+}
+
+model EmployeeProfile {
+  id                 String             @id @default(uuid())
+  employeeId         String             @unique
+  employee           Employee           @relation(fields: [employeeId], references: [id])
+  bio                String?
+  dataClassification DataClassification @default(CONFIDENTIAL)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+}
+
+model Employment {
+  id            String         @id @default(uuid())
+  employeeId    String
+  employee      Employee       @relation(fields: [employeeId], references: [id])
+  type          EmploymentType
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  recordedAt    DateTime       @default(now())
+  recordedBy    String
+  reason        String
+  source        String
+}
+
+model EmploymentContract {
+  id                 String             @id @default(uuid())
+  employeeId         String
+  employee           Employee           @relation(fields: [employeeId], references: [id])
+  contractNumber     String             @unique
+  type               EmploymentType
+  dataClassification DataClassification @default(RESTRICTED)
+  effectiveFrom      DateTime
+  effectiveTo        DateTime?
+  recordedAt         DateTime           @default(now())
+  recordedBy         String
+  reason             String
+  source             String
+}
+
+model EmploymentHistory {
+  id            String   @id @default(uuid())
+  employeeId    String
+  employee      Employee @relation(fields: [employeeId], references: [id])
+  eventType     String
+  description   String
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  recordedAt    DateTime @default(now())
+  recordedBy    String
+  reason        String
+  source        String
+}
+
+model PositionAssignment {
+  id            String   @id @default(uuid())
+  employeeId    String
+  employee      Employee @relation(fields: [employeeId], references: [id])
+  positionId    String
+  position      Position @relation(fields: [positionId], references: [id])
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  recordedAt    DateTime @default(now())
+  recordedBy    String
+  reason        String
+  source        String
+}
+
+model DepartmentAssignment {
+  id            String     @id @default(uuid())
+  employeeId    String
+  employee      Employee   @relation(fields: [employeeId], references: [id])
+  departmentId  String
+  department    Department @relation(fields: [departmentId], references: [id])
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  recordedAt    DateTime   @default(now())
+  recordedBy    String
+  reason        String
+  source        String
+}
+
+model ManagerAssignment {
+  id            String   @id @default(uuid())
+  employeeId    String
+  employee      Employee @relation("EmployeeManagerAssignments", fields: [employeeId], references: [id])
+  managerId     String
+  manager       Employee @relation("ManagerAssignments", fields: [managerId], references: [id])
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  recordedAt    DateTime @default(now())
+  recordedBy    String
+  reason        String
+  source        String
+}
+
+model CostCenterAssignment {
+  id            String     @id @default(uuid())
+  employeeId    String
+  employee      Employee   @relation(fields: [employeeId], references: [id])
+  costCenterId  String
+  costCenter    CostCenter @relation(fields: [costCenterId], references: [id])
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  recordedAt    DateTime   @default(now())
+  recordedBy    String
+  reason        String
+  source        String
+}
+
+model CompensationHistory {
+  id                 String             @id @default(uuid())
+  employeeId         String
+  employee           Employee           @relation(fields: [employeeId], references: [id])
+  baseSalary         Decimal            @db.Decimal(14, 2)
+  currency           String             @default("BRL")
+  dataClassification DataClassification @default(RESTRICTED)
+  effectiveFrom      DateTime
+  effectiveTo        DateTime?
+  recordedAt         DateTime           @default(now())
+  recordedBy         String
+  reason             String
+  source             String
+}
+
+model EmployeeAddress {
+  id                 String             @id @default(uuid())
+  personId           String
+  person             Person             @relation(fields: [personId], references: [id])
+  addressLine        String
+  city               String
+  state              String
+  postalCode         String
+  country            String             @default("BR")
+  dataClassification DataClassification @default(CONFIDENTIAL)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+}
+
+model EmergencyContact {
+  id                 String             @id @default(uuid())
+  personId           String
+  person             Person             @relation(fields: [personId], references: [id])
+  name               String
+  relationship       String
+  phone              String
+  dataClassification DataClassification @default(CONFIDENTIAL)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+}
+
+model Dependent {
+  id                 String             @id @default(uuid())
+  personId           String
+  person             Person             @relation(fields: [personId], references: [id])
+  name               String
+  relationship       String
+  dataClassification DataClassification @default(SENSITIVE)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+}
+
+model EmployeeDocument {
+  id                 String             @id @default(uuid())
+  personId           String
+  person             Person             @relation(fields: [personId], references: [id])
+  documentType       String
+  storageKey         String
+  dataClassification DataClassification @default(RESTRICTED)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+}
+
+model EmployeeStatusHistory {
+  id            String         @id @default(uuid())
+  employeeId    String
+  employee      Employee       @relation(fields: [employeeId], references: [id])
+  status        EmployeeStatus
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  recordedAt    DateTime       @default(now())
+  recordedBy    String
+  reason        String
+  source        String
+}
+
+model RoleAssignment {
+  id          String     @id @default(uuid())
+  employeeId  String
+  employee    Employee   @relation(fields: [employeeId], references: [id])
+  companyId   String?
+  company     Company?   @relation(fields: [companyId], references: [id])
+  role        PeopleRole
+  assignedAt  DateTime   @default(now())
+  assignedBy  String
+  expiresAt   DateTime?
+}
+
+model AccessScope {
+  id         String          @id @default(uuid())
+  employeeId String
+  employee   Employee        @relation(fields: [employeeId], references: [id])
+  companyId  String?
+  company    Company?        @relation(fields: [companyId], references: [id])
+  type       AccessScopeType
+  scopeId    String
+  createdAt  DateTime        @default(now())
+}
+
+model FieldPermission {
+  id         String            @id @default(uuid())
+  employeeId String
+  employee   Employee          @relation(fields: [employeeId], references: [id])
+  fieldKey   SensitiveFieldKey
+  canRead    Boolean           @default(false)
+  canWrite   Boolean           @default(false)
+  grantedAt  DateTime          @default(now())
+  grantedBy  String
+}
+
+model AuditLog {
+  id            String   @id @default(uuid())
+  actorId       String?
+  actorEmployee Employee? @relation(fields: [actorId], references: [id])
+  actorRole     String
+  action        String
+  entityType    String
+  entityId      String
+  before        Json?
+  after         Json?
+  reason        String?
+  requestId     String?
+  correlationId String?
+  ip            String?
+  userAgent     String?
+  createdAt     DateTime @default(now())
+}
+
+model DataAccessLog {
+  id            String   @id @default(uuid())
+  employeeId    String?
+  employee      Employee? @relation(fields: [employeeId], references: [id])
+  actorId       String
+  entityType    String
+  entityId      String
+  fieldKey      String
+  purpose       String
+  requestId     String?
+  correlationId String?
+  createdAt     DateTime @default(now())
+}

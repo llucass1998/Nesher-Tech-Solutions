@@ -1,0 +1,15 @@
+{
+  "extends": "../../packages/typescript-config/nestjs.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "baseUrl": ".",
+    "paths": {
+      "@logipeople/auth": ["../../packages/auth/src/index.ts"],
+      "@logipeople/config": ["../../packages/config/src/index.ts"],
+      "@logipeople/contracts": ["../../packages/contracts/src/index.ts"],
+      "@logipeople/logger": ["../../packages/logger/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts", "prisma.config.ts"],
+  "exclude": ["dist", "node_modules", "src/generated"]
+}

@@ -1,0 +1,23 @@
+{
+  "name": "logipeople-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "start:dev": "ts-node-dev --respawn --transpile-only src/main.ts",
+    "lint": "eslint src test --ext .ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc -p tsconfig.json",
+    "prisma:generate": "prisma generate --config prisma.config.ts",
+    "prisma:migrate": "prisma migrate dev --config prisma.config.ts",
+    "prisma:deploy": "prisma migrate deploy --config prisma.config.ts",
+    "seed": "tsx ../../databases/logipeople/prisma/seed/seed.ts"
+  },
+  "dependencies": {
+    "@logipeople/auth": "0.1.0",
+    "@logipeople/config": "0.1.0",
+    "@logipeople/contracts": "0.1.0",
+    "@logipeople/logger": "0.1.0"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "extends": "../../packages/typescript-config/next.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"],
+      "@logipeople/contracts": ["../../packages/contracts/src/index.ts"]
+    }
+  },
+  "include": ["next-env.d.ts", "app/**/*.ts", "app/**/*.tsx", "src/**/*.ts", "src/**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}
