@@ -7,6 +7,7 @@ import { deprecatedRoute, verificarAccessTokenV1, verificarApiKeyPagamento, veri
 import { UserController } from './controllers/UserController';
 import { AuthV1Controller } from './controllers/AuthV1Controller';
 import { DriverV1Controller } from './controllers/DriverV1Controller';
+import { DashboardController } from './controllers/DashboardController';
 
 const routes = Router();
 
@@ -18,6 +19,7 @@ const vehicleController = new VehicleController();
 const deliveryController = new DeliveryController();
 const authV1Controller = new AuthV1Controller();
 const driverV1Controller = new DriverV1Controller();
+const dashboardController = new DashboardController();
 
 // ==========================================
 // API V1 - AUTENTICACAO E MOTORISTA
@@ -33,10 +35,14 @@ routes.get('/api/v1/driver/deliveries', verificarAccessTokenV1, (req, res) => dr
 routes.get('/api/v1/driver/deliveries/:id', verificarAccessTokenV1, (req, res) => driverV1Controller.delivery(req, res));
 routes.patch('/api/v1/driver/deliveries/:id/status', verificarAccessTokenV1, (req, res) => driverV1Controller.updateDeliveryStatus(req, res));
 
+routes.get('/api/v1/dashboard/metrics', (req, res) => dashboardController.metrics(req, res));
+
 // ==========================================
 // ROTA DE LOGIN
 // ==========================================
 routes.post('/login', deprecatedRoute({ successor: '/api/v1/auth/login' }), (req, res) => authController.login(req, res));
+
+routes.get('/dashboard/metrics', deprecatedRoute({ successor: '/api/v1/dashboard/metrics' }), (req, res) => dashboardController.metrics(req, res));
 
 // ==========================================
 // ROTAS DE MOTORISTAS

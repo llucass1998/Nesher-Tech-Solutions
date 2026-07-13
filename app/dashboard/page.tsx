@@ -45,7 +45,7 @@ export default function DashboardHomePage() {
 
     async function loadMetrics() {
       try {
-        const response = await axios.get<DashboardMetrics>(`${API_URL}/dashboard/metrics`);
+        const response = await axios.get<DashboardMetrics>(`${API_URL}/api/v1/dashboard/metrics`);
         if (isMounted) {
           setMetrics(response.data);
         }

@@ -9,6 +9,7 @@ Implementar apenas:
 3. Fase 3 - Autenticacao versionada em `/api/v1/auth/*`.
 4. Fase 4 - Ownership do motorista em `/api/v1/driver/*`.
 5. Fase 5 - Depreciacao controlada das rotas legadas.
+6. Fase 7 - Primeiro incremento operacional do LogiFlow.
 
 ## Ajuste de escopo por estado real
 
@@ -65,6 +66,14 @@ LogiDesk, workers, Redis, BullMQ, Outbox, DLQ, Socket.IO autenticado e SSO real 
 - Adicionar headers `Deprecation`, `Sunset` e `Link` quando houver sucessor versionado real.
 - Registrar warning estruturado para uso de rota legada.
 - Nao remover rota ate existir endpoint v1 equivalente, migracao do frontend e ausencia de uso observada em logs.
+
+### Fase 7
+
+- Corrigir o dashboard operacional para consumir uma rota real versionada.
+- Expor `GET /api/v1/dashboard/metrics`.
+- Manter `GET /dashboard/metrics` como alias legado depreciado.
+- Calcular metricas reais de veiculos, motoristas, veiculos em rota, entregas concluidas e serie de 7 dias.
+- Cobrir agregacao e compatibilidade legada com testes.
 
 ## Fora de escopo nesta execucao
 

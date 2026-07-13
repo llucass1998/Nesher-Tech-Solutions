@@ -12,6 +12,7 @@ Data: 2026-07-12
 | Fase 4 - Ownership motorista | Implementada | `/api/v1/driver/me`, `/deliveries`, `/deliveries/:id`, `/status`; teste de entrega alheia retorna 403. |
 | Fase 5 - Depreciacao das rotas legadas | Implementada sem remocao | Middleware `deprecatedRoute`; headers `Deprecation`, `Sunset`, `Link`; teste de regressao atualizado. |
 | Fase 6 - LogiDesk operacional | Bloqueada | Nao existem `apps/logidesk-*` nem arquivos de ticket/suporte/SLA neste checkout; ver `docs/LOGIDESK.md`. |
+| Fase 7 - LogiFlow operacional | Iniciada | Dashboard operacional agora usa `GET /api/v1/dashboard/metrics`; alias legado depreciado preservado. |
 
 ## Matriz de regressao
 
@@ -26,6 +27,7 @@ Data: 2026-07-12
 | Auth versionada | Nao existia | Nao | Sim | PASS |
 | Ownership motorista | Nao existia | Nao | Sim | PASS |
 | Depreciacao de rota legada | Rotas antigas sem aviso | Nao | Sim | PASS |
+| Dashboard operacional | Frontend chamava rota inexistente `/dashboard/metrics` | Nao | Sim | PASS |
 | LogiDesk/ticket | Nao existe no checkout | Nao | Nao aplicavel | Bloqueado por ausencia de modulo |
 | Outbox/Redis/retry | Nao existe no LogiFlow legado | Nao | Nao aplicavel | Bloqueado por ausencia de modulo |
 
@@ -107,6 +109,44 @@ Decisao: nao criar LogiDesk do zero sem confirmacao explicita, porque o prompt m
 | --- | --- | --- |
 | `npm run typecheck` | PASS | Raiz e workspaces passaram. |
 | `npm test` | PASS apos repeticao | Primeira execucao teve falha de worker do Vitest sem teste quebrado; repeticao passou com 3 arquivos e 18 testes. |
+| `npm run lint` | PASS | Sem erros. |
+| `npm run build` | PASS | Next raiz compilou; aviso Node `DEP0169` permanece. |
+| `npm run test:workspaces` | PASS | LogiPeople API: 5 arquivos, 25 testes; demais pacotes sem testes e `passWithNoTests`. |
+| `npm run lint:workspaces` | PASS | Sem erros; avisos do Next sobre `pages` em pacotes nao-Next. |
+| `npm run build:workspaces` | PASS | LogiPeople API/web/worker e pacotes passaram; aviso de lockfiles multiplos no Next. |
+
+## Fase 7 - LogiFlow operacional
+
+Primeiro incremento implementado:
+
+- `GET /api/v1/dashboard/metrics` criado.
+- `GET /dashboard/metrics` mantido como alias legado depreciado.
+- Dashboard frontend passou a consumir a rota versionada.
+- Metricas calculadas:
+  - total de veiculos;
+  - motoristas ativos;
+  - veiculos em rota;
+  - entregas concluidas;
+  - serie de entregas concluidas dos ultimos 7 dias.
+- Chave diaria do grafico usa data local para evitar erro de fuso horario em UTC.
+
+Itens da Fase 7 ainda pendentes:
+
+- filtros e paginacao completos em entregas;
+- timeline e historico de entrega;
+- comprovantes;
+- ocorrencias operacionais;
+- estados de integracao;
+- reprocessamento seguro;
+- mapa autenticado por ownership;
+- testes E2E do fluxo operacional completo.
+
+### Validacoes da Fase 7
+
+| Comando | Resultado | Observacao |
+| --- | --- | --- |
+| `npm test` | PASS | 4 arquivos, 20 testes passaram. |
+| `npm run typecheck` | PASS | Raiz e workspaces passaram. |
 | `npm run lint` | PASS | Sem erros. |
 | `npm run build` | PASS | Next raiz compilou; aviso Node `DEP0169` permanece. |
 
