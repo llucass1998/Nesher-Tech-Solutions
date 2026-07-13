@@ -15,6 +15,7 @@ Implementar apenas:
 9. Fase 10 - Testes completos no escopo disponivel.
 10. Fase 11 - Docker e seguranca basica do runtime.
 11. Fase 12 - CI/CD.
+12. Fase 13 - Documentacao.
 
 ## Ajuste de escopo por estado real
 
@@ -163,6 +164,15 @@ LogiDesk, workers, Redis, BullMQ, Outbox, DLQ, Socket.IO autenticado e SSO real 
 - Executar smoke test Docker do LogiFlow com health checks reais.
 - Usar filtros por path para evitar CI desnecessario.
 - Documentar que LogiDesk segue bloqueado por ausencia de app neste checkout.
+
+### Fase 13
+
+- Atualizar README com estado real do monorepo.
+- Atualizar `docs/CURRENT_STATE.md` e `docs/ARCHITECTURE.md`.
+- Criar guias de autenticacao, autorizacao, API, LogiFlow, LogiPeople, integracao, eventos, observabilidade, testes, deploy e troubleshooting.
+- Registrar explicitamente pendencias de LogiDesk, Redis/BullMQ, Outbox/DLQ, Socket.IO e E2E.
+- Manter documentacao sem segredos reais.
+- Validar links, comandos e consistencia basica com lint/build.
 
 ## Fora de escopo nesta execucao
 

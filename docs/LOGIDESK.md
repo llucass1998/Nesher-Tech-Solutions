@@ -1,6 +1,6 @@
 # LogiDesk
 
-Data: 2026-07-12
+Data: 2026-07-13
 
 ## Estado encontrado
 
@@ -19,11 +19,13 @@ Buscas executadas nao encontraram arquivos com nomes ou dominios relacionados a:
 - `atendimento`
 - `suporte`
 
-A pasta `apps/` contem apenas:
+A pasta `apps/` contem:
 
 - `apps/logipeople-api`
 - `apps/logipeople-web`
 - `apps/logipeople-worker`
+
+O LogiFlow legado continua na raiz (`app/`, `src/`, `prisma/`), nao em `apps/logiflow-*`.
 
 ## Decisao tecnica
 

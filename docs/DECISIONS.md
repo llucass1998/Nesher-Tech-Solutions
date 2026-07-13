@@ -31,3 +31,11 @@ Decisao: criar workflows separados para LogiFlow, LogiPeople e integracao/plataf
 Motivo: o checkout atual possui `package-lock.json` e os comandos validados localmente usam npm. Tambem nao ha app LogiDesk neste checkout, entao criar um workflow LogiDesk dedicado seria artificial.
 
 Consequencia: alteracoes em LogiFlow, LogiPeople e pacotes compartilhados disparam pipelines adequados por path. O audit completo deve permanecer com 0 vulnerabilidades conhecidas, exceto quando houver excecao documentada e aprovada.
+
+## 2026-07-13 - Documentacao reflete o checkout real
+
+Decisao: documentar LogiFlow raiz e LogiPeople como produtos presentes, mantendo LogiDesk como bloqueado.
+
+Motivo: criar documentacao para `apps/logiflow-*` ou `apps/logidesk-*` como se existissem geraria instrucao falsa para manutencao e CI.
+
+Consequencia: a Fase 13 consolida guias praticos para o que existe e registra explicitamente pendencias de LogiDesk, Outbox, Redis/BullMQ, DLQ, Socket.IO e E2E.

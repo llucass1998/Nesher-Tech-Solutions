@@ -1,41 +1,89 @@
 # Architecture
 
-## Current LogiFlow baseline
+## Visao geral
 
-LogiFlow is currently a single repository with a Next.js App Router frontend in `app/` and a separate Express API in `src/`.
+O repositorio funciona como uma plataforma em transicao. O LogiFlow ainda vive na raiz, com frontend Next.js e API Express. O LogiPeople ja segue uma estrutura de monorepo mais clara, em `apps/`, `packages/` e `databases/`.
 
-- `package.json` defines a single private app named `logiflow` with `dev`, `dev:api`, `build`, `lint`, `test` and Prisma scripts.
-- `app/` contains client-side pages that call the API through `NEXT_PUBLIC_API_URL`, defaulting to `http://localhost:3333`.
-- `src/server.ts` starts the Express API on port `3333` and mounts `src/routes.ts`.
-- `src/routes.ts` centralizes REST routes for login, users, drivers, vehicles and deliveries.
-- `src/controllers/*` currently combine HTTP handling, validation, Prisma access and business rules.
-- `prisma/schema.prisma` is the LogiFlow database schema for `Driver`, `Vehicle` and `Delivery`.
-- `src/__tests__/payment-api-key.test.ts` expects payment API-key behavior that is not visible in the current route/controller implementation. This is a LogiFlow risk and not part of LogiPeople.
+LogiDesk nao existe neste checkout. Qualquer integracao com suporte deve ser tratada como contrato futuro, nao como feature pronta.
 
-## LogiPeople target for phases 1-6
-
-LogiPeople starts as an independent modular monolith inside the platform workspace, not as another LogiFlow page or Express controller.
+## LogiFlow
 
 ```text
-apps/logipeople-web      Next.js App Router frontend
-apps/logipeople-api      NestJS API under /api/v1
-apps/logipeople-worker   Worker bootstrap prepared for future queues
-packages/*               Shared contracts, auth, config, logger and tooling
-databases/logipeople     Independent Prisma schema and migrations
+app/             Frontend Next.js App Router
+src/server.ts    Bootstrap da API Express
+src/routes.ts    Registro central de rotas
+src/controllers  Controllers HTTP
+src/middlewares  Auth, API key, RBAC e depreciacao
+src/lib          Prisma, tokens, erros, logger e observabilidade
+prisma/          Schema e migrations
 ```
 
-## Boundary decisions
+Padroes atuais:
 
-- LogiPeople uses its own PostgreSQL database named `logipeople_db`.
-- LogiPeople does not read or write the existing LogiFlow Prisma schema.
-- LogiFlow must not query `logipeople_db` directly.
-- Controllers in LogiPeople remain thin; business rules live in services/use cases.
-- RH and DP are represented as separate domains in the data model and API boundaries, while sharing one API and database initially.
-- Payroll, time attendance, benefits, eSocial, AI assistants and real LogiFlow/LogiDesk integrations are intentionally out of scope for this first execution.
+- Controllers ainda concentram parte de validacao, regra de negocio e acesso Prisma.
+- Rotas v1 novas convivem com rotas legadas depreciadas.
+- Identidade versionada usa `User`, `DriverProfile` e `RefreshSession`.
+- Driver ownership e resolvido por `JWT sub -> User -> DriverProfile -> driverId`.
+- Endpoints operacionais exigem `ADMIN` ou `OPERATOR`.
 
-## Initial runtime ports
+## LogiPeople
 
-- LogiFlow web: existing Next.js development port.
-- LogiFlow API: existing Express port `3333`.
-- LogiPeople web: planned development port `3400`.
-- LogiPeople API: planned development port `3433`.
+```text
+apps/logipeople-api       NestJS modular
+apps/logipeople-web       Next.js App Router
+apps/logipeople-worker    Worker bootstrap
+databases/logipeople      Prisma separado
+packages/auth             Tipos de identidade
+packages/contracts        Zod HTTP contracts
+packages/event-contracts  Zod event contracts
+packages/config           Env/config helpers
+packages/logger           Logger compartilhado
+```
+
+Padroes atuais:
+
+- API modular por dominio.
+- Guards para JWT, RBAC, ABAC e field access.
+- Contratos Zod compartilhados em `packages/contracts`.
+- Banco separado do LogiFlow.
+
+## Bancos
+
+LogiFlow e LogiPeople possuem schemas Prisma separados. Nao ha relacoes Prisma entre bancos.
+
+```mermaid
+erDiagram
+  User ||--o| DriverProfile : has
+  Driver ||--o| DriverProfile : legacy_link
+  Driver ||--o{ Delivery : assigned
+  Vehicle ||--o{ Delivery : used
+  Delivery ||--o{ DeliveryStatusHistory : status_history
+  Delivery ||--o{ Occurrence : has
+  Delivery ||--o{ DeliveryProof : has
+```
+
+## Runtime LogiFlow
+
+```mermaid
+flowchart LR
+  Web[LogiFlow Web] --> API[Express API]
+  API --> DB[(PostgreSQL LogiFlow)]
+  Migrate[logiflow-migrate] --> DB
+  DB --> API
+```
+
+## CI/CD
+
+Workflows:
+
+- `logiflow-ci.yml`: LogiFlow, Docker e smoke test.
+- `logipeople-ci.yml`: LogiPeople e pacotes compartilhados.
+- `integration-ci.yml`: verificacao completa de plataforma.
+
+## Pendencias arquiteturais
+
+- Extrair regras de controllers LogiFlow para services/use cases.
+- Criar LogiDesk real ou importar sua base.
+- Implementar Outbox, Redis/BullMQ, DLQ e reprocessamento distribuido.
+- Adicionar Socket.IO autenticado.
+- Cobrir E2E completo com Playwright.

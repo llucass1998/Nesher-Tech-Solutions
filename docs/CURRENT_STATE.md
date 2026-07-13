@@ -1,67 +1,92 @@
 # Current State
 
-Data: 2026-07-12
+Data: 2026-07-13
 
 ## Resumo
 
-O checkout atual nao corresponde integralmente ao prompt mestre. O prompt descreve um monorepo com `apps/logiflow-web`, `apps/logiflow-api`, `apps/logiflow-worker`, `apps/logidesk-web`, `apps/logidesk-api` e `apps/logidesk-worker`; esses apps nao existem neste workspace.
+O checkout atual nao corresponde integralmente ao prompt mestre original. O prompt descreve `apps/logiflow-*` e `apps/logidesk-*`, mas este repositorio contem:
 
-O repositorio possui hoje duas frentes:
+- LogiFlow legado modernizado na raiz.
+- LogiPeople como produto modular dentro de `apps/`.
+- Nenhuma implementacao LogiDesk.
 
-- LogiFlow legado na raiz: frontend Next.js em `app/`, API Express em `src/`, banco Prisma em `prisma/`.
-- LogiPeople em monorepo: `apps/logipeople-*`, `packages/*` e `databases/logipeople`, com alteracoes nao relacionadas ja presentes no working tree.
+As fases 1-12 do fluxo principal foram implementadas no escopo real do checkout. A fase atual, Fase 13, consolida a documentacao.
 
-Esta execucao aplicou as Fases 1-5 somente ao LogiFlow legado da raiz, preservando LogiPeople e evitando sobrescrever alteracoes existentes.
+## LogiFlow
 
-## Estrutura encontrada
+Estrutura:
 
-- `app/`: frontend LogiFlow legado.
-- `src/`: API Express LogiFlow legada.
-- `prisma/`: schema e migrations do banco LogiFlow legado.
-- `apps/logipeople-api`, `apps/logipeople-web`, `apps/logipeople-worker`: modulo LogiPeople existente.
-- `packages/auth`, `packages/config`, `packages/contracts`, `packages/event-contracts`, `packages/logger`: pacotes compartilhados atualmente voltados a LogiPeople.
-- `databases/logipeople`: banco separado do LogiPeople.
-- `.claude/skills`: skills locais para integracao segura, seguranca e E2E LogiFlow/LogiDesk.
+- `app/`: web Next.js App Router.
+- `src/`: API Express.
+- `prisma/`: schema e migrations do banco LogiFlow.
+- `packages/ui`: componentes compartilhados usados pelo LogiFlow.
 
-## LogiFlow legado
+Implementado:
 
-Rotas atuais:
+- Auth versionada em `/api/v1/auth/*`.
+- `User`, `DriverProfile` e `RefreshSession`.
+- Ownership de motorista em `/api/v1/driver/*`.
+- Rotas legadas depreciadas com headers e warning estruturado.
+- Dashboard versionado.
+- Endpoints operacionais de entregas, timeline, status, ocorrencias, comprovantes e reprocessamento.
+- Health checks e metricas.
+- Docker Compose com migration gate.
+- CI/CD GitHub Actions.
+- Audit de dependencias com 0 vulnerabilidades conhecidas.
 
-- `POST /login`
-- `POST /users`
-- `GET/POST/PUT/DELETE/PATCH /drivers`
-- `GET/POST/PUT/DELETE/PATCH /vehicles`
-- `GET/POST/PUT/DELETE/PATCH /deliveries`
+Ainda pendente:
 
-Modelos atuais:
-
-- `Driver`
-- `Vehicle`
-- `Delivery`
-
-Riscos confirmados:
-
-- Login legado autentica em `Driver.password`.
-- Ainda nao existe `User` como fonte unica de identidade no schema raiz.
-- Ainda nao existe `DriverProfile`.
-- Endpoints versionados `/api/v1/auth/*` e `/api/v1/driver/*` ainda nao existem.
-- LogiDesk operacional nao existe neste checkout.
-- Nao ha arquivos relacionados a ticket, chamado, suporte, SLA, inbox, kanban ou LogiDesk.
-- Docker Compose e GitHub Actions nao foram encontrados por busca filtrada.
+- Remocao definitiva das rotas legadas.
+- Redis, BullMQ, Outbox, DLQ e workers LogiFlow reais.
+- Socket.IO autenticado.
+- E2E Playwright completo.
+- Integracao real com LogiDesk.
 
 ## LogiPeople
 
-LogiPeople ja possui NestJS, Prisma separado, guards, modulos, testes e documentacao propria. O working tree ja tinha alteracoes nao minhas em:
+Estrutura:
 
-- `databases/logipeople/prisma/schema.prisma`
-- `packages/contracts/src/index.ts`
-- `apps/logipeople-api/src/modules/absence-vacation/`
-- `databases/logipeople/prisma/migrations/20260712040000_absence_vacation_foundation/`
+- `apps/logipeople-api`: NestJS API.
+- `apps/logipeople-web`: Next.js App Router.
+- `apps/logipeople-worker`: worker bootstrap.
+- `databases/logipeople`: Prisma schema, migrations e seed.
+- `packages/*`: auth, contracts, event-contracts, config e logger.
 
-Essas alteracoes serao preservadas.
+Implementado:
 
-## Estado da Fase 6
+- Identidade e permissoes base.
+- RBAC, ABAC e controle de campos.
+- Organizacao e Core People.
+- Recrutamento preliminar.
+- Onboarding preliminar.
+- Ponto e frequencia preliminar.
+- Folha preliminar.
+- Beneficios preliminares.
+- Ausencias e ferias preliminares.
+- Analytics agregados.
 
-A Fase 6 pede evoluir o LogiDesk operacional, mas nao ha base de LogiDesk neste workspace. Criar `apps/logidesk-*` do zero seria uma reconstrucao, contrariando a regra do prompt mestre de nao reconstruir o projeto do zero.
+Limitacoes:
 
-O estado e os pre-requisitos da Fase 6 estao documentados em `docs/LOGIDESK.md`.
+- Dados sensiveis e DP continuam preliminares.
+- eSocial real, calculos legais, pagamentos, provisoes e automacoes externas nao estao implementados.
+
+## LogiDesk
+
+Nao ha `apps/logidesk-api`, `apps/logidesk-web` ou `apps/logidesk-worker`.
+
+A Fase 6 segue bloqueada para evolucao real de produto. Ver `docs/LOGIDESK.md`.
+
+## Infraestrutura
+
+- Docker Compose existe para LogiFlow DB, migration, API e web.
+- GitHub Actions existem para LogiFlow, LogiPeople e integracao/plataforma.
+- `.env.example` contem placeholders e nao segredos reais.
+
+## Validacoes recentes
+
+- `npm audit`: PASS, 0 vulnerabilidades.
+- `npm run lint`: PASS.
+- `npm run typecheck`: PASS.
+- `npm test`: PASS.
+- `npm run build`: PASS.
+- LogiPeople web/API checks passaram na conclusao da fase Analytics.

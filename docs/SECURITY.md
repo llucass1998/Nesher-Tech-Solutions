@@ -1,6 +1,14 @@
 # Security
 
-## Principles for LogiPeople phases 1-6
+## Platform principles
+
+- Sensitive values must come from environment variables.
+- Do not commit real secrets.
+- `.env.example` must contain placeholders only.
+- Logs must redact tokens, cookies, passwords and hashes.
+- `npm audit` must remain at 0 known vulnerabilities unless an exception is explicitly approved.
+
+## LogiPeople principles
 
 - Sensitive values must come from environment variables.
 - Salary, bank data, documents, medical data, biometrics and confidential evaluations require field-level controls.
@@ -43,3 +51,10 @@ Full rate limiting, OpenTelemetry, storage scanning, encrypted backups and compl
 - API startup in Docker must be gated by successful `prisma migrate deploy`.
 - High-severity dependency audit failures must block CI.
 - Dependency audit must remain at 0 known vulnerabilities unless a documented exception is explicitly approved.
+
+## Service-to-service future guardrails
+
+- Use HMAC or signed service tokens for service calls.
+- Require idempotency keys for integration commands.
+- Require correlation IDs across systems.
+- Never log service tokens, API keys or full payloads with sensitive fields.

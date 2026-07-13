@@ -17,7 +17,8 @@ Data: 2026-07-12
 | Fase 9 - Observabilidade | Concluida no escopo inicial | Logger estruturado com redaction, request/correlation id, health checks e metricas HTTP em texto Prometheus. |
 | Fase 10 - Testes completos | Concluida no escopo disponivel | Suite raiz ampliada para 39 testes cobrindo auth, ownership, operacoes, reprocessamento, health e metricas. |
 | Fase 11 - Docker e seguranca | Concluida | Dockerfiles, Compose, migration one-shot, health checks, runtime nao privilegiado, Helmet e validacao real de containers. |
-| Fase 12 - CI/CD | Concluida no escopo do checkout atual | Workflows GitHub Actions criados para LogiFlow, LogiPeople e integracao/plataforma com lint, typecheck, testes, build, audit alto, Prisma e Docker. |
+| Fase 12 - CI/CD | Concluida no escopo do checkout atual | Workflows GitHub Actions criados para LogiFlow, LogiPeople e integracao/plataforma com lint, typecheck, testes, build, audit completo, Prisma e Docker. |
+| Fase 13 - Documentacao | Concluida | README e guias docs atualizados para refletir LogiFlow, LogiPeople, Docker, CI/CD, seguranca, integracao e pendencias reais. |
 
 ## Matriz de regressao
 
@@ -488,3 +489,36 @@ Decisoes:
 | `npm run test:workspaces` | PASS | LogiPeople API: 9 arquivos, 44 testes; demais workspaces sem testes e `passWithNoTests`. |
 | `npm run build:workspaces` | PASS | Workspaces passaram; aviso de root do Next permanece. |
 | `docker compose config` com env CI | PASS | Compose renderiza com segredos ficticios de CI. |
+
+## Fase 13 - Documentacao
+
+Implementado:
+
+- README reescrito com estado real da plataforma.
+- `docs/CURRENT_STATE.md` atualizado.
+- `docs/ARCHITECTURE.md` atualizado.
+- Novos guias criados:
+  - `docs/API.md`;
+  - `docs/AUTHENTICATION.md`;
+  - `docs/AUTHORIZATION.md`;
+  - `docs/IDENTITY-MIGRATION.md`;
+  - `docs/LOGIFLOW.md`;
+  - `docs/LOGIPEOPLE.md`;
+  - `docs/INTEGRATION.md`;
+  - `docs/EVENTS.md`;
+  - `docs/OBSERVABILITY.md`;
+  - `docs/TESTING.md`;
+  - `docs/DEPLOYMENT.md`;
+  - `docs/TROUBLESHOOTING.md`.
+- `docs/LOGIDESK.md`, `docs/SECURITY.md`, `docs/DECISIONS.md` e `docs/IMPLEMENTATION_PLAN.md` atualizados.
+
+### Validacoes da Fase 13
+
+| Comando | Resultado | Observacao |
+| --- | --- | --- |
+| Busca de caracteres corrompidos em README/docs | PASS | Sem ocorrencias nos documentos verificados. |
+| `npm run lint` | PASS | Sem erros. |
+| `npm run typecheck` | PASS | Raiz e workspaces passaram. |
+| `npm test` | PASS | 6 arquivos, 39 testes passaram. |
+| `npm run build` | PASS | Next raiz compilou; aviso Node `DEP0169` permanece. |
+| `npm audit` | PASS | 0 vulnerabilidades. |

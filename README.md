@@ -1,206 +1,140 @@
-# LogiFlow
+# LogiFlow Platform
 
-Plataforma full stack para gestão logística empresarial, com controle de entregas, motoristas, veículos, dashboard operacional e base preparada para central de chamados e assistente WAHA.
+Plataforma em monorepo para operacao logistica, base de suporte futura e modulos corporativos de pessoas.
 
-O projeto foi desenvolvido com frontend em Next.js e backend em Node.js/Express, usando Prisma com PostgreSQL para persistencia dos dados.
+O checkout atual contem:
 
-## Sobre o projeto
+- **LogiFlow legado modernizado** na raiz: Next.js App Router em `app/`, API Express em `src/`, banco Prisma em `prisma/`.
+- **LogiPeople** em `apps/logipeople-*`: NestJS API, Next.js web, worker, pacotes compartilhados e Prisma separado em `databases/logipeople`.
+- **LogiDesk** documentado como bloqueado: nao existe implementacao `apps/logidesk-*` neste checkout.
 
-A proposta do sistema e centralizar a rotina operacional de uma logistica simples: cadastrar motoristas, controlar veiculos, criar entregas, atualizar status e acompanhar o desempenho por meio de metricas visuais.
+## Stack
 
-Este projeto tambem foi pensado como portfolio full stack, mostrando integracao entre frontend, API REST, banco de dados, autenticacao e dashboard administrativo.
-
-## Funcionalidades
-
-- Login com autenticacao JWT
-- Cadastro de motoristas
-- Cadastro de veiculos
-- Cadastro e gerenciamento de entregas
-- Atualizacao de status de entregas
-- Controle de status de motoristas
-- Controle de status de veiculos
-- Dashboard com metricas operacionais
-- Grafico de entregas dos ultimos 7 dias
-- Calculo de faturamento diario e mensal
-- Area/app do motorista para acompanhamento das entregas
-- Visualizacao com mapa usando Leaflet
-- API REST integrada ao frontend
-
-## Indicadores do dashboard
-
-- Veiculos cadastrados
-- Motoristas ativos
-- Veiculos em rota
-- Entregas finalizadas
-- Faturamento do dia
-- Faturamento do mes
-- Volume de entregas dos ultimos 7 dias
-
-## Tecnologias utilizadas
-
-- Next.js
-- React
+- Node.js 24
 - TypeScript
-- Tailwind CSS
-- Node.js
-- Express
-- Prisma
+- Next.js 16 App Router
+- React 19
+- Express 5
+- NestJS 11 nos apps LogiPeople
+- Prisma 7
 - PostgreSQL
-- JWT
-- Bcrypt
-- Axios
-- Recharts
-- Leaflet
-- React Leaflet
+- Docker Compose
+- Vitest
+- ESLint
+- GitHub Actions
 
-## Estrutura do projeto
+## Estrutura
 
 ```text
-app/
-  dashboard/          # Painel administrativo do LogiFlow
-  driver-app/         # Area do motorista
-  register/           # Cadastro
-
-src/
-  controllers/        # Controllers da API Express do LogiFlow
-  lib/                # Configuracao do Prisma do LogiFlow
-  middlewares/        # Middlewares de autenticacao
-  routes.ts           # Rotas da API Express
-  server.ts           # Servidor Express
-
-prisma/
-  schema.prisma       # Modelagem do banco de dados do LogiFlow
-
-apps/
-  logipeople-web/     # Frontend independente do LogiPeople
-  logipeople-api/     # API NestJS independente do LogiPeople
-  logipeople-worker/  # Worker independente do LogiPeople
-
-packages/
-  auth/               # Tipos de identidade, papéis e escopos
-  contracts/          # Contratos Zod HTTP
-  event-contracts/    # Contratos Zod de eventos
-  config/             # Validação de variáveis
-  logger/             # Logger com redaction
-
-databases/
-  logipeople/         # Prisma schema, migrations e seed do LogiPeople
+app/                         LogiFlow web legado
+src/                         LogiFlow API Express
+prisma/                      Banco LogiFlow
+apps/logipeople-api          LogiPeople API NestJS
+apps/logipeople-web          LogiPeople web Next.js
+apps/logipeople-worker       Worker LogiPeople
+packages/auth                Tipos e fronteiras de identidade
+packages/contracts           Contratos Zod HTTP
+packages/event-contracts     Contratos Zod de eventos
+packages/logger              Logger compartilhado
+packages/ui                  Componentes UI compartilhados LogiFlow
+databases/logipeople         Banco LogiPeople
+docs/                        Documentacao de arquitetura, operacao e decisoes
 ```
 
-## Modelos principais
-
-O banco de dados possui tres entidades centrais:
-
-- `Driver`: motoristas cadastrados no sistema.
-- `Vehicle`: veiculos disponiveis para operacao.
-- `Delivery`: entregas, valores, enderecos, status, motorista e veiculo vinculados.
-
-## Como rodar localmente
-
-Clone o repositorio:
-
-```bash
-cd C:\\Users\\lluca\\Documents\\Codex\\LogiFlow
-```
-
-Instale as dependencias:
+## Comandos principais
 
 ```bash
 npm install
+npm run lint
+npm run typecheck
+npm test
+npm run build
+npm audit
 ```
 
-Crie o arquivo `.env` na raiz do projeto:
+Workspaces:
+
+```bash
+npm run lint:workspaces
+npm run test:workspaces
+npm run build:workspaces
+npm run logipeople:prisma:generate
+```
+
+Prisma LogiFlow:
+
+```bash
+npm run prisma:generate
+npm run prisma:migrate
+npm run prisma:deploy
+```
+
+## Desenvolvimento local
+
+Copie `.env.example` para `.env` e configure valores reais:
 
 ```bash
 cp .env.example .env
 ```
 
-Configure as variaveis:
-
-```env
-DATABASE_URL="postgresql://usuario:senha@localhost:5432/sistema_logistica?schema=public"
-JWT_SECRET="troque-essa-chave"
-NEXT_PUBLIC_API_URL="http://localhost:3333"
-```
-
-Gere o client do Prisma:
-
-```bash
-npx prisma generate
-```
-
-Inicie o projeto:
+LogiFlow:
 
 ```bash
 npm run dev
+npm run dev:api
 ```
 
-O comando acima inicia:
-
-- Frontend: `http://localhost:3000`
-- API: `http://localhost:3333`
-
-## Scripts disponiveis
+LogiPeople:
 
 ```bash
-npm run dev                         # Inicia o frontend Next.js do LogiFlow
-npm run dev:api                     # Inicia apenas a API Express do LogiFlow
-npm run build                       # Gera build de producao do LogiFlow
-npm run lint                        # Executa o ESLint
-npm run test                        # Executa testes automatizados
-npm run prisma:generate             # Gera o client Prisma do LogiFlow
-npm run logipeople:dev:web          # Inicia o frontend LogiPeople na porta 3400
-npm run logipeople:dev:api          # Inicia a API LogiPeople na porta 3433
-npm run logipeople:dev:worker       # Inicia o worker LogiPeople
-npm run logipeople:prisma:generate  # Gera o client Prisma do LogiPeople
-npm run logipeople:prisma:migrate   # Aplica migrations locais do LogiPeople
+npm run logipeople:dev:web
+npm run logipeople:dev:api
+npm run logipeople:dev:worker
 ```
 
-## Rotas principais da API
+## Docker LogiFlow
 
-### Autenticacao
+O Compose exige segredos por variavel de ambiente. Com `.env` configurado:
 
-- `POST /login`
-- `POST /users`
+```bash
+docker compose config
+docker compose build
+docker compose up -d
+docker compose ps
+```
 
-### Motoristas
+Health checks:
 
-- `GET /drivers`
-- `POST /drivers`
-- `PUT /drivers/:id`
-- `DELETE /drivers/:id`
-- `PATCH /drivers/:id/status`
+```bash
+curl -i http://localhost:3333/api/v1/health/live
+curl -i http://localhost:3333/api/v1/health/ready
+```
 
-### Veiculos
+## Estado das fases
 
-- `GET /vehicles`
-- `POST /vehicles`
-- `PUT /vehicles/:id`
-- `DELETE /vehicles/:id`
-- `PATCH /vehicles/:id/status`
+LogiFlow tem auth v1, ownership de motorista, rotas legadas depreciadas, dashboard operacional, endpoints operacionais, observabilidade, Docker e CI/CD.
 
-### Entregas
+LogiPeople possui fundacoes de organizacao, pessoas, recrutamento, onboarding, ponto, folha preliminar, beneficios, ausencias/ferias e analytics agregado.
 
-- `GET /deliveries`
-- `GET /deliveries/:id`
-- `POST /deliveries`
-- `PUT /deliveries/:id`
-- `DELETE /deliveries/:id`
-- `PATCH /deliveries/:id/status`
+LogiDesk, Redis/BullMQ, Outbox/DLQ reais, Socket.IO autenticado e E2E Playwright completo seguem pendentes porque a base correspondente nao existe neste checkout.
 
-## Aprendizados do projeto
+## Documentacao
 
-- Organizacao de um projeto full stack em uma unica base
-- Integracao entre Next.js e uma API Express
-- Modelagem de dados relacionais com Prisma
-- Uso de JWT para proteger rotas sensiveis
-- Construcao de dashboard com indicadores reais
-- Consumo de API REST no frontend
-- Separacao de responsabilidades entre rotas, controllers e banco de dados
+Comece por:
 
-## Autor
+- `docs/CURRENT_STATE.md`
+- `docs/ARCHITECTURE.md`
+- `docs/API.md`
+- `docs/AUTHENTICATION.md`
+- `docs/AUTHORIZATION.md`
+- `docs/DEPLOYMENT.md`
+- `docs/TESTING.md`
+- `docs/TROUBLESHOOTING.md`
 
-Desenvolvido por Lucas Souza.
+## Guardrails
 
-- GitHub: [llucass1998](https://github.com/llucass1998)
-- LinkedIn: [Lucas Souza](https://www.linkedin.com/in/lucas-souza-52422b160/)
+- Nunca commitar segredos reais.
+- Nunca alterar contrato publico sem versionar ou documentar compatibilidade.
+- Nunca marcar integracao como pronta apenas por HTTP 200.
+- Toda mudanca relevante deve passar por lint, typecheck, testes, build e audit.
+- `npm audit` deve ficar com 0 vulnerabilidades, salvo excecao documentada e aprovada.
