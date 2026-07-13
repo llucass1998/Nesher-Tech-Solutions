@@ -243,6 +243,54 @@ export const createOnboardingTaskSchema = z.object({
   reason: z.string().min(3),
 });
 
+export const analyticsMetricRowSchema = z.object({
+  label: z.string(),
+  count: z.number().int().min(0),
+});
+
+export const analyticsOverviewSchema = z.object({
+  generatedAt: z.string().datetime(),
+  privacy: z.object({
+    aggregationOnly: z.literal(true),
+    excludesSensitiveFields: z.literal(true),
+    legalValidationPending: z.literal(true),
+  }),
+  people: z.object({
+    employeesByStatus: z.array(analyticsMetricRowSchema),
+    positionsByStatus: z.array(analyticsMetricRowSchema),
+  }),
+  hiring: z.object({
+    applicationsByStatus: z.array(analyticsMetricRowSchema),
+    onboardingTasksByStatus: z.array(analyticsMetricRowSchema),
+  }),
+  operations: z.object({
+    attendancePeriodsByStatus: z.array(analyticsMetricRowSchema),
+    absenceRequestsByStatus: z.array(analyticsMetricRowSchema),
+    vacationPeriodsByStatus: z.array(analyticsMetricRowSchema),
+  }),
+  administration: z.object({
+    payrollCyclesByStatus: z.array(analyticsMetricRowSchema),
+    benefitEnrollmentsByStatus: z.array(analyticsMetricRowSchema),
+  }),
+  governance: z.object({
+    pendingLegalValidation: z.object({
+      attendancePeriods: z.number().int().min(0),
+      payrollCycles: z.number().int().min(0),
+      payrollRuns: z.number().int().min(0),
+      payrollItems: z.number().int().min(0),
+      benefitPlans: z.number().int().min(0),
+      benefitEnrollments: z.number().int().min(0),
+      absenceRequests: z.number().int().min(0),
+      vacationPeriods: z.number().int().min(0),
+      jobOpenings: z.number().int().min(0),
+      jobApplications: z.number().int().min(0),
+      onboardingPlans: z.number().int().min(0),
+      onboardingTasks: z.number().int().min(0),
+      total: z.number().int().min(0),
+    }),
+  }),
+});
+
 export type CreateCompanyInput = z.infer<typeof createCompanySchema>;
 export type CreateDepartmentInput = z.infer<typeof createDepartmentSchema>;
 export type CreatePositionInput = z.infer<typeof createPositionSchema>;
@@ -264,3 +312,5 @@ export type CreateCandidateInput = z.infer<typeof createCandidateSchema>;
 export type CreateJobApplicationInput = z.infer<typeof createJobApplicationSchema>;
 export type CreateOnboardingPlanInput = z.infer<typeof createOnboardingPlanSchema>;
 export type CreateOnboardingTaskInput = z.infer<typeof createOnboardingTaskSchema>;
+export type AnalyticsMetricRow = z.infer<typeof analyticsMetricRowSchema>;
+export type AnalyticsOverview = z.infer<typeof analyticsOverviewSchema>;
