@@ -9,6 +9,7 @@ import { AuthV1Controller } from './controllers/AuthV1Controller';
 import { DriverV1Controller } from './controllers/DriverV1Controller';
 import { DashboardController } from './controllers/DashboardController';
 import { LogiflowOperationsController } from './controllers/LogiflowOperationsController';
+import { live, metrics, ready } from './lib/observability';
 
 const routes = Router();
 
@@ -22,6 +23,10 @@ const authV1Controller = new AuthV1Controller();
 const driverV1Controller = new DriverV1Controller();
 const dashboardController = new DashboardController();
 const operationsController = new LogiflowOperationsController();
+
+routes.get('/api/v1/health/live', live);
+routes.get('/api/v1/health/ready', ready);
+routes.get('/api/v1/metrics', metrics);
 
 // ==========================================
 // API V1 - AUTENTICACAO E MOTORISTA

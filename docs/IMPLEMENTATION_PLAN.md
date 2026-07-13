@@ -11,6 +11,7 @@ Implementar apenas:
 5. Fase 5 - Depreciacao controlada das rotas legadas.
 6. Fase 7 - Primeiro incremento operacional do LogiFlow.
 7. Fase 8 - UI/UX e design system compartilhado.
+8. Fase 9 - Observabilidade.
 
 ## Ajuste de escopo por estado real
 
@@ -97,6 +98,19 @@ LogiDesk, workers, Redis, BullMQ, Outbox, DLQ, Socket.IO autenticado e SSO real 
 - Aplicar o pacote compartilhado na tela critica de entregas.
 - Manter dimensoes estaveis para badges, skeletons e paginacao.
 - Validar lint, typecheck, testes e build incluindo workspaces.
+
+### Fase 9
+
+- Criar logger estruturado com redaction de tokens, cookies, senhas e hashes.
+- Adicionar middleware de request context com `requestId` e `correlationId`.
+- Propagar `x-request-id` e `x-correlation-id` no response.
+- Registrar logs HTTP com metodo, rota, status, duracao, usuario e role quando disponiveis.
+- Criar health checks:
+  - `GET /api/v1/health/live`;
+  - `GET /api/v1/health/ready`.
+- Criar endpoint de metricas em texto Prometheus:
+  - `GET /api/v1/metrics`.
+- Manter Prometheus/Grafana/OpenTelemetry como preparacao futura, sem obrigar ambiente local.
 
 ## Fora de escopo nesta execucao
 

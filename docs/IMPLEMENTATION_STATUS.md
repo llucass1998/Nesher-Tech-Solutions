@@ -14,6 +14,7 @@ Data: 2026-07-12
 | Fase 6 - LogiDesk operacional | Bloqueada | Nao existem `apps/logidesk-*` nem arquivos de ticket/suporte/SLA neste checkout; ver `docs/LOGIDESK.md`. |
 | Fase 7 - LogiFlow operacional | Concluida no escopo do checkout atual | Dashboard, entregas v1, filtros, paginacao, timeline, historico, ocorrencias, comprovantes e reprocessamento seguro implementados. |
 | Fase 8 - UI/UX e design system | Concluida no escopo inicial | `packages/ui` criado e aplicado na tela de entregas com badges, empty/error states, skeleton e paginacao compartilhados. |
+| Fase 9 - Observabilidade | Concluida no escopo inicial | Logger estruturado com redaction, request/correlation id, health checks e metricas HTTP em texto Prometheus. |
 
 ## Matriz de regressao
 
@@ -35,6 +36,7 @@ Data: 2026-07-12
 | Comprovantes | Apenas campo `proofUrl` solto | Nao | Sim | PASS |
 | Reprocessamento seguro | Nao existia | Nao | Sim | PASS |
 | Design system compartilhado | `packages/ui` nao existia | Nao | Sim | PASS |
+| Observabilidade HTTP | Nao havia request context, health ou metricas | Nao | Sim | PASS |
 | LogiDesk/ticket | Nao existe no checkout | Nao | Nao aplicavel | Bloqueado por ausencia de modulo |
 | Outbox/Redis/retry | Nao existe no LogiFlow legado | Nao | Nao aplicavel | Bloqueado por ausencia de modulo |
 
@@ -218,6 +220,52 @@ Ainda pendente para uma fase visual maior:
 | `npm run test:workspaces` | PASS | Inclui `@logiflow/ui` sem testes e com `passWithNoTests`. |
 | `npm run lint:workspaces` | PASS | Inclui `@logiflow/ui`; avisos Next sobre `pages` em pacotes nao-Next permanecem. |
 | `npm run build:workspaces` | PASS | Inclui build/typecheck de `@logiflow/ui`; aviso de lockfiles multiplos no Next permanece. |
+
+## Fase 9 - Observabilidade
+
+Implementado:
+
+- `src/lib/logger.ts` com `pino` e redaction para:
+  - `authorization`;
+  - `cookie`;
+  - `password`;
+  - `passwordHash`;
+  - `refreshToken`;
+  - `refreshTokenHash`;
+  - `token`.
+- `src/lib/observability.ts` com:
+  - middleware `requestContext`;
+  - `x-request-id`;
+  - `x-correlation-id`;
+  - log HTTP estruturado;
+  - metricas HTTP em memoria;
+  - health live;
+  - health ready com verificacao de banco.
+- Endpoints:
+  - `GET /api/v1/health/live`;
+  - `GET /api/v1/health/ready`;
+  - `GET /api/v1/metrics`.
+- `src/server.ts` passou a usar o middleware de observabilidade antes das rotas.
+
+Fora do escopo inicial:
+
+- OpenTelemetry real;
+- Prometheus server;
+- Grafana;
+- Sentry;
+- trace/span distribuidos entre LogiFlow e LogiDesk, bloqueado pela ausencia de LogiDesk.
+
+### Validacoes da Fase 9
+
+| Comando | Resultado | Observacao |
+| --- | --- | --- |
+| `npm test` | PASS | 6 arquivos, 28 testes passaram. |
+| `npm run typecheck` | PASS | Raiz e workspaces passaram. |
+| `npm run lint` | PASS | Sem erros. |
+| `npm run build` | PASS | Next raiz compilou; aviso Node `DEP0169` permanece. |
+| `npm run test:workspaces` | PASS | LogiPeople API: 6 arquivos, 31 testes; demais pacotes sem testes e `passWithNoTests`. |
+| `npm run lint:workspaces` | PASS | Sem erros; avisos do Next sobre `pages` em pacotes nao-Next. |
+| `npm run build:workspaces` | PASS | LogiPeople API/web/worker, pacotes e `@logiflow/ui` passaram; aviso de lockfiles multiplos no Next. |
 
 ## Evidencias de seguranca
 
