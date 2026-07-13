@@ -2,9 +2,7 @@
 
 ## Visao geral
 
-O repositorio funciona como uma plataforma em transicao. O LogiFlow ainda vive na raiz, com frontend Next.js e API Express. O LogiPeople ja segue uma estrutura de monorepo mais clara, em `apps/`, `packages/` e `databases/`.
-
-LogiDesk nao existe neste checkout. Qualquer integracao com suporte deve ser tratada como contrato futuro, nao como feature pronta.
+O repositorio funciona como uma plataforma em transicao. O LogiFlow ainda vive na raiz, com frontend Next.js e API Express. O LogiPeople segue uma estrutura de monorepo mais clara, em `apps/`, `packages/` e `databases/`. O LogiDesk agora possui uma fundacao propria em `apps/logidesk-*` e `databases/logidesk`, mas ainda nao representa o produto empresarial completo descrito no prompt mestre.
 
 ## LogiFlow
 
@@ -47,9 +45,27 @@ Padroes atuais:
 - Contratos Zod compartilhados em `packages/contracts`.
 - Banco separado do LogiFlow.
 
+## LogiDesk
+
+```text
+apps/logidesk-api       NestJS API fundacional de tickets
+apps/logidesk-web       Next.js App Router para dashboard, tickets, SLA e configuracoes
+apps/logidesk-worker    Worker BullMQ fundacional
+databases/logidesk      Prisma separado
+```
+
+Padroes atuais:
+
+- API modular com `HealthModule` e `TicketsModule`.
+- Banco PostgreSQL separado, sem relacoes Prisma com LogiFlow.
+- Endpoint service-to-service `POST /api/v1/tickets/from-logiflow` protegido por `x-service-token`.
+- Criacao de ticket idempotente por `idempotency-key`.
+- Ticket cria historico, SLA preliminar, auditoria e outbox local.
+- Worker BullMQ sobe e conecta no Redis, mas o processamento distribuido completo ainda e pendente.
+
 ## Bancos
 
-LogiFlow e LogiPeople possuem schemas Prisma separados. Nao ha relacoes Prisma entre bancos.
+LogiFlow, LogiPeople e LogiDesk possuem schemas Prisma separados. Nao ha relacoes Prisma entre bancos.
 
 ```mermaid
 erDiagram
@@ -70,6 +86,10 @@ flowchart LR
   API --> DB[(PostgreSQL LogiFlow)]
   Migrate[logiflow-migrate] --> DB
   DB --> API
+  API --> Outbox[(LogiFlow Outbox)]
+  Worker[logiflow-worker] --> Redis[(Redis)]
+  Worker --> DeskAPI[LogiDesk API]
+  DeskAPI --> DeskDB[(PostgreSQL LogiDesk)]
 ```
 
 ## CI/CD
@@ -78,12 +98,13 @@ Workflows:
 
 - `logiflow-ci.yml`: LogiFlow, Docker e smoke test.
 - `logipeople-ci.yml`: LogiPeople e pacotes compartilhados.
+- `logidesk-ci.yml`: LogiDesk API/web/worker, Prisma e Docker.
 - `integration-ci.yml`: verificacao completa de plataforma.
 
 ## Pendencias arquiteturais
 
 - Extrair regras de controllers LogiFlow para services/use cases.
-- Criar LogiDesk real ou importar sua base.
-- Implementar Outbox, Redis/BullMQ, DLQ e reprocessamento distribuido.
+- Completar o LogiDesk empresarial: equipes, SLA completo, mensagens, notas internas, anexos, relatorios e Socket.IO.
+- Completar processamento de Outbox, Redis/BullMQ, DLQ e reprocessamento distribuido.
 - Adicionar Socket.IO autenticado.
 - Cobrir E2E completo com Playwright.

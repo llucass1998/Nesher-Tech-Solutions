@@ -1,0 +1,21 @@
+FROM node:24-alpine AS builder
+WORKDIR /app
+COPY . .
+RUN npm ci
+RUN npm run logidesk:prisma:generate
+RUN npm run build -w logidesk-api
+RUN cp -R apps/logidesk-api/src/generated apps/logidesk-api/dist/src/generated
+
+FROM node:24-alpine AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/apps/logidesk-api ./apps/logidesk-api
+COPY --from=builder /app/packages ./packages
+COPY --from=builder /app/databases/logidesk ./databases/logidesk
+RUN addgroup -S logidesk && adduser -S logidesk -G logidesk \
+  && chown -R logidesk:logidesk /app
+USER logidesk
+EXPOSE 3533
+CMD ["node", "apps/logidesk-api/dist/src/main.js"]

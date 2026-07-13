@@ -1,4 +1,15 @@
 services:
+  redis:
+    image: redis:8-alpine
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   logiflow-db:
     image: postgres:17-alpine
     environment:
@@ -31,6 +42,8 @@ services:
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:-}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:-}
       PAYMENTS_API_KEY: ${PAYMENTS_API_KEY:?set PAYMENTS_API_KEY}
+      LOGIDESK_API_URL: ${LOGIDESK_API_URL:-http://logidesk-api:3533/api/v1}
+      LOGIDESK_SERVICE_TOKEN: ${LOGIDESK_SERVICE_TOKEN:?set LOGIDESK_SERVICE_TOKEN}
       ACCESS_TOKEN_TTL_SECONDS: ${ACCESS_TOKEN_TTL_SECONDS:-900}
       REFRESH_TOKEN_TTL_DAYS: ${REFRESH_TOKEN_TTL_DAYS:-7}
       LOG_LEVEL: ${LOG_LEVEL:-info}
@@ -39,6 +52,8 @@ services:
         condition: service_healthy
       logiflow-migrate:
         condition: service_completed_successfully
+      redis:
+        condition: service_healthy
     ports:
       - "${LOGIFLOW_API_PORT:-3333}:3333"
     healthcheck:
@@ -82,5 +97,121 @@ services:
       retries: 5
     restart: unless-stopped
 
+  logiflow-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.workspace-worker
+      args:
+        WORKSPACE: logiflow-worker
+    environment:
+      NODE_ENV: production
+      REDIS_URL: redis://redis:6379
+      LOGIDESK_API_URL: ${LOGIDESK_API_URL:-http://logidesk-api:3533/api/v1}
+      LOGIDESK_SERVICE_TOKEN: ${LOGIDESK_SERVICE_TOKEN:?set LOGIDESK_SERVICE_TOKEN}
+    depends_on:
+      redis:
+        condition: service_healthy
+      logiflow-api:
+        condition: service_healthy
+      logidesk-api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  logidesk-db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${LOGIDESK_DB_NAME:-logidesk}
+      POSTGRES_USER: ${LOGIDESK_DB_USER:-logidesk}
+      POSTGRES_PASSWORD: ${LOGIDESK_DB_PASSWORD:?set LOGIDESK_DB_PASSWORD}
+    ports:
+      - "${LOGIDESK_DB_PORT:-5434}:5432"
+    volumes:
+      - logidesk-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  logidesk-migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.logidesk-api
+    command: ["npx", "prisma", "migrate", "deploy", "--config", "apps/logidesk-api/prisma.config.ts"]
+    environment:
+      NODE_ENV: production
+      LOGIDESK_DATABASE_URL: postgresql://${LOGIDESK_DB_USER:-logidesk}:${LOGIDESK_DB_PASSWORD:?set LOGIDESK_DB_PASSWORD}@logidesk-db:5432/${LOGIDESK_DB_NAME:-logidesk}?schema=public
+    depends_on:
+      logidesk-db:
+        condition: service_healthy
+    restart: "no"
+
+  logidesk-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.logidesk-api
+    environment:
+      NODE_ENV: production
+      LOGIDESK_PORT: 3533
+      LOGIDESK_WEB_ORIGIN: ${LOGIDESK_WEB_ORIGIN:-http://localhost:3500}
+      LOGIDESK_DATABASE_URL: postgresql://${LOGIDESK_DB_USER:-logidesk}:${LOGIDESK_DB_PASSWORD:?set LOGIDESK_DB_PASSWORD}@logidesk-db:5432/${LOGIDESK_DB_NAME:-logidesk}?schema=public
+      LOGIDESK_SERVICE_TOKEN: ${LOGIDESK_SERVICE_TOKEN:?set LOGIDESK_SERVICE_TOKEN}
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      logidesk-db:
+        condition: service_healthy
+      logidesk-migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    ports:
+      - "${LOGIDESK_API_PORT:-3533}:3533"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3533/api/v1/health/live >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  logidesk-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.workspace-worker
+      args:
+        WORKSPACE: logidesk-worker
+    environment:
+      NODE_ENV: production
+      REDIS_URL: redis://redis:6379
+      LOGIDESK_DATABASE_URL: postgresql://${LOGIDESK_DB_USER:-logidesk}:${LOGIDESK_DB_PASSWORD:?set LOGIDESK_DB_PASSWORD}@logidesk-db:5432/${LOGIDESK_DB_NAME:-logidesk}?schema=public
+    depends_on:
+      redis:
+        condition: service_healthy
+      logidesk-api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  logidesk-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.logidesk-web
+      args:
+        NEXT_PUBLIC_LOGIDESK_API_URL: ${NEXT_PUBLIC_LOGIDESK_API_URL:-http://localhost:3533/api/v1}
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_LOGIDESK_API_URL: ${NEXT_PUBLIC_LOGIDESK_API_URL:-http://localhost:3533/api/v1}
+    depends_on:
+      logidesk-api:
+        condition: service_healthy
+    ports:
+      - "${LOGIDESK_WEB_PORT:-3500}:3500"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3500 >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
 volumes:
   logiflow-db-data:
+  logidesk-db-data:

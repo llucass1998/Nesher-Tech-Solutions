@@ -31,6 +31,9 @@ vi.mock('../lib/prisma', () => ({
     deliveryProof: {
       create: vi.fn(),
     },
+    outboxEvent: {
+      upsert: vi.fn(),
+    },
     $transaction: vi.fn(async (callback: (tx: typeof prisma) => unknown) => callback(prisma)),
   },
 }));
@@ -370,5 +373,91 @@ describe('LogiFlow operacional v1', () => {
     expect(response.status).toBe(409);
     expect(response.body.error.code).toBe('INTEGRATION_UNAVAILABLE');
     expect(prisma.occurrence.update).not.toHaveBeenCalled();
+  });
+
+  it('escala ocorrencia para o LogiDesk criando outbox idempotente', async () => {
+    await mockLogin();
+    const login = await request(app).post('/api/v1/auth/login').send({
+      email: 'operator@example.com',
+      password: 'secret123',
+    });
+
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(operatorUser);
+    vi.mocked(prisma.occurrence.findUnique).mockResolvedValue({
+      id: 'occurrence-1',
+      deliveryId: 'delivery-1',
+      title: 'Atraso critico',
+      description: 'Bloqueio na doca',
+      severity: 'CRITICAL',
+      status: 'OPEN',
+      integrationStatus: 'FAILED',
+      retryCount: 1,
+      lastError: 'Timeout',
+      ticketNumber: null,
+      createdByUserId: 'operator-1',
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+      delivery: {
+        ...baseDelivery,
+        driver: { id: 'driver-1', name: 'Driver', email: 'driver@example.com' },
+        vehicle: { id: 'vehicle-1', plate: 'ABC1234', model: 'Van' },
+      },
+    } as never);
+    vi.mocked(prisma.occurrence.update).mockResolvedValue({
+      id: 'occurrence-1',
+      deliveryId: 'delivery-1',
+      title: 'Atraso critico',
+      description: 'Bloqueio na doca',
+      severity: 'CRITICAL',
+      status: 'OPEN',
+      integrationStatus: 'PENDING',
+      retryCount: 2,
+      lastError: null,
+      ticketNumber: null,
+      createdByUserId: 'operator-1',
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    });
+    vi.mocked(prisma.outboxEvent.upsert).mockResolvedValue({
+      id: 'outbox-1',
+      eventType: 'logiflow.occurrence_escalated',
+      eventVersion: 1,
+      payload: {},
+      status: 'PENDING',
+      attempts: 0,
+      lastError: null,
+      correlationId: '11111111-1111-4111-8111-111111111111',
+      causationId: 'occurrence-1',
+      idempotencyKey: 'logiflow:occurrence:occurrence-1:ticket',
+      processedAt: null,
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    });
+
+    const response = await request(app)
+      .post('/api/v1/operations/occurrences/occurrence-1/escalate')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
+      .set('x-correlation-id', '11111111-1111-4111-8111-111111111111');
+
+    expect(response.status).toBe(202);
+    expect(prisma.occurrence.update).toHaveBeenCalledWith({
+      where: { id: 'occurrence-1' },
+      data: {
+        integrationStatus: 'PENDING',
+        retryCount: { increment: 1 },
+        lastError: null,
+      },
+    });
+    expect(prisma.outboxEvent.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      where: { idempotencyKey: 'logiflow:occurrence:occurrence-1:ticket' },
+      create: expect.objectContaining({
+        eventType: 'logiflow.occurrence_escalated',
+        correlationId: '11111111-1111-4111-8111-111111111111',
+        payload: expect.objectContaining({
+          priority: 'URGENT',
+          occurrenceId: 'occurrence-1',
+        }),
+      }),
+    }));
   });
 });

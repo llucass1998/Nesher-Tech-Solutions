@@ -1,0 +1,24 @@
+FROM node:24-alpine AS builder
+WORKDIR /app
+ENV NEXT_TELEMETRY_DISABLED=1
+ARG NEXT_PUBLIC_LOGIDESK_API_URL=http://localhost:3533/api/v1
+ENV NEXT_PUBLIC_LOGIDESK_API_URL=$NEXT_PUBLIC_LOGIDESK_API_URL
+COPY . .
+RUN npm ci
+RUN npm run build -w logidesk-web
+
+FROM node:24-alpine AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_PUBLIC_LOGIDESK_API_URL=http://localhost:3533/api/v1
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/apps/logidesk-web ./apps/logidesk-web
+COPY --from=builder /app/packages ./packages
+RUN addgroup -S logidesk && adduser -S logidesk -G logidesk \
+  && chown -R logidesk:logidesk /app
+USER logidesk
+WORKDIR /app/apps/logidesk-web
+EXPOSE 3500
+CMD ["npm", "run", "start"]

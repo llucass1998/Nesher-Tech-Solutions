@@ -8,9 +8,9 @@ O checkout atual nao corresponde integralmente ao prompt mestre original. O prom
 
 - LogiFlow legado modernizado na raiz.
 - LogiPeople como produto modular dentro de `apps/`.
-- Nenhuma implementacao LogiDesk.
+- LogiDesk como fundacao operacional em `apps/logidesk-*`.
 
-As fases 1-12 do fluxo principal foram implementadas no escopo real do checkout. A fase atual, Fase 13, consolida a documentacao.
+As fases 1-13 do fluxo principal foram implementadas no escopo real do checkout. A execucao atual adicionou a fundacao LogiDesk, workers, Redis/Outbox estrutural e Docker integrado.
 
 ## LogiFlow
 
@@ -37,10 +37,9 @@ Implementado:
 Ainda pendente:
 
 - Remocao definitiva das rotas legadas.
-- Redis, BullMQ, Outbox, DLQ e workers LogiFlow reais.
+- Processamento completo de outbox/retry/DLQ nos workers.
 - Socket.IO autenticado.
 - E2E Playwright completo.
-- Integracao real com LogiDesk.
 
 ## LogiPeople
 
@@ -72,14 +71,29 @@ Limitacoes:
 
 ## LogiDesk
 
-Nao ha `apps/logidesk-api`, `apps/logidesk-web` ou `apps/logidesk-worker`.
+Estrutura:
 
-A Fase 6 segue bloqueada para evolucao real de produto. Ver `docs/LOGIDESK.md`.
+- `apps/logidesk-api`: NestJS API.
+- `apps/logidesk-web`: Next.js App Router.
+- `apps/logidesk-worker`: worker BullMQ.
+- `databases/logidesk`: Prisma schema e migrations.
+
+Implementado:
+
+- Tickets, mensagens, notas internas, historico, SLA preliminar, outbox, DLQ, auditoria e health checks.
+- Criacao idempotente de ticket a partir do LogiFlow.
+- Web com dashboard, chamados, Kanban, SLA e configuracoes.
+
+Limitacoes:
+
+- SSO/JWKS real ainda nao esta conectado.
+- Socket.IO autenticado e processamento completo dos workers ainda precisam evoluir.
+- E2E completo LogiFlow/LogiDesk ainda nao existe.
 
 ## Infraestrutura
 
-- Docker Compose existe para LogiFlow DB, migration, API e web.
-- GitHub Actions existem para LogiFlow, LogiPeople e integracao/plataforma.
+- Docker Compose existe para LogiFlow, LogiDesk, Redis e workers.
+- GitHub Actions existem para LogiFlow, LogiDesk, LogiPeople e integracao/plataforma.
 - `.env.example` contem placeholders e nao segredos reais.
 
 ## Validacoes recentes
@@ -89,4 +103,5 @@ A Fase 6 segue bloqueada para evolucao real de produto. Ver `docs/LOGIDESK.md`.
 - `npm run typecheck`: PASS.
 - `npm test`: PASS.
 - `npm run build`: PASS.
-- LogiPeople web/API checks passaram na conclusao da fase Analytics.
+- Docker Compose integrado LogiFlow/LogiDesk/Redis subiu com health checks.
+- Smoke test idempotente de ticket LogiDesk retornou `LD-000001` sem duplicar.

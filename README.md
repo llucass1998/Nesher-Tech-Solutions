@@ -6,7 +6,7 @@ O checkout atual contem:
 
 - **LogiFlow legado modernizado** na raiz: Next.js App Router em `app/`, API Express em `src/`, banco Prisma em `prisma/`.
 - **LogiPeople** em `apps/logipeople-*`: NestJS API, Next.js web, worker, pacotes compartilhados e Prisma separado em `databases/logipeople`.
-- **LogiDesk** documentado como bloqueado: nao existe implementacao `apps/logidesk-*` neste checkout.
+- **LogiDesk** em `apps/logidesk-*`: NestJS API, Next.js web, worker BullMQ e Prisma separado em `databases/logidesk`.
 
 ## Stack
 
@@ -32,12 +32,17 @@ prisma/                      Banco LogiFlow
 apps/logipeople-api          LogiPeople API NestJS
 apps/logipeople-web          LogiPeople web Next.js
 apps/logipeople-worker       Worker LogiPeople
+apps/logidesk-api            LogiDesk API NestJS
+apps/logidesk-web            LogiDesk web Next.js
+apps/logidesk-worker         Worker LogiDesk BullMQ
+apps/logiflow-worker         Worker LogiFlow BullMQ
 packages/auth                Tipos e fronteiras de identidade
 packages/contracts           Contratos Zod HTTP
 packages/event-contracts     Contratos Zod de eventos
 packages/logger              Logger compartilhado
 packages/ui                  Componentes UI compartilhados LogiFlow
 databases/logipeople         Banco LogiPeople
+databases/logidesk           Banco LogiDesk
 docs/                        Documentacao de arquitetura, operacao e decisoes
 ```
 
@@ -59,6 +64,7 @@ npm run lint:workspaces
 npm run test:workspaces
 npm run build:workspaces
 npm run logipeople:prisma:generate
+npm run logidesk:prisma:generate
 ```
 
 Prisma LogiFlow:
@@ -92,7 +98,15 @@ npm run logipeople:dev:api
 npm run logipeople:dev:worker
 ```
 
-## Docker LogiFlow
+LogiDesk:
+
+```bash
+npm run logidesk:dev:web
+npm run logidesk:dev:api
+npm run logidesk:dev:worker
+```
+
+## Docker
 
 O Compose exige segredos por variavel de ambiente. Com `.env` configurado:
 
@@ -108,6 +122,8 @@ Health checks:
 ```bash
 curl -i http://localhost:3333/api/v1/health/live
 curl -i http://localhost:3333/api/v1/health/ready
+curl -i http://localhost:3533/api/v1/health/live
+curl -i http://localhost:3533/api/v1/health/ready
 ```
 
 ## Estado das fases
@@ -116,7 +132,7 @@ LogiFlow tem auth v1, ownership de motorista, rotas legadas depreciadas, dashboa
 
 LogiPeople possui fundacoes de organizacao, pessoas, recrutamento, onboarding, ponto, folha preliminar, beneficios, ausencias/ferias e analytics agregado.
 
-LogiDesk, Redis/BullMQ, Outbox/DLQ reais, Socket.IO autenticado e E2E Playwright completo seguem pendentes porque a base correspondente nao existe neste checkout.
+LogiDesk possui fundacao operacional com tickets, SLA preliminar, outbox, DLQ, worker e web. Processamento completo de workers, Socket.IO autenticado e E2E Playwright completo ainda seguem pendentes.
 
 ## Documentacao
 

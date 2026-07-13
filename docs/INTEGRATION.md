@@ -2,22 +2,44 @@
 
 ## Estado atual
 
-Nao existe integracao real LogiFlow <-> LogiDesk neste checkout porque LogiDesk nao existe.
+A fundacao da integracao LogiFlow -> LogiDesk foi criada.
 
-Tambem nao existem modulos reais de:
+Componentes:
 
-- Redis;
-- BullMQ;
-- Outbox Pattern;
-- Dead-letter queue;
-- consumidores de eventos LogiFlow/LogiDesk.
+- LogiFlow `POST /api/v1/operations/occurrences/:id/escalate`.
+- `OutboxEvent` e `DeadLetterEvent` no banco LogiFlow.
+- Contrato `logiflow.occurrence_escalated` em `packages/event-contracts`.
+- LogiDesk `POST /api/v1/tickets/from-logiflow`.
+- `IdempotencyRecord`, `OutboxEvent`, `DeadLetterEvent`, `AuditLog` no banco LogiDesk.
+- Workers `apps/logiflow-worker` e `apps/logidesk-worker` com BullMQ/Redis.
+- Redis no Docker Compose.
 
-## Contratos compartilhados
+## Fluxo implementado
 
-Pacotes existentes:
+```mermaid
+flowchart TD
+  Occurrence[Ocorrencia LogiFlow] --> Escalate[Endpoint escalate]
+  Escalate --> LFOutbox[Outbox LogiFlow]
+  LFOutbox --> LFWorker[LogiFlow worker BullMQ]
+  LFWorker --> DeskAPI[LogiDesk tickets/from-logiflow]
+  DeskAPI --> Ticket[Ticket LogiDesk]
+  DeskAPI --> DeskOutbox[Outbox LogiDesk]
+```
 
-- `packages/contracts`: contratos HTTP Zod, atualmente usados principalmente por LogiPeople.
-- `packages/event-contracts`: contratos de eventos para evolucao futura.
+## Contratos
+
+- `logiflow.occurrence_escalated`
+- `ticket.created`
+- `ticket.updated`
+
+Todos devem carregar:
+
+- `eventId`
+- `eventType`
+- `eventVersion`
+- `occurredAt`
+- `correlationId`
+- payload validado por Zod
 
 ## Regra absoluta
 
@@ -35,18 +57,9 @@ Para marcar integracao como pronta, confirmar:
 - teste de falha e recuperacao;
 - E2E completo.
 
-## Fluxo alvo futuro
+## Limites atuais
 
-```mermaid
-flowchart TD
-  Occurrence[Ocorrencia LogiFlow] --> Outbox[Outbox LogiFlow]
-  Outbox --> Queue[Fila Redis/BullMQ]
-  Queue --> Consumer[Consumidor LogiDesk]
-  Consumer --> Ticket[Ticket LogiDesk]
-  Ticket --> Reply[Evento de retorno]
-  Reply --> LogiFlow[Atualiza ocorrencia]
-```
-
-## Status
-
-Bloqueado ate existir base LogiDesk ou autorizacao explicita para cria-la do zero.
+- O worker ainda nao faz dispatch HTTP real da outbox para LogiDesk.
+- Retry/backoff e DLQ existem como estrutura, mas precisam de processamento completo.
+- Socket.IO distribuido ainda nao foi conectado.
+- E2E completo ainda nao foi automatizado.

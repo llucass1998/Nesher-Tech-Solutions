@@ -1,0 +1,17 @@
+{
+  "name": "logidesk-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev -p 3500",
+    "start": "next start -p 3500",
+    "lint": "eslint app src --ext .ts,.tsx",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "build": "next build"
+  },
+  "dependencies": {
+    "@logipeople/event-contracts": "0.1.0"
+  }
+}

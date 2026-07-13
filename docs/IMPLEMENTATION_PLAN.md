@@ -16,16 +16,17 @@ Implementar apenas:
 10. Fase 11 - Docker e seguranca basica do runtime.
 11. Fase 12 - CI/CD.
 12. Fase 13 - Documentacao.
+13. Incremento atual - fundacao LogiDesk, workers, Redis, Outbox e Docker integrado.
 
 ## Ajuste de escopo por estado real
 
-Como `apps/logiflow-*` e `apps/logidesk-*` nao existem, as mudancas serao aplicadas ao LogiFlow legado:
+Inicialmente `apps/logiflow-*` e `apps/logidesk-*` nao existiam, entao as primeiras mudancas foram aplicadas ao LogiFlow legado:
 
 - API Express em `src/`.
 - Prisma em `prisma/schema.prisma`.
 - Testes Vitest/Supertest em `src/__tests__`.
 
-LogiDesk, workers, Redis, BullMQ, Outbox, DLQ, Socket.IO autenticado e SSO real ficam documentados como fases futuras porque nao ha base correspondente neste checkout.
+Na execucao atual foi criada a fundacao LogiDesk e de workers. Socket.IO autenticado, SSO real, dispatcher completo de outbox, retry/DLQ operacional e E2E completo continuam como proximas etapas.
 
 ## Plano tecnico
 
@@ -159,26 +160,39 @@ LogiDesk, workers, Redis, BullMQ, Outbox, DLQ, Socket.IO autenticado e SSO real 
   - integracao/plataforma.
 - Usar Node.js 24 e `npm ci`, alinhado ao lockfile atual.
 - Executar lint, typecheck, testes, build e audit de alta severidade.
-- Validar Prisma generate para LogiFlow e LogiPeople.
-- Validar Docker Compose e build Docker do LogiFlow.
-- Executar smoke test Docker do LogiFlow com health checks reais.
+- Validar Prisma generate para LogiFlow, LogiPeople e LogiDesk.
+- Validar Docker Compose e build Docker de LogiFlow, LogiDesk, Redis e workers.
+- Executar smoke test Docker integrado com health checks reais.
 - Usar filtros por path para evitar CI desnecessario.
-- Documentar que LogiDesk segue bloqueado por ausencia de app neste checkout.
+- Documentar que LogiDesk existe como fundacao e ainda tem produto empresarial pendente.
 
 ### Fase 13
 
 - Atualizar README com estado real do monorepo.
 - Atualizar `docs/CURRENT_STATE.md` e `docs/ARCHITECTURE.md`.
 - Criar guias de autenticacao, autorizacao, API, LogiFlow, LogiPeople, integracao, eventos, observabilidade, testes, deploy e troubleshooting.
-- Registrar explicitamente pendencias de LogiDesk, Redis/BullMQ, Outbox/DLQ, Socket.IO e E2E.
+- Registrar explicitamente pendencias de LogiDesk empresarial, dispatcher Redis/BullMQ/Outbox/DLQ, Socket.IO, SSO e E2E.
 - Manter documentacao sem segredos reais.
 - Validar links, comandos e consistencia basica com lint/build.
 
+### Incremento atual - LogiDesk e integracao fundacional
+
+- Criar `databases/logidesk` com Prisma e migration inicial.
+- Criar `apps/logidesk-api` com health checks e tickets.
+- Criar `apps/logidesk-web` com dashboard, tickets, SLA e configuracoes iniciais.
+- Criar `apps/logidesk-worker` e `apps/logiflow-worker` com BullMQ/Redis.
+- Adicionar `OutboxEvent` e `DeadLetterEvent` ao LogiFlow.
+- Criar escalonamento de ocorrencia para outbox no LogiFlow.
+- Adicionar contratos de eventos LogiFlow/LogiDesk em `packages/event-contracts`.
+- Expandir Docker Compose para Redis, LogiDesk DB/API/web/worker e LogiFlow worker.
+- Criar workflow `logidesk-ci.yml` e atualizar workflows de plataforma.
+- Validar build, health checks, logs, migrations e smoke test idempotente de ticket.
+
 ## Fora de escopo nesta execucao
 
-- Reconstrucao completa do LogiDesk.
+- Reconstrucao completa do LogiDesk empresarial.
 - SSO real entre dois produtos.
-- Redis/BullMQ/Outbox/DLQ.
+- Dispatcher completo de Redis/BullMQ/Outbox/DLQ.
 - Playwright E2E completo.
 
-Esses itens dependem de estrutura que ainda nao existe no checkout atual.
+Esses itens agora dependem de evoluir a fundacao criada, nao mais de ausencia total de estrutura.

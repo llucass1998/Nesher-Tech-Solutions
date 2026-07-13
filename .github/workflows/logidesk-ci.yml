@@ -1,0 +1,62 @@
+name: LogiDesk CI
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/logidesk-ci.yml"
+      - "apps/logidesk-api/**"
+      - "apps/logidesk-web/**"
+      - "apps/logidesk-worker/**"
+      - "databases/logidesk/**"
+      - "packages/auth/**"
+      - "packages/event-contracts/**"
+      - "packages/logger/**"
+      - "packages/eslint-config/**"
+      - "packages/typescript-config/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+  push:
+    branches: [master, main]
+    paths:
+      - ".github/workflows/logidesk-ci.yml"
+      - "apps/logidesk-api/**"
+      - "apps/logidesk-web/**"
+      - "apps/logidesk-worker/**"
+      - "databases/logidesk/**"
+      - "packages/auth/**"
+      - "packages/event-contracts/**"
+      - "packages/logger/**"
+      - "packages/eslint-config/**"
+      - "packages/typescript-config/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+
+concurrency:
+  group: logidesk-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: workspace checks
+    runs-on: ubuntu-latest
+    env:
+      LOGIDESK_DATABASE_URL: postgresql://logidesk:logidesk@localhost:5434/logidesk?schema=public
+      LOGIDESK_SERVICE_TOKEN: ci-service-token
+      LOGIDESK_WEB_ORIGIN: http://localhost:3500
+      NEXT_PUBLIC_LOGIDESK_API_URL: http://localhost:3533/api/v1
+      REDIS_URL: redis://localhost:6379
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run logidesk:prisma:generate
+      - run: npm run lint:workspaces
+      - run: npm run typecheck
+      - run: npm run test:workspaces
+      - run: npm run build:workspaces
+      - run: npm audit

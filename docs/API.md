@@ -4,6 +4,7 @@
 
 - LogiFlow API: `http://localhost:3333`
 - LogiPeople API: `http://localhost:3433/api/v1`
+- LogiDesk API: `http://localhost:3533/api/v1`
 
 ## LogiFlow health
 
@@ -36,6 +37,7 @@
 - `POST /api/v1/operations/deliveries/:id/proofs`
 - `PATCH /api/v1/operations/occurrences/:id`
 - `POST /api/v1/operations/occurrences/:id/reprocess`
+- `POST /api/v1/operations/occurrences/:id/escalate`
 
 ## Rotas legadas LogiFlow
 
@@ -113,3 +115,35 @@ Regras:
 - `legalValidationPending` permanece `true`;
 - a operacao e idempotente por `payrollRunId`;
 - folha fechada exige reabertura auditada antes de gerar novo demonstrativo.
+
+## LogiDesk
+
+Base local: `http://localhost:3533/api/v1`.
+
+- `GET /health/live`
+- `GET /health/ready`
+- `GET /tickets`
+- `POST /tickets/from-logiflow`
+- `GET /tickets/:id`
+- `PATCH /tickets/:id`
+- `POST /tickets/:id/messages`
+- `POST /tickets/:id/notes`
+
+`POST /tickets/from-logiflow` exige headers:
+
+- `x-service-token`
+- `idempotency-key`
+
+Payload:
+
+```json
+{
+  "deliveryId": "uuid",
+  "occurrenceId": "uuid",
+  "subject": "Entrega com atraso",
+  "description": "Motorista reportou bloqueio.",
+  "priority": "HIGH",
+  "requesterEmail": "cliente@empresa.com",
+  "correlationId": "uuid"
+}
+```

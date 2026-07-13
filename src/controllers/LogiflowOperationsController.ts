@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { Request, Response } from 'express';
 import { Prisma } from '../generated/prisma';
 import { prisma } from '../lib/prisma';
@@ -326,6 +327,89 @@ export class LogiflowOperationsController {
     }
   }
 
+  async escalateOccurrence(req: Request, res: Response) {
+    const occurrenceId = getParamValue(req.params.id);
+
+    if (!occurrenceId) {
+      return sendError(res, 400, 'VALIDATION_ERROR', 'ID da ocorrencia e obrigatorio.');
+    }
+
+    try {
+      const occurrence = await prisma.occurrence.findUnique({
+        where: { id: occurrenceId },
+        include: {
+          delivery: {
+            include: {
+              driver: { select: { id: true, name: true, email: true } },
+              vehicle: { select: { id: true, plate: true, model: true } },
+            },
+          },
+        },
+      });
+
+      if (!occurrence) {
+        return sendError(res, 404, 'RESOURCE_NOT_FOUND', 'Ocorrencia nao encontrada.');
+      }
+
+      if (occurrence.integrationStatus === 'PROCESSING' || occurrence.integrationStatus === 'COMPLETED') {
+        return sendError(res, 409, 'IDEMPOTENCY_CONFLICT', 'Ocorrencia ja foi escalada para suporte.');
+      }
+
+      const correlationId = getCorrelationId(req) ?? crypto.randomUUID();
+      const idempotencyKey = `logiflow:occurrence:${occurrence.id}:ticket`;
+
+      const result = await prisma.$transaction(async (tx) => {
+        const updated = await tx.occurrence.update({
+          where: { id: occurrence.id },
+          data: {
+            integrationStatus: 'PENDING',
+            retryCount: { increment: 1 },
+            lastError: null,
+          },
+        });
+
+        const outbox = await tx.outboxEvent.upsert({
+          where: { idempotencyKey },
+          update: {
+            status: 'PENDING',
+            attempts: { increment: 1 },
+            lastError: null,
+            correlationId,
+          },
+          create: {
+            eventType: 'logiflow.occurrence_escalated',
+            eventVersion: 1,
+            idempotencyKey,
+            correlationId,
+            causationId: occurrence.id,
+            payload: {
+              deliveryId: occurrence.deliveryId,
+              occurrenceId: occurrence.id,
+              subject: occurrence.title,
+              description: occurrence.description,
+              severity: occurrence.severity,
+              priority: mapSeverityToPriority(occurrence.severity),
+              driver: occurrence.delivery.driver,
+              vehicle: occurrence.delivery.vehicle,
+              delivery: {
+                description: occurrence.delivery.description,
+                pickupAddress: occurrence.delivery.pickupAddress,
+                deliveryAddress: occurrence.delivery.deliveryAddress,
+              },
+            },
+          },
+        });
+
+        return { occurrence: updated, outbox };
+      });
+
+      return res.status(202).json(result);
+    } catch (error) {
+      console.error(error);
+      return sendError(res, 500, 'INTERNAL_ERROR', 'Erro ao escalar ocorrencia para o LogiDesk.');
+    }
+  }
+
   async createProof(req: Request, res: Response) {
     const deliveryId = getParamValue(req.params.id);
     const { url, type = 'PHOTO', description } = req.body as {
@@ -365,4 +449,11 @@ export class LogiflowOperationsController {
       return sendError(res, 500, 'INTERNAL_ERROR', 'Erro ao registrar comprovante.');
     }
   }
+}
+
+function mapSeverityToPriority(severity: string) {
+  if (severity === 'CRITICAL') return 'URGENT';
+  if (severity === 'HIGH') return 'HIGH';
+  if (severity === 'LOW') return 'LOW';
+  return 'MEDIUM';
 }

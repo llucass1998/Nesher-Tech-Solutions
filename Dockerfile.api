@@ -2,6 +2,7 @@ FROM node:24-alpine AS deps
 WORKDIR /app
 COPY . .
 RUN npm ci
+RUN npm run prisma:generate
 
 FROM node:24-alpine AS runtime
 WORKDIR /app

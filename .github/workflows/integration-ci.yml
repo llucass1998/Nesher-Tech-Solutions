@@ -58,6 +58,18 @@ jobs:
       LOGIPEOPLE_DATABASE_URL: postgresql://logipeople:logipeople@localhost:5432/logipeople?schema=public
       LOGIPEOPLE_JWT_SECRET: ci-logipeople-secret
       LOGIPEOPLE_WEB_ORIGIN: http://localhost:3400
+      LOGIDESK_DB_NAME: logidesk
+      LOGIDESK_DB_USER: logidesk
+      LOGIDESK_DB_PASSWORD: ci-logidesk-password
+      LOGIDESK_DB_PORT: 55434
+      LOGIDESK_API_PORT: 3535
+      LOGIDESK_WEB_PORT: 3505
+      LOGIDESK_DATABASE_URL: postgresql://logidesk:ci-logidesk-password@localhost:55434/logidesk?schema=public
+      LOGIDESK_SERVICE_TOKEN: ci-service-token
+      LOGIDESK_API_URL: http://localhost:3535/api/v1
+      NEXT_PUBLIC_LOGIDESK_API_URL: http://localhost:3535/api/v1
+      REDIS_PORT: 56379
+      REDIS_URL: redis://localhost:56379
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -67,6 +79,7 @@ jobs:
       - run: npm ci
       - run: npm run prisma:generate
       - run: npm run logipeople:prisma:generate
+      - run: npm run logidesk:prisma:generate
       - run: npm run lint
       - run: npm run lint:workspaces
       - run: npm run typecheck
@@ -76,4 +89,4 @@ jobs:
       - run: npm run build:workspaces
       - run: npm audit
       - run: docker compose config
-      - run: docker compose build logiflow-migrate logiflow-api logiflow-web
+      - run: docker compose build logiflow-migrate logiflow-api logiflow-web logiflow-worker logidesk-migrate logidesk-api logidesk-web logidesk-worker

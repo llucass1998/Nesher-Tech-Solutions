@@ -1,0 +1,204 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../apps/logidesk-api/src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_CUSTOMER
+  RESOLVED
+  CLOSED
+  REOPENED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TicketSource {
+  LOGIFLOW
+  LOGIDESK
+  EMAIL
+  API
+}
+
+enum SlaStatus {
+  RUNNING
+  PAUSED
+  WARNING
+  BREACHED
+  MET
+}
+
+enum OutboxStatus {
+  PENDING
+  PROCESSING
+  PROCESSED
+  FAILED
+  DEAD_LETTER
+}
+
+model Ticket {
+  id              String          @id @default(uuid())
+  number          String          @unique
+  subject         String
+  description     String
+  status          TicketStatus    @default(OPEN)
+  priority        TicketPriority  @default(MEDIUM)
+  source          TicketSource    @default(LOGIDESK)
+  requesterId     String?
+  requesterEmail  String?
+  assigneeId      String?
+  teamId          String?
+  category        String?
+  externalSystem  String?
+  externalId      String?
+  deliveryId      String?
+  occurrenceId    String?
+  correlationId   String
+  idempotencyKey  String?
+  messages        TicketMessage[]
+  notes           TicketNote[]
+  history         TicketHistory[]
+  sla             TicketSla?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@unique([externalSystem, externalId])
+  @@index([status, priority])
+  @@index([correlationId])
+}
+
+model TicketMessage {
+  id            String   @id @default(uuid())
+  ticketId      String
+  ticket        Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  authorId      String?
+  authorRole    String
+  body          String
+  internal      Boolean  @default(false)
+  correlationId String
+  createdAt     DateTime @default(now())
+
+  @@index([ticketId, createdAt])
+}
+
+model TicketNote {
+  id            String   @id @default(uuid())
+  ticketId      String
+  ticket        Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  authorId      String?
+  body          String
+  correlationId String
+  createdAt     DateTime @default(now())
+
+  @@index([ticketId, createdAt])
+}
+
+model TicketHistory {
+  id            String   @id @default(uuid())
+  ticketId      String
+  ticket        Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  action        String
+  before        Json?
+  after         Json?
+  actorId       String?
+  actorRole     String?
+  correlationId String
+  createdAt     DateTime @default(now())
+
+  @@index([ticketId, createdAt])
+}
+
+model SlaPolicy {
+  id                         String      @id @default(uuid())
+  name                       String
+  priority                   TicketPriority
+  firstResponseMinutes       Int
+  resolutionMinutes          Int
+  active                     Boolean     @default(true)
+  createdAt                  DateTime    @default(now())
+  updatedAt                  DateTime    @updatedAt
+}
+
+model TicketSla {
+  id                       String    @id @default(uuid())
+  ticketId                 String    @unique
+  ticket                   Ticket    @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  status                   SlaStatus @default(RUNNING)
+  firstResponseDueAt       DateTime
+  resolutionDueAt          DateTime
+  firstRespondedAt         DateTime?
+  resolvedAt               DateTime?
+  pausedAt                 DateTime?
+  pausedDurationSeconds    Int       @default(0)
+  warningEmittedAt         DateTime?
+  breachedAt               DateTime?
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+}
+
+model IdempotencyRecord {
+  id             String   @id @default(uuid())
+  key            String   @unique
+  operation      String
+  requestHash    String
+  responseRef    String?
+  correlationId  String
+  createdAt      DateTime @default(now())
+}
+
+model OutboxEvent {
+  id             String       @id @default(uuid())
+  eventType      String
+  eventVersion   Int
+  payload        Json
+  status         OutboxStatus @default(PENDING)
+  attempts       Int          @default(0)
+  lastError      String?
+  correlationId  String
+  causationId    String?
+  processedAt    DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([status, createdAt])
+  @@index([correlationId])
+}
+
+model DeadLetterEvent {
+  id             String   @id @default(uuid())
+  outboxEventId  String?
+  eventType      String
+  payload        Json
+  error          String
+  correlationId  String
+  createdAt      DateTime @default(now())
+
+  @@index([correlationId])
+}
+
+model AuditLog {
+  id             String   @id @default(uuid())
+  actorId        String?
+  actorRole      String?
+  action         String
+  entityType     String
+  entityId       String
+  before         Json?
+  after          Json?
+  requestId      String?
+  correlationId  String
+  createdAt      DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([correlationId])
+}

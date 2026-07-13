@@ -2,70 +2,67 @@
 
 Data: 2026-07-13
 
-## Estado encontrado
+## Estado atual
 
-Nao existe uma implementacao LogiDesk neste checkout.
+LogiDesk agora existe como fundacao operacional neste monorepo.
 
-Buscas executadas nao encontraram arquivos com nomes ou dominios relacionados a:
+Apps:
 
-- `logidesk`
-- `ticket`
-- `support`
-- `chamado`
-- `sla`
-- `message`
-- `inbox`
-- `kanban`
-- `atendimento`
-- `suporte`
+- `apps/logidesk-api`: API NestJS.
+- `apps/logidesk-web`: web Next.js App Router.
+- `apps/logidesk-worker`: worker BullMQ para outbox/SLA.
 
-A pasta `apps/` contem:
+Banco:
 
-- `apps/logipeople-api`
-- `apps/logipeople-web`
-- `apps/logipeople-worker`
+- `databases/logidesk`: Prisma schema e migrations.
 
-O LogiFlow legado continua na raiz (`app/`, `src/`, `prisma/`), nao em `apps/logiflow-*`.
+## Funcionalidades implementadas
 
-## Decisao tecnica
-
-A Fase 6 esta bloqueada neste workspace porque o prompt mestre exige completar e preservar um produto LogiDesk existente, mas a base esperada nao esta presente.
-
-Nao foi criado `apps/logidesk-api`, `apps/logidesk-web` ou `apps/logidesk-worker` nesta etapa porque isso seria criar um produto novo do zero, nao evoluir a base existente.
-
-## Pre-requisitos para desbloquear
-
-Para continuar a Fase 6 sem reconstruir indevidamente, uma destas condicoes precisa ser atendida:
-
-1. Trazer para este checkout a branch ou commit que contem `apps/logidesk-api`, `apps/logidesk-web` e `apps/logidesk-worker`.
-2. Confirmar explicitamente que a proxima etapa deve criar o LogiDesk do zero dentro deste monorepo.
-3. Redefinir a Fase 6 para implementar apenas contratos e preparacao de integracao no LogiFlow legado, deixando o produto LogiDesk para uma etapa posterior.
-
-## Escopo esperado quando desbloqueado
-
-Quando a base LogiDesk estiver disponivel, a Fase 6 deve validar e completar:
-
-- Dashboard.
-- Caixa de entrada.
-- Meus chamados.
-- Todos os chamados.
-- Kanban.
-- Equipes.
-- SLA.
-- Categorias.
-- Relatorios.
-- Notificacoes.
-- Configuracoes.
-- Busca, paginacao, ordenacao e filtros.
-- Detalhe do chamado.
+- Tickets com numero, status, prioridade, origem e referencias externas do LogiFlow.
+- Criacao idempotente de ticket a partir de ocorrencia do LogiFlow.
 - Mensagens.
 - Notas internas.
 - Historico.
+- SLA preliminar por prioridade.
+- Outbox LogiDesk.
+- Dead-letter table.
 - Auditoria.
-- Eventos.
-- Socket.IO.
-- Testes unitarios, integracao e E2E.
+- Health checks `GET /api/v1/health/live` e `GET /api/v1/health/ready`.
+- Web com dashboard, lista de chamados, Kanban, SLA e configuracoes.
+
+## API principal
+
+Base local:
+
+```text
+http://localhost:3533/api/v1
+```
+
+Rotas:
+
+- `GET /health/live`
+- `GET /health/ready`
+- `GET /tickets`
+- `POST /tickets/from-logiflow`
+- `GET /tickets/:id`
+- `PATCH /tickets/:id`
+- `POST /tickets/:id/messages`
+- `POST /tickets/:id/notes`
+
+`POST /tickets/from-logiflow` exige:
+
+- `x-service-token`
+- `idempotency-key`
+- `correlationId` no payload
+
+## Limites atuais
+
+- SSO/JWKS real ainda nao foi conectado ao LogiFlow identity.
+- Socket.IO ainda nao esta emitindo eventos para browsers.
+- Worker BullMQ esta estruturado, mas o processamento de outbox ainda e inicial.
+- E2E Playwright completo LogiFlow -> LogiDesk ainda nao foi criado.
+- SLA e preliminar; calendario comercial, pausas e alertas completos ainda precisam evoluir.
 
 ## Guardrail
 
-Nenhum item de LogiDesk deve ser marcado como `PASS` sem evidencia de codigo, teste, build e execucao real no modulo correspondente.
+Nao considerar a integracao pronta apenas por HTTP 200. Para marcar PASS completo, validar persistencia nos dois bancos, outbox, worker, idempotencia, logs correlacionados, retry/DLQ e E2E.

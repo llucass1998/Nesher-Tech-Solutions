@@ -32,5 +32,42 @@ export const employeeOperationalStatusEventSchema = platformEventEnvelopeSchema.
   }),
 });
 
+export const logiflowOccurrenceEscalatedEventSchema = platformEventEnvelopeSchema.extend({
+  eventType: z.literal('logiflow.occurrence_escalated'),
+  eventVersion: z.literal(1),
+  data: z.object({
+    deliveryId: z.string().uuid(),
+    occurrenceId: z.string().uuid(),
+    subject: z.string().min(3),
+    description: z.string().min(3),
+    severity: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']),
+    priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']),
+  }),
+});
+
+export const logideskTicketCreatedEventSchema = platformEventEnvelopeSchema.extend({
+  eventType: z.literal('ticket.created'),
+  eventVersion: z.literal(1),
+  data: z.object({
+    ticketId: z.string().uuid(),
+    ticketNumber: z.string().min(1),
+    deliveryId: z.string().uuid().optional(),
+    occurrenceId: z.string().uuid().optional(),
+  }),
+});
+
+export const logideskTicketUpdatedEventSchema = platformEventEnvelopeSchema.extend({
+  eventType: z.literal('ticket.updated'),
+  eventVersion: z.literal(1),
+  data: z.object({
+    ticketId: z.string().uuid(),
+    ticketNumber: z.string().min(1),
+    status: z.string().min(1),
+  }),
+});
+
 export type PlatformEventEnvelope = z.infer<typeof platformEventEnvelopeSchema>;
 export type EmployeeOperationalStatusEvent = z.infer<typeof employeeOperationalStatusEventSchema>;
+export type LogiflowOccurrenceEscalatedEvent = z.infer<typeof logiflowOccurrenceEscalatedEventSchema>;
+export type LogideskTicketCreatedEvent = z.infer<typeof logideskTicketCreatedEventSchema>;
+export type LogideskTicketUpdatedEvent = z.infer<typeof logideskTicketUpdatedEventSchema>;

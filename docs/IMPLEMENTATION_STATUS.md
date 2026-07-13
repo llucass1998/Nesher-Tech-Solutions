@@ -11,13 +11,13 @@ Data: 2026-07-13
 | Fase 3 - Auth versionada | Implementada | `POST /api/v1/auth/register`, `login`, `refresh`, `logout`, `GET /me`; testes em `auth-driver-v1.test.ts`. |
 | Fase 4 - Ownership motorista | Implementada | `/api/v1/driver/me`, `/deliveries`, `/deliveries/:id`, `/status`; teste de entrega alheia retorna 403. |
 | Fase 5 - Depreciacao das rotas legadas | Implementada sem remocao | Middleware `deprecatedRoute`; headers `Deprecation`, `Sunset`, `Link`; teste de regressao atualizado. |
-| Fase 6 - LogiDesk operacional | Bloqueada | Nao existem `apps/logidesk-*` nem arquivos de ticket/suporte/SLA neste checkout; ver `docs/LOGIDESK.md`. |
+| Fase 6 - LogiDesk operacional | Fundacao implementada; produto completo pendente | `apps/logidesk-api`, `apps/logidesk-web`, `apps/logidesk-worker`, `databases/logidesk`; Docker e smoke test idempotente passaram. |
 | Fase 7 - LogiFlow operacional | Concluida no escopo do checkout atual | Dashboard, entregas v1, filtros, paginacao, timeline, historico, ocorrencias, comprovantes e reprocessamento seguro implementados. |
 | Fase 8 - UI/UX e design system | Concluida no escopo inicial | `packages/ui` criado e aplicado na tela de entregas com badges, empty/error states, skeleton e paginacao compartilhados. |
 | Fase 9 - Observabilidade | Concluida no escopo inicial | Logger estruturado com redaction, request/correlation id, health checks e metricas HTTP em texto Prometheus. |
 | Fase 10 - Testes completos | Concluida no escopo disponivel | Suite raiz ampliada para 39 testes cobrindo auth, ownership, operacoes, reprocessamento, health e metricas. |
 | Fase 11 - Docker e seguranca | Concluida | Dockerfiles, Compose, migration one-shot, health checks, runtime nao privilegiado, Helmet e validacao real de containers. |
-| Fase 12 - CI/CD | Concluida no escopo do checkout atual | Workflows GitHub Actions criados para LogiFlow, LogiPeople e integracao/plataforma com lint, typecheck, testes, build, audit completo, Prisma e Docker. |
+| Fase 12 - CI/CD | Concluida no escopo atual | Workflows GitHub Actions criados para LogiFlow, LogiPeople, LogiDesk e integracao/plataforma com lint, typecheck, testes, build, audit completo, Prisma e Docker. |
 | Fase 13 - Documentacao | Concluida | README e guias docs atualizados para refletir LogiFlow, LogiPeople, Docker, CI/CD, seguranca, integracao e pendencias reais. |
 | Fase 14 - Holerites demonstrativos LogiPeople | Concluida no escopo do checkout atual | Fundacao preliminar restrita de holerites demonstrativos validada com Prisma, testes, build, audit e documentacao; sem publicacao ao colaborador, PDF oficial, assinatura, pagamento bancario ou eSocial. |
 
@@ -43,8 +43,8 @@ Data: 2026-07-13
 | Design system compartilhado | `packages/ui` nao existia | Nao | Sim | PASS |
 | Observabilidade HTTP | Nao havia request context, health ou metricas | Nao | Sim | PASS |
 | Testes criticos adicionais | Cobertura parcial de bordas auth/operacionais | Parcial | Sim | PASS |
-| LogiDesk/ticket | Nao existe no checkout | Nao | Nao aplicavel | Bloqueado por ausencia de modulo |
-| Outbox/Redis/retry | Nao existe no LogiFlow legado | Nao | Nao aplicavel | Bloqueado por ausencia de modulo |
+| LogiDesk/ticket | Fundacao de tickets existe | Nao | Sim | PASS no smoke test idempotente e testes unitarios LogiDesk |
+| Outbox/Redis/retry | Fundacao de outbox, Redis e workers existe | Nao | Parcial | PASS para build/health/worker ready; dispatcher/retry/DLQ completo pendente |
 
 ## Validacoes
 
@@ -102,20 +102,30 @@ Todas as rotas legadas preservam o controller atual e passam a emitir:
 
 ## Bloqueios conhecidos
 
-- O prompt mestre descreve apps LogiFlow/LogiDesk que nao existem neste checkout.
-- Fase 6 esta bloqueada por ausencia completa de LogiDesk no workspace.
-- Outbox, Redis/BullMQ, DLQ, Socket.IO distribuido e testes E2E LogiFlow/LogiDesk seguem bloqueados pela ausencia dos modulos LogiDesk/workers reais neste checkout.
-- O Compose validado cobre a stack LogiFlow raiz (`logiflow-db`, `logiflow-migrate`, `logiflow-api`, `logiflow-web`).
-- Os workflows GitHub Actions existem para LogiFlow, LogiPeople e integracao/plataforma; nao ha workflow dedicado de LogiDesk porque nao ha app LogiDesk.
+- LogiDesk agora possui fundacao, mas ainda nao tem o produto empresarial completo: SSO real, Socket.IO autenticado, anexos, SLA avancado, relatorios, equipes completas e E2E Playwright.
+- Outbox, Redis/BullMQ e DLQ existem como estrutura inicial; o dispatcher com retry/backoff persistente, DLQ operacional e reprocessamento fim a fim ainda nao foi fechado.
+- O Compose validado cobre LogiFlow, LogiDesk, Redis, bancos, workers, APIs e webs.
+- Os workflows GitHub Actions existem para LogiFlow, LogiPeople, LogiDesk e integracao/plataforma.
 
-## Fase 6 - evidencia do bloqueio
+## Fase 6 - LogiDesk fundacional
 
-| Verificacao | Resultado |
-| --- | --- |
-| `rg --files \| rg -i "(logidesk\|ticket\|support\|chamado\|sla\|message\|inbox\|kanban\|atendimento\|suporte)"` | Sem resultados |
-| `Get-ChildItem -Directory apps` | Apenas `logipeople-api`, `logipeople-web`, `logipeople-worker` |
+Implementado:
 
-Decisao: nao criar LogiDesk do zero sem confirmacao explicita, porque o prompt mestre orienta preservar e evoluir a base existente.
+- `databases/logidesk/prisma/schema.prisma` e migration inicial.
+- `apps/logidesk-api` com health checks e modulo de tickets.
+- `POST /api/v1/tickets/from-logiflow` com `x-service-token` e `idempotency-key`.
+- Criacao de ticket com historico, SLA preliminar, auditoria, idempotencia e outbox local.
+- `apps/logidesk-web` com dashboard, tickets, Kanban basico, SLA e configuracoes.
+- `apps/logidesk-worker` com BullMQ e Redis.
+- `Dockerfile.logidesk-api`, `Dockerfile.logidesk-web` e workflow `logidesk-ci.yml`.
+
+Ainda pendente:
+
+- SSO/JWKS real.
+- Socket.IO autenticado.
+- SLA empresarial completo.
+- Anexos, equipes, categorias, relatorios e notificacoes completas.
+- E2E Playwright LogiFlow -> LogiDesk.
 
 ### Validacoes da Fase 6
 
@@ -127,7 +137,7 @@ Decisao: nao criar LogiDesk do zero sem confirmacao explicita, porque o prompt m
 | `npm run build` | PASS | Next raiz compilou; aviso Node `DEP0169` permanece. |
 | `npm run test:workspaces` | PASS | LogiPeople API: 5 arquivos, 25 testes; demais pacotes sem testes e `passWithNoTests`. |
 | `npm run lint:workspaces` | PASS | Sem erros; avisos do Next sobre `pages` em pacotes nao-Next. |
-| `npm run build:workspaces` | PASS | LogiPeople API/web/worker e pacotes passaram; aviso de lockfiles multiplos no Next. |
+| `npm run build:workspaces` | PASS | LogiPeople e LogiDesk API/web/worker e pacotes passaram; aviso de lockfiles multiplos no Next. |
 
 ## Fase 7 - LogiFlow operacional
 
@@ -168,11 +178,11 @@ Implementado:
   - registro rapido de ocorrencia;
   - registro rapido de comprovante.
 
-Fora do escopo tecnico possivel neste checkout:
+Fora do escopo tecnico fechado nesta fase:
 
-- Escalonamento real para LogiDesk, porque a Fase 6 esta bloqueada por ausencia de LogiDesk.
-- Outbox/Redis/DLQ reais, porque esses modulos nao existem no LogiFlow legado.
-- E2E completo Playwright, porque ainda nao ha ambiente Docker/servicos integrados localizados.
+- Dispatcher real do outbox ate o LogiDesk com retry/backoff persistente.
+- DLQ operacional com reprocessamento fim a fim.
+- E2E completo Playwright LogiFlow -> LogiDesk.
 - Mapa autenticado por ownership completo, porque o mapa atual usa fluxo legado e a auth operacional depende de sessao v1 no frontend.
 
 ### Validacoes da Fase 7
@@ -258,7 +268,7 @@ Fora do escopo inicial:
 - Prometheus server;
 - Grafana;
 - Sentry;
-- trace/span distribuidos entre LogiFlow e LogiDesk, bloqueado pela ausencia de LogiDesk.
+- trace/span distribuidos entre LogiFlow e LogiDesk ainda nao instrumentados com OpenTelemetry real.
 
 ### Validacoes da Fase 9
 
@@ -292,11 +302,11 @@ Implementado no escopo disponivel do checkout:
 - Observabilidade:
   - readiness retorna `503` quando o banco falha.
 
-Fora do escopo possivel neste checkout:
+Fora do escopo ainda pendente:
 
-- Testes de contrato LogiFlow/LogiDesk, porque LogiDesk nao existe.
-- Testes Redis/BullMQ/Outbox/DLQ, porque os modulos nao existem no LogiFlow legado.
-- Testes E2E Playwright completos, porque nao ha Docker Compose/stack integrada localizada.
+- Testes de contrato LogiFlow/LogiDesk completos.
+- Testes Redis/BullMQ/Outbox/DLQ com falha, retry, DLQ e reprocessamento.
+- Testes E2E Playwright completos usando a stack integrada.
 
 ### Validacoes da Fase 10
 
@@ -468,8 +478,8 @@ Implementado:
 Decisoes:
 
 - CI usa `npm ci`, porque o projeto possui `package-lock.json` e os comandos locais validados usam npm.
-- LogiDesk nao ganhou workflow dedicado porque nao existe app LogiDesk neste checkout.
-- O audit bloqueia vulnerabilidades altas. Vulnerabilidades moderadas atuais seguem documentadas para uma fase de upgrade de dependencias.
+- LogiDesk possui workflow dedicado apos a criacao de `apps/logidesk-*`.
+- O audit completo deve permanecer com 0 vulnerabilidades conhecidas.
 
 ### Validacoes da Fase 12
 
@@ -585,3 +595,61 @@ Riscos residuais:
 - A web ainda usa provedor placeholder de token do LogiIdentity; paginas autenticadas exibem estado sem credencial ate a integracao real.
 - Holerites seguem como evidencia preliminar restrita e nao podem ser usados como recibo legal, pagamento, PDF oficial, assinatura ou eSocial.
 - A rota `/payslips` foi validada via servidor `logipeople-web` em `127.0.0.1:3400`, com HTTP 200 e estado sem credencial renderizado; nao houve navegacao manual em browser grafico.
+
+## Incremento atual - LogiDesk, Redis, workers e integracao fundacional
+
+Implementado nesta execucao:
+
+- `databases/logidesk/prisma/schema.prisma` e migration `20260713040000_init`.
+- `apps/logidesk-api` com health checks, tickets, mensagens, notas internas, historico, SLA preliminar, auditoria, outbox e idempotencia.
+- `apps/logidesk-web` com dashboard, tickets, Kanban basico, SLA e configuracoes.
+- `apps/logidesk-worker` e `apps/logiflow-worker` com BullMQ/Redis e logs estruturados.
+- `prisma/schema.prisma` do LogiFlow ganhou `OutboxEvent` e `DeadLetterEvent`.
+- `POST /api/v1/operations/occurrences/:id/escalate` cria outbox idempotente para escalonamento.
+- `packages/event-contracts` ganhou schemas de eventos LogiFlow/LogiDesk.
+- Docker Compose passou a cobrir LogiFlow DB/API/web/worker, LogiDesk DB/API/web/worker e Redis.
+- Workflows atualizados para LogiFlow, LogiDesk e integracao/plataforma.
+
+Falhas encontradas e corrigidas durante Docker:
+
+- `logidesk-api` procurava `dist/main.js`; corrigido para `dist/src/main.js`.
+- Prisma Client do LogiDesk era copiado para `dist/generated`; corrigido para `dist/src/generated`.
+- Prisma 7 exigia adapter explicito; `PrismaService` passou a usar `@prisma/adapter-pg` com `LOGIDESK_DATABASE_URL`.
+
+Validacoes executadas em 2026-07-13:
+
+| Comando/verificacao | Resultado | Evidencia |
+| --- | --- | --- |
+| `npm run logidesk:prisma:generate` | PASS | Prisma Client LogiDesk gerado. |
+| `npm run prisma:generate` | PASS | Prisma Client LogiFlow gerado. |
+| `npm run typecheck -w logidesk-api` | PASS | TypeScript LogiDesk API sem erros. |
+| `npm run test -w logidesk-api` | PASS | 1 arquivo, 3 testes. |
+| `npm run typecheck` | PASS | Raiz e workspaces passaram. |
+| `npm test` | PASS | Suite raiz passou. |
+| `npm run lint` | PASS | Sem erros. |
+| `npm run lint:workspaces` | PASS | Sem erros; avisos conhecidos do Next sobre `pages`. |
+| `npm run build` | PASS | Build raiz passou. |
+| `npm run build:workspaces` | PASS | LogiDesk web gerou 6 paginas; workspaces passaram. |
+| `npm audit` | PASS | 0 vulnerabilidades. |
+| `docker compose config` com env CI | PASS | Compose renderizado com segredos ficticios. |
+| `docker compose build logiflow-api logiflow-worker logidesk-migrate logidesk-api logidesk-web logidesk-worker` | PASS | Imagens construidas. |
+| `docker compose up -d` com portas alternativas | PASS | DBs, APIs, webs, Redis e workers subiram. |
+| `GET http://localhost:3335/api/v1/health/live` | PASS | HTTP 200. |
+| `GET http://localhost:3335/api/v1/health/ready` | PASS | HTTP 200. |
+| `GET http://localhost:3535/api/v1/health/live` | PASS | HTTP 200. |
+| `GET http://localhost:3535/api/v1/health/ready` | PASS | HTTP 200, checks `api`, `prisma` e `postgres` ok. |
+| `GET http://localhost:3005` | PASS | HTTP 200. |
+| `GET http://localhost:3505` | PASS | HTTP 200. |
+| Smoke `POST /api/v1/tickets/from-logiflow` | PASS | Ticket `LD-000001` criado. |
+| Smoke idempotente com mesma key | PASS | Segunda chamada retornou o mesmo ticket `LD-000001`. |
+| `docker compose logs --tail=120 logiflow-api logiflow-worker` | PASS | API com requests correlacionados; worker `ready`. |
+| `docker compose logs --tail=120 logidesk-api logidesk-worker` | PASS | Nest iniciou rotas; worker `ready`. |
+
+Pendencias que ainda nao podem ser marcadas como PASS completo:
+
+- Dispatcher real de outbox LogiFlow -> LogiDesk.
+- Retry/backoff persistente e DLQ operacional.
+- SSO/JWKS real entre produtos.
+- Socket.IO autenticado.
+- Testes de contrato consumer/provider.
+- E2E Playwright completo.

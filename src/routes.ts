@@ -50,6 +50,7 @@ routes.post('/api/v1/operations/deliveries/:id/occurrences', verificarAccessToke
 routes.post('/api/v1/operations/deliveries/:id/proofs', verificarAccessTokenV1, requireRoles(['ADMIN', 'OPERATOR']), (req, res) => operationsController.createProof(req, res));
 routes.patch('/api/v1/operations/occurrences/:id', verificarAccessTokenV1, requireRoles(['ADMIN', 'OPERATOR']), (req, res) => operationsController.updateOccurrence(req, res));
 routes.post('/api/v1/operations/occurrences/:id/reprocess', verificarAccessTokenV1, requireRoles(['ADMIN', 'OPERATOR']), (req, res) => operationsController.reprocessOccurrence(req, res));
+routes.post('/api/v1/operations/occurrences/:id/escalate', verificarAccessTokenV1, requireRoles(['ADMIN', 'OPERATOR']), (req, res) => operationsController.escalateOccurrence(req, res));
 
 // ==========================================
 // ROTA DE LOGIN

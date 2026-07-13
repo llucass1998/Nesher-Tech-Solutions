@@ -2,7 +2,7 @@
 
 ## Estado atual
 
-Eventos versionados estao preparados em `packages/event-contracts`, mas nao ha pipeline real com Redis, BullMQ, Outbox ou DLQ neste checkout.
+Eventos versionados estao preparados em `packages/event-contracts`. O LogiFlow agora possui tabela `OutboxEvent` e `DeadLetterEvent`, e os workers LogiFlow/LogiDesk sobem com BullMQ e Redis. O dispatcher completo de outbox, retry persistente e DLQ operacional ainda nao esta finalizado.
 
 ## Eventos alvo LogiFlow
 
@@ -26,6 +26,12 @@ Eventos versionados estao preparados em `packages/event-contracts`, mas nao ha p
 - `ticket:sla:breached`
 - `notification:created`
 
+## Schemas implementados
+
+- `logiflowOccurrenceEscalatedEventSchema`
+- `logideskTicketCreatedEventSchema`
+- `logideskTicketUpdatedEventSchema`
+
 ## Envelope recomendado
 
 ```json
@@ -41,7 +47,7 @@ Eventos versionados estao preparados em `packages/event-contracts`, mas nao ha p
 }
 ```
 
-## Regras futuras
+## Regras obrigatorias
 
 - Todo evento deve ter schema Zod.
 - Toda publicacao deve ser idempotente.

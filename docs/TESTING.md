@@ -30,6 +30,13 @@ LogiPeople:
 - Modulos de dominios implementados.
 - Analytics agregado.
 
+LogiDesk:
+
+- Tickets service-to-service com token de servico.
+- Idempotencia por `idempotency-key`.
+- Criacao de historico, SLA preliminar, auditoria e outbox.
+- Typecheck e build da API/web/workers.
+
 ## O que testar em toda feature nova
 
 - Caminho feliz.
@@ -43,6 +50,6 @@ LogiPeople:
 ## Pendencias
 
 - Testes de contrato LogiFlow/LogiDesk.
-- Testes Redis/BullMQ/Outbox/DLQ.
+- Testes completos de Redis/BullMQ/Outbox/DLQ com falha, retry e reprocessamento.
 - Playwright E2E completo.
 - Smoke test de deploy real.
