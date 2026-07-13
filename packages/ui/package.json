@@ -1,0 +1,17 @@
+{
+  "name": "@logiflow/ui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.tsx",
+  "types": "src/index.tsx",
+  "scripts": {
+    "lint": "eslint src --ext .ts,.tsx",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "build": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  }
+}

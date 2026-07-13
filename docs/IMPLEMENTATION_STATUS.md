@@ -13,6 +13,7 @@ Data: 2026-07-12
 | Fase 5 - Depreciacao das rotas legadas | Implementada sem remocao | Middleware `deprecatedRoute`; headers `Deprecation`, `Sunset`, `Link`; teste de regressao atualizado. |
 | Fase 6 - LogiDesk operacional | Bloqueada | Nao existem `apps/logidesk-*` nem arquivos de ticket/suporte/SLA neste checkout; ver `docs/LOGIDESK.md`. |
 | Fase 7 - LogiFlow operacional | Concluida no escopo do checkout atual | Dashboard, entregas v1, filtros, paginacao, timeline, historico, ocorrencias, comprovantes e reprocessamento seguro implementados. |
+| Fase 8 - UI/UX e design system | Concluida no escopo inicial | `packages/ui` criado e aplicado na tela de entregas com badges, empty/error states, skeleton e paginacao compartilhados. |
 
 ## Matriz de regressao
 
@@ -33,6 +34,7 @@ Data: 2026-07-12
 | Ocorrencias operacionais | Nao existia | Nao | Sim | PASS |
 | Comprovantes | Apenas campo `proofUrl` solto | Nao | Sim | PASS |
 | Reprocessamento seguro | Nao existia | Nao | Sim | PASS |
+| Design system compartilhado | `packages/ui` nao existia | Nao | Sim | PASS |
 | LogiDesk/ticket | Nao existe no checkout | Nao | Nao aplicavel | Bloqueado por ausencia de modulo |
 | Outbox/Redis/retry | Nao existe no LogiFlow legado | Nao | Nao aplicavel | Bloqueado por ausencia de modulo |
 
@@ -178,6 +180,44 @@ Fora do escopo tecnico possivel neste checkout:
 | `npm run test:workspaces` | PASS | LogiPeople API: 5 arquivos, 25 testes; demais pacotes sem testes e `passWithNoTests`. |
 | `npm run lint:workspaces` | PASS | Sem erros; avisos do Next sobre `pages` em pacotes nao-Next. |
 | `npm run build:workspaces` | PASS | LogiPeople API/web/worker e pacotes passaram; aviso de lockfiles multiplos no Next. |
+
+## Fase 8 - UI/UX e design system
+
+Implementado:
+
+- `packages/ui` criado como workspace `@logiflow/ui`.
+- Componentes compartilhados criados:
+  - `StatusBadge`;
+  - `PriorityBadge`;
+  - `EmptyState`;
+  - `ErrorState`;
+  - `LoadingSkeleton`;
+  - `Pagination`;
+  - `ToolbarButton`.
+- Tela `app/dashboard/deliveries/page.tsx` passou a usar:
+  - `StatusBadge` para status de entrega;
+  - `EmptyState` para listas vazias;
+  - `ErrorState` para falha de carregamento;
+  - `LoadingSkeleton` para carregamento;
+  - `Pagination` para navegacao de paginas.
+
+Ainda pendente para uma fase visual maior:
+
+- Migrar motoristas, veiculos, dashboard e driver app para os mesmos componentes.
+- Criar `AppShell`, `Sidebar`, `Header`, `DataTable`, `FilterBar`, `SearchInput`, `ConfirmDialog`, `FormField`, `FileUploader`, `Timeline`, `NotificationPanel`, `AccessDenied` e `SessionExpiredDialog`.
+- Validar screenshots responsivos com Playwright em 320px, 375px, 768px, 1024px e 1440px.
+
+### Validacoes da Fase 8
+
+| Comando | Resultado | Observacao |
+| --- | --- | --- |
+| `npm test` | PASS | 5 arquivos, 25 testes passaram. |
+| `npm run typecheck` | PASS | Raiz e workspaces passaram, incluindo `@logiflow/ui`. |
+| `npm run lint` | PASS | Sem erros. |
+| `npm run build` | PASS | Next raiz compilou; aviso Node `DEP0169` permanece. |
+| `npm run test:workspaces` | PASS | Inclui `@logiflow/ui` sem testes e com `passWithNoTests`. |
+| `npm run lint:workspaces` | PASS | Inclui `@logiflow/ui`; avisos Next sobre `pages` em pacotes nao-Next permanecem. |
+| `npm run build:workspaces` | PASS | Inclui build/typecheck de `@logiflow/ui`; aviso de lockfiles multiplos no Next permanece. |
 
 ## Evidencias de seguranca
 

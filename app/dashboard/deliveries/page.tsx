@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import { FormEventHandler, useCallback, useEffect, useState } from 'react';
 import { socket } from '../../../socket';
 import axios from 'axios';
+import { EmptyState, ErrorState, LoadingSkeleton, Pagination, StatusBadge } from '../../../packages/ui/src';
 
 const Map = dynamic(() => import('../../../components/Map'), { 
   ssr: false,
@@ -477,15 +478,6 @@ export default function DeliveriesPage() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'PENDING': return <span className="px-2.5 py-1 bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-400 rounded-full text-xs font-medium whitespace-nowrap">Pendente</span>;
-      case 'IN_TRANSIT': return <span className="px-2.5 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-400 rounded-full text-xs font-medium whitespace-nowrap">Em Trânsito</span>;
-      case 'DELIVERED': return <span className="px-2.5 py-1 bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-400 rounded-full text-xs font-medium whitespace-nowrap">Entregue</span>;
-      default: return <span className="px-2.5 py-1 bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 rounded-full text-xs font-medium whitespace-nowrap">{status}</span>;
-    }
-  };
-
   const inputClass = "w-full h-[40px] px-3 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#185FA5] dark:focus:ring-blue-500 focus:border-transparent transition-colors";
   const labelClass = "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1";
   const activeDeliveries = deliveries.filter((delivery) => delivery.status !== 'DELIVERED');
@@ -605,8 +597,14 @@ export default function DeliveriesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--color-border-secondary)] dark:divide-gray-700">
-              {loading && <tr><td colSpan={5} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400 text-sm">Carregando entregas...</td></tr>}
-              {!loading && activeDeliveries.length === 0 && <tr><td colSpan={5} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400 text-sm">Nenhuma entrega em aberto no sistema.</td></tr>}
+              {loading && <tr><td colSpan={5}><LoadingSkeleton rows={4} /></td></tr>}
+              {!loading && activeDeliveries.length === 0 && (
+                <tr>
+                  <td colSpan={5}>
+                    <EmptyState title="Nenhuma entrega em aberto" description="Ajuste os filtros ou crie uma nova entrega para iniciar a operacao." icon="ti-package-off" />
+                  </td>
+                </tr>
+              )}
               {!loading && activeDeliveries.map((delivery) => (
                 <tr 
                   key={delivery.id} 
@@ -636,7 +634,7 @@ export default function DeliveriesPage() {
                     {delivery.vehicle ? `${delivery.vehicle.model} (${delivery.vehicle.plate})` : 'Não atribuído'}
                   </td>
                   <td className="px-6 py-4">
-                    {getStatusBadge(delivery.status)}
+                    <StatusBadge status={delivery.status} />
                   </td>
                 </tr>
               ))}
@@ -644,42 +642,27 @@ export default function DeliveriesPage() {
           </table>
         </div>
         {loadError && (
-          <div className="border-t border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-300">
-            {loadError}
+          <div className="border-t border-red-200 dark:border-red-900/50">
+            <ErrorState message={loadError} />
           </div>
         )}
         <div className="border-t border-[var(--color-border-secondary)] dark:border-gray-700 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm text-[var(--color-text-secondary)] dark:text-gray-400">
-          <span>
-            {pagination.total} entrega{pagination.total === 1 ? '' : 's'} encontrada{pagination.total === 1 ? '' : 's'}
-          </span>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              disabled={pagination.page <= 1}
-              onClick={() => setPage((current) => Math.max(1, current - 1))}
-              className="h-[34px] px-3 rounded-md border border-gray-300 disabled:opacity-50 dark:border-gray-600"
-            >
-              Anterior
-            </button>
-            <span>Pagina {pagination.page} de {pagination.totalPages}</span>
-            <button
-              type="button"
-              disabled={pagination.page >= pagination.totalPages}
-              onClick={() => setPage((current) => current + 1)}
-              className="h-[34px] px-3 rounded-md border border-gray-300 disabled:opacity-50 dark:border-gray-600"
-            >
-              Proxima
-            </button>
-          </div>
+          <Pagination
+            page={pagination.page}
+            totalPages={pagination.totalPages}
+            total={pagination.total}
+            onPrevious={() => setPage((current) => Math.max(1, current - 1))}
+            onNext={() => setPage((current) => current + 1)}
+          />
         </div>
         {selectedDeliveryId && (
           <div className="border-t border-[var(--color-border-secondary)] dark:border-gray-700 p-4 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-4">
             <div>
               <h3 className="text-sm font-semibold text-[var(--color-text-primary)] dark:text-white">Timeline operacional</h3>
               <div className="mt-3 space-y-2">
-                {timelineLoading && <p className="text-sm text-gray-500">Carregando timeline...</p>}
+                {timelineLoading && <LoadingSkeleton rows={3} />}
                 {!timelineLoading && timeline.length === 0 && (
-                  <p className="text-sm text-gray-500">Nenhum historico operacional registrado para esta entrega.</p>
+                  <EmptyState title="Sem historico operacional" description="Mudancas de status, ocorrencias e comprovantes aparecerao aqui." icon="ti-timeline" />
                 )}
                 {!timelineLoading && timeline.map((item) => (
                   <div key={`${item.type}-${item.data.id}`} className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900/40">
@@ -762,11 +745,11 @@ export default function DeliveriesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--color-border-secondary)] dark:divide-gray-700">
-                {loading && <tr><td colSpan={4} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400 text-sm">Carregando finalizadas...</td></tr>}
+                {loading && <tr><td colSpan={4}><LoadingSkeleton rows={3} /></td></tr>}
                 {!loading && completedTodayDeliveries.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400 text-sm">
-                      Nenhuma entrega finalizada hoje.
+                    <td colSpan={4}>
+                      <EmptyState title="Nenhuma entrega finalizada hoje" description="As entregas concluidas no dia aparecerao neste resumo." icon="ti-circle-check" />
                     </td>
                   </tr>
                 )}

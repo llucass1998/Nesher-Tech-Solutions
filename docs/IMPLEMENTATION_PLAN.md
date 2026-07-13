@@ -10,6 +10,7 @@ Implementar apenas:
 4. Fase 4 - Ownership do motorista em `/api/v1/driver/*`.
 5. Fase 5 - Depreciacao controlada das rotas legadas.
 6. Fase 7 - Primeiro incremento operacional do LogiFlow.
+7. Fase 8 - UI/UX e design system compartilhado.
 
 ## Ajuste de escopo por estado real
 
@@ -81,6 +82,21 @@ LogiDesk, workers, Redis, BullMQ, Outbox, DLQ, Socket.IO autenticado e SSO real 
 - Permitir reprocessamento seguro de ocorrencias em `FAILED` ou `DEAD_LETTER`.
 - Aplicar RBAC `ADMIN`/`OPERATOR` nos endpoints operacionais.
 - Atualizar a tela de entregas mantendo fallback legado quando nao houver token v1.
+
+### Fase 8
+
+- Criar `packages/ui`, ausente no checkout atual.
+- Consolidar componentes compartilhados de estado e feedback:
+  - `StatusBadge`;
+  - `PriorityBadge`;
+  - `EmptyState`;
+  - `ErrorState`;
+  - `LoadingSkeleton`;
+  - `Pagination`;
+  - `ToolbarButton`.
+- Aplicar o pacote compartilhado na tela critica de entregas.
+- Manter dimensoes estaveis para badges, skeletons e paginacao.
+- Validar lint, typecheck, testes e build incluindo workspaces.
 
 ## Fora de escopo nesta execucao
 
