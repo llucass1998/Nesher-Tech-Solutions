@@ -2,7 +2,7 @@
 
 ## Scope for this execution
 
-Phases 1-12 are in scope:
+Phases 1-13 are in scope:
 
 1. Study and diagnosis.
 2. Reference and license documentation.
@@ -16,6 +16,7 @@ Phases 1-12 are in scope:
 10. Absence and Vacation foundation.
 11. Recruitment foundation.
 12. Onboarding foundation.
+13. Analytics foundation.
 
 ## Current status
 
@@ -27,6 +28,7 @@ Phases 1-12 are in scope:
 | Database | Implemented | A separate LogiPeople Prisma schema, initial migration and seed exist under `databases/logipeople`. |
 | Identity and permissions | Implemented | JWT validation, RBAC, ABAC and field control are implemented as LogiPeople primitives. |
 | Organization/Core People | Implemented | Initial models, services, endpoints and web pages are implemented for phases 1-6. |
+| Analytics foundation | Implemented | Phase 13 adds aggregated status metrics and governance counts through API endpoints, tests and a web page. Individual BI, predictive analytics and legally validated reporting remain out of scope. |
 | Recruitment foundation | Implemented | Phase 11 adds preliminary openings, candidates, applications, API endpoints, tests and a web page. Job-board publishing, offer management and candidate-to-employee conversion remain out of scope. |
 | Onboarding foundation | Implemented | Phase 12 adds preliminary internal onboarding plans, checklist tasks, API endpoints, tests and a web page. Admission approval, candidate-to-employee conversion, external provisioning and workflow automation remain out of scope. |
 | Time and Attendance foundation | Implemented | Phase 7 adds work schedules, time entries, preliminary attendance periods, API endpoints, tests and a web page. Legal/payroll validation remains pending. |
@@ -41,6 +43,7 @@ Phases 1-12 are in scope:
 - Benefits provider integrations and definitive payroll deductions are not implemented.
 - Recruitment job-board publishing, offer management, hiring automation and candidate-to-employee conversion are not implemented.
 - Onboarding admission approval, candidate-to-employee conversion, external provisioning and workflow automation are not implemented.
+- Analytics are aggregate-only; individual-level BI, predictive analytics, automated decisions and legally validated reporting are not implemented.
 - Absence and vacation legal balance calculations, automatic approvals and payroll effects are not implemented.
 - eSocial real submission is not implemented.
 - Legal/tax compliance is not validated.
@@ -57,3 +60,4 @@ Phases 1-12 are in scope:
 - Absence and vacation records are preliminary confidential evidence only; they must not trigger automatic approvals, payroll effects, eSocial events or legal compliance claims without DP and legal validation.
 - Recruitment records are preliminary confidential evidence only; they must not trigger hiring, onboarding, offer commitments or external publication without HR governance and consent validation.
 - Onboarding records are preliminary confidential evidence only; they must not trigger admission approval, access provisioning, benefits activation, payroll setup or external communications without HR/DP governance.
+- Analytics are preliminary aggregate indicators only; they must not be used for legal, payroll, hiring, termination, benefit eligibility or disciplinary decisions without validated governance and source review.

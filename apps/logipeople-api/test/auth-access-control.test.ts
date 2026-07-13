@@ -153,6 +153,17 @@ describe('LogiPeople authentication and access control', () => {
     expect(guard.canActivate(context)).toBe(true);
   });
 
+  it('allows auditors to access analytics endpoints', () => {
+    const auditorPrincipal: AuthenticatedPrincipal = {
+      ...principal,
+      roles: ['AUDITOR'],
+    };
+    const guard = new RbacGuard(new TestReflector(['AUDITOR']) as never);
+    const context = createContext({ principal: auditorPrincipal });
+
+    expect(guard.canActivate(context)).toBe(true);
+  });
+
   it('rejects requests when ABAC company scope differs from the body', () => {
     const guard = new AbacGuard(new TestReflector(['COMPANY']) as never);
     const context = createContext({ principal, body: { companyId: 'company-2' }, params: {} });

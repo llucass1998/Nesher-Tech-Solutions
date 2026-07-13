@@ -218,6 +218,54 @@ export interface OnboardingTaskSummary {
   employee?: { employeeNumber: string; person?: { fullName: string; preferredName?: string | null } | null } | null;
 }
 
+export interface AnalyticsMetricRow {
+  label: string;
+  count: number;
+}
+
+export interface AnalyticsOverview {
+  generatedAt: string;
+  privacy: {
+    aggregationOnly: true;
+    excludesSensitiveFields: true;
+    legalValidationPending: true;
+  };
+  people: {
+    employeesByStatus: AnalyticsMetricRow[];
+    positionsByStatus: AnalyticsMetricRow[];
+  };
+  hiring: {
+    applicationsByStatus: AnalyticsMetricRow[];
+    onboardingTasksByStatus: AnalyticsMetricRow[];
+  };
+  operations: {
+    attendancePeriodsByStatus: AnalyticsMetricRow[];
+    absenceRequestsByStatus: AnalyticsMetricRow[];
+    vacationPeriodsByStatus: AnalyticsMetricRow[];
+  };
+  administration: {
+    payrollCyclesByStatus: AnalyticsMetricRow[];
+    benefitEnrollmentsByStatus: AnalyticsMetricRow[];
+  };
+  governance: {
+    pendingLegalValidation: {
+      attendancePeriods: number;
+      payrollCycles: number;
+      payrollRuns: number;
+      payrollItems: number;
+      benefitPlans: number;
+      benefitEnrollments: number;
+      absenceRequests: number;
+      vacationPeriods: number;
+      jobOpenings: number;
+      jobApplications: number;
+      onboardingPlans: number;
+      onboardingTasks: number;
+      total: number;
+    };
+  };
+}
+
 export async function getPeopleToken(): Promise<string | null> {
   return null;
 }
@@ -226,7 +274,7 @@ export async function fetchLogiPeople<T>(path: string): Promise<{ data?: T; erro
   const token = await getPeopleToken();
 
   if (!token) {
-    return { unauthorized: true, error: 'Sem credencial do LogiIdentity nesta sessão.' };
+    return { unauthorized: true, error: 'Sem credencial do LogiIdentity nesta sessao.' };
   }
 
   const response = await fetch(`${API_URL}${path}`, {

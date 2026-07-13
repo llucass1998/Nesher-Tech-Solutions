@@ -6,9 +6,9 @@ LogiFlow remains responsible for logistics operations: drivers, vehicles, delive
 
 ## LogiPeople
 
-LogiPeople is an independent HR and Departamento Pessoal system. In phases 1-12, the foundation, Organization, Core People, preliminary Recruitment, preliminary Onboarding, preliminary Time and Attendance, preliminary Payroll, preliminary Benefits and preliminary Absence and Vacation foundations are implemented.
+LogiPeople is an independent HR and Departamento Pessoal system. In phases 1-13, the foundation, Organization, Core People, preliminary Analytics, preliminary Recruitment, preliminary Onboarding, preliminary Time and Attendance, preliminary Payroll, preliminary Benefits and preliminary Absence and Vacation foundations are implemented.
 
-### Implemented in phases 1-12
+### Implemented in phases 1-13
 
 - Identity integration boundary.
 - RBAC and ABAC primitives.
@@ -17,6 +17,7 @@ LogiPeople is an independent HR and Departamento Pessoal system. In phases 1-12,
 - Organization structure.
 - Core People records.
 - Employee history with effective dating.
+- Analytics foundation with aggregated status metrics and governance counts.
 - Recruitment foundation with preliminary openings, candidates and applications.
 - Onboarding foundation with preliminary internal plans and checklist tasks.
 - Time and Attendance foundation with work schedules, time entries and preliminary attendance periods.
@@ -38,7 +39,7 @@ The following domains are documented as future modules and must not be represent
 - Termination.
 - Government reporting and eSocial.
 - AI assistants.
-- Analytics.
+- Advanced analytics, individual-level BI, predictive models and legally validated reports.
 - Real LogiFlow and LogiDesk integrations.
 
 ## Organization vs Core People
@@ -49,4 +50,4 @@ Core People defines people and employment records: person, employee, employment,
 
 ## Departamento Pessoal boundary
 
-DP-sensitive records such as contracts, compensation history, documents, time-attendance evidence, preliminary recruitment records, preliminary onboarding records, preliminary absence/vacation records, preliminary payroll records and preliminary benefits records are modeled with data classification and audit from the beginning, but candidate-to-employee conversion, onboarding automation, absence/vacation legal balance calculations, payroll legal calculations, benefits provider integrations, payment execution and eSocial real submission are not implemented in phases 1-12.
+DP-sensitive records such as contracts, compensation history, documents, time-attendance evidence, preliminary analytics aggregates, preliminary recruitment records, preliminary onboarding records, preliminary absence/vacation records, preliminary payroll records and preliminary benefits records are modeled with data classification and audit from the beginning, but individual-level BI, predictive analytics, candidate-to-employee conversion, onboarding automation, absence/vacation legal balance calculations, payroll legal calculations, benefits provider integrations, payment execution and eSocial real submission are not implemented in phases 1-13.
