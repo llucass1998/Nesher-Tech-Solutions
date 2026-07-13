@@ -6,9 +6,9 @@ LogiFlow remains responsible for logistics operations: drivers, vehicles, delive
 
 ## LogiPeople
 
-LogiPeople is an independent HR and Departamento Pessoal system. In phases 1-10, the foundation, Organization, Core People, preliminary Time and Attendance, preliminary Payroll, preliminary Benefits and preliminary Absence and Vacation foundations are implemented.
+LogiPeople is an independent HR and Departamento Pessoal system. In phases 1-11, the foundation, Organization, Core People, preliminary Recruitment, preliminary Time and Attendance, preliminary Payroll, preliminary Benefits and preliminary Absence and Vacation foundations are implemented.
 
-### Implemented in phases 1-10
+### Implemented in phases 1-11
 
 - Identity integration boundary.
 - RBAC and ABAC primitives.
@@ -17,6 +17,7 @@ LogiPeople is an independent HR and Departamento Pessoal system. In phases 1-10,
 - Organization structure.
 - Core People records.
 - Employee history with effective dating.
+- Recruitment foundation with preliminary openings, candidates and applications.
 - Time and Attendance foundation with work schedules, time entries and preliminary attendance periods.
 - Payroll foundation with cycles, preliminary runs, payroll items and audited reopening requests.
 - Benefits foundation with plans and preliminary enrollments.
@@ -26,7 +27,7 @@ LogiPeople is an independent HR and Departamento Pessoal system. In phases 1-10,
 
 The following domains are documented as future modules and must not be represented as complete or legally validated in this phase:
 
-- Recruitment.
+- Recruitment job-board publishing, offer management, hiring automation and candidate-to-employee conversion.
 - Onboarding beyond foundation records.
 - Time and Attendance legal/payroll rule validation.
 - Absence and Vacation legal balance calculation, automatic approvals, payroll effects and eSocial events.
@@ -47,4 +48,4 @@ Core People defines people and employment records: person, employee, employment,
 
 ## Departamento Pessoal boundary
 
-DP-sensitive records such as contracts, compensation history, documents, time-attendance evidence, preliminary absence/vacation records, preliminary payroll records and preliminary benefits records are modeled with data classification and audit from the beginning, but absence/vacation legal balance calculations, payroll legal calculations, benefits provider integrations, payment execution and eSocial real submission are not implemented in phases 1-10.
+DP-sensitive records such as contracts, compensation history, documents, time-attendance evidence, preliminary recruitment records, preliminary absence/vacation records, preliminary payroll records and preliminary benefits records are modeled with data classification and audit from the beginning, but candidate-to-employee conversion, absence/vacation legal balance calculations, payroll legal calculations, benefits provider integrations, payment execution and eSocial real submission are not implemented in phases 1-11.

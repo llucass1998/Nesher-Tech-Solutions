@@ -156,6 +156,42 @@ export interface VacationPeriodSummary {
   employee?: { employeeNumber: string; person?: { fullName: string; preferredName?: string | null } | null } | null;
 }
 
+export interface JobOpeningSummary {
+  id: string;
+  title: string;
+  description: string;
+  status: string;
+  targetOpenings: number;
+  effectiveFrom: string;
+  effectiveTo?: string | null;
+  legalValidationPending: boolean;
+  company?: { name: string } | null;
+  position?: { title: string; status: string } | null;
+  _count?: { applications: number };
+}
+
+export interface CandidateSummary {
+  id: string;
+  fullName: string;
+  email: string;
+  phone?: string | null;
+  status: string;
+  consentRecordedAt?: string | null;
+  dataClassification: string;
+  _count?: { applications: number };
+}
+
+export interface JobApplicationSummary {
+  id: string;
+  status: string;
+  source: string;
+  appliedAt: string;
+  notes?: string | null;
+  legalValidationPending: boolean;
+  opening?: { title: string; company?: { name: string } | null; position?: { title: string } | null } | null;
+  candidate?: { fullName: string; email: string } | null;
+}
+
 export async function getPeopleToken(): Promise<string | null> {
   return null;
 }

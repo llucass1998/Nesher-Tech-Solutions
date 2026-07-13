@@ -162,6 +162,41 @@ enum VacationPeriodStatus {
   CANCELLED
 }
 
+enum RecruitmentOpeningStatus {
+  DRAFT
+  OPEN
+  PAUSED
+  CLOSED
+  CANCELLED
+}
+
+enum CandidateStatus {
+  NEW
+  ACTIVE
+  WITHDRAWN
+  HIRED
+  REJECTED
+}
+
+enum JobApplicationStatus {
+  APPLIED
+  SCREENING
+  INTERVIEW
+  OFFER
+  REJECTED
+  WITHDRAWN
+  HIRED
+}
+
+enum JobApplicationSource {
+  MANUAL
+  REFERRAL
+  INTERNAL
+  JOB_BOARD
+  AGENCY
+  OTHER
+}
+
 enum PeopleRole {
   SUPER_ADMIN
   PEOPLE_ADMIN
@@ -231,6 +266,7 @@ model Company {
   benefitPlans       BenefitPlan[]
   absenceRequests    AbsenceRequest[]
   vacationPeriods    VacationPeriod[]
+  jobOpenings        JobOpening[]
   roleAssignments    RoleAssignment[]
   accessScopes       AccessScope[]
   createdAt          DateTime             @default(now())
@@ -332,6 +368,7 @@ model Position {
   status              PositionStatus       @default(VACANT)
   assignments         PositionAssignment[]
   employees           Employee[]
+  jobOpenings         JobOpening[]
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
 }
@@ -893,6 +930,76 @@ model VacationPeriod {
 
   @@index([companyId, status])
   @@index([employeeId, periodStart, periodEnd])
+}
+
+model JobOpening {
+  id                     String                   @id @default(uuid())
+  companyId              String
+  company                Company                  @relation(fields: [companyId], references: [id])
+  positionId             String?
+  position               Position?                @relation(fields: [positionId], references: [id])
+  title                  String
+  description            String
+  status                 RecruitmentOpeningStatus @default(DRAFT)
+  targetOpenings         Int                      @default(1)
+  effectiveFrom          DateTime
+  effectiveTo            DateTime?
+  recordedAt             DateTime                 @default(now())
+  recordedBy             String
+  reason                 String
+  source                 String
+  legalValidationPending Boolean                  @default(true)
+  dataClassification     DataClassification       @default(INTERNAL)
+  applications           JobApplication[]
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+
+  @@index([companyId, status])
+  @@index([positionId, status])
+}
+
+model Candidate {
+  id                     String             @id @default(uuid())
+  fullName               String
+  email                  String             @unique
+  phone                  String?
+  status                 CandidateStatus    @default(NEW)
+  consentRecordedAt      DateTime?
+  recordedAt             DateTime           @default(now())
+  recordedBy             String
+  reason                 String
+  source                 String
+  dataClassification     DataClassification @default(CONFIDENTIAL)
+  applications           JobApplication[]
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  @@index([status, createdAt])
+}
+
+model JobApplication {
+  id                     String               @id @default(uuid())
+  openingId              String
+  opening                JobOpening           @relation(fields: [openingId], references: [id])
+  candidateId            String
+  candidate              Candidate            @relation(fields: [candidateId], references: [id])
+  status                 JobApplicationStatus @default(APPLIED)
+  source                 JobApplicationSource @default(MANUAL)
+  appliedAt              DateTime             @default(now())
+  notes                  String?
+  reviewedAt             DateTime?
+  reviewedBy             String?
+  recordedAt             DateTime             @default(now())
+  recordedBy             String
+  reason                 String
+  legalValidationPending Boolean              @default(true)
+  dataClassification     DataClassification   @default(CONFIDENTIAL)
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+
+  @@unique([openingId, candidateId])
+  @@index([openingId, status])
+  @@index([candidateId, status])
 }
 
 model RoleAssignment {

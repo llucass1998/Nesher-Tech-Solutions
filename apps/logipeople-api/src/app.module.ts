@@ -10,6 +10,7 @@ import { HealthModule } from './modules/health/health.module';
 import { OrganizationModule } from './modules/organization/organization.module';
 import { PayrollModule } from './modules/payroll/payroll.module';
 import { PeopleModule } from './modules/people/people.module';
+import { RecruitmentModule } from './modules/recruitment/recruitment.module';
 import { TimeAttendanceModule } from './modules/time-attendance/time-attendance.module';
 
 @Module({
@@ -24,6 +25,7 @@ import { TimeAttendanceModule } from './modules/time-attendance/time-attendance.
     HealthModule,
     OrganizationModule,
     PeopleModule,
+    RecruitmentModule,
     TimeAttendanceModule,
     PayrollModule,
   ],

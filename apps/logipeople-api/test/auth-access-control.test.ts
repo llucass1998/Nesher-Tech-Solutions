@@ -131,6 +131,17 @@ describe('LogiPeople authentication and access control', () => {
     expect(guard.canActivate(context)).toBe(true);
   });
 
+  it('allows recruiters to access recruitment endpoints', () => {
+    const recruiterPrincipal: AuthenticatedPrincipal = {
+      ...principal,
+      roles: ['RECRUITER'],
+    };
+    const guard = new RbacGuard(new TestReflector(['RECRUITER']) as never);
+    const context = createContext({ principal: recruiterPrincipal });
+
+    expect(guard.canActivate(context)).toBe(true);
+  });
+
   it('rejects requests when ABAC company scope differs from the body', () => {
     const guard = new AbacGuard(new TestReflector(['COMPANY']) as never);
     const context = createContext({ principal, body: { companyId: 'company-2' }, params: {} });
