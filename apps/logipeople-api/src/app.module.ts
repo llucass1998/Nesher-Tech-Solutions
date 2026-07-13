@@ -7,6 +7,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { BenefitsModule } from './modules/benefits/benefits.module';
 import { AbsenceVacationModule } from './modules/absence-vacation/absence-vacation.module';
 import { HealthModule } from './modules/health/health.module';
+import { OnboardingModule } from './modules/onboarding/onboarding.module';
 import { OrganizationModule } from './modules/organization/organization.module';
 import { PayrollModule } from './modules/payroll/payroll.module';
 import { PeopleModule } from './modules/people/people.module';
@@ -23,6 +24,7 @@ import { TimeAttendanceModule } from './modules/time-attendance/time-attendance.
     BenefitsModule,
     AbsenceVacationModule,
     HealthModule,
+    OnboardingModule,
     OrganizationModule,
     PeopleModule,
     RecruitmentModule,

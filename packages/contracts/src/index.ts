@@ -224,6 +224,25 @@ export const createJobApplicationSchema = z.object({
   reason: z.string().min(3),
 });
 
+export const createOnboardingPlanSchema = z.object({
+  companyId: z.string().uuid(),
+  employeeId: z.string().uuid(),
+  name: z.string().min(2),
+  startDate: z.string().date(),
+  targetEndDate: z.string().date().optional(),
+  reason: z.string().min(3),
+});
+
+export const createOnboardingTaskSchema = z.object({
+  planId: z.string().uuid(),
+  employeeId: z.string().uuid(),
+  title: z.string().min(2),
+  description: z.string().optional(),
+  owner: z.enum(['HR', 'MANAGER', 'EMPLOYEE', 'IT', 'FACILITIES', 'OTHER']).default('HR'),
+  dueDate: z.string().date().optional(),
+  reason: z.string().min(3),
+});
+
 export type CreateCompanyInput = z.infer<typeof createCompanySchema>;
 export type CreateDepartmentInput = z.infer<typeof createDepartmentSchema>;
 export type CreatePositionInput = z.infer<typeof createPositionSchema>;
@@ -243,3 +262,5 @@ export type CreateVacationPeriodInput = z.infer<typeof createVacationPeriodSchem
 export type CreateJobOpeningInput = z.infer<typeof createJobOpeningSchema>;
 export type CreateCandidateInput = z.infer<typeof createCandidateSchema>;
 export type CreateJobApplicationInput = z.infer<typeof createJobApplicationSchema>;
+export type CreateOnboardingPlanInput = z.infer<typeof createOnboardingPlanSchema>;
+export type CreateOnboardingTaskInput = z.infer<typeof createOnboardingTaskSchema>;

@@ -3,6 +3,7 @@ import Link from 'next/link';
 const navigation = [
   { href: '/people', label: 'Pessoas' },
   { href: '/recruitment', label: 'Recrutamento' },
+  { href: '/onboarding', label: 'Onboarding' },
   { href: '/organization', label: 'Organização' },
   { href: '/time-attendance', label: 'Ponto' },
   { href: '/absence-vacation', label: 'Ausências/Férias' },
@@ -34,8 +35,8 @@ export default function AppLayout({ children }: Readonly<{ children: React.React
         <header className="sticky top-0 z-10 border-b border-[var(--color-border-secondary)] bg-[var(--color-background-primary)]/95 px-6 py-4 backdrop-blur">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-xs uppercase tracking-[0.18em] text-[var(--color-brand-primary)]">Fase 11</p>
-              <p className="text-sm text-[var(--color-text-secondary)]">Fundação, Core People, recrutamento, ponto, ausências, férias, folha e benefícios preliminares</p>
+              <p className="text-xs uppercase tracking-[0.18em] text-[var(--color-brand-primary)]">Fase 12</p>
+              <p className="text-sm text-[var(--color-text-secondary)]">Fundação, Core People, recrutamento, onboarding, ponto, ausências, férias, folha e benefícios preliminares</p>
             </div>
             <Link href="/settings" className="rounded-lg border border-[var(--color-border-secondary)] px-3 py-2 text-sm font-semibold hover:bg-[var(--color-background-tertiary)]">
               Permissões

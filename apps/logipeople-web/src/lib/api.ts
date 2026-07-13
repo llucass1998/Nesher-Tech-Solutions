@@ -192,6 +192,32 @@ export interface JobApplicationSummary {
   candidate?: { fullName: string; email: string } | null;
 }
 
+export interface OnboardingPlanSummary {
+  id: string;
+  name: string;
+  status: string;
+  startDate: string;
+  targetEndDate?: string | null;
+  completedAt?: string | null;
+  legalValidationPending: boolean;
+  company?: { name: string } | null;
+  employee?: { employeeNumber: string; person?: { fullName: string; preferredName?: string | null } | null } | null;
+  _count?: { tasks: number };
+}
+
+export interface OnboardingTaskSummary {
+  id: string;
+  title: string;
+  description?: string | null;
+  owner: string;
+  status: string;
+  dueDate?: string | null;
+  completedAt?: string | null;
+  legalValidationPending: boolean;
+  plan?: { name: string; company?: { name: string } | null } | null;
+  employee?: { employeeNumber: string; person?: { fullName: string; preferredName?: string | null } | null } | null;
+}
+
 export async function getPeopleToken(): Promise<string | null> {
   return null;
 }

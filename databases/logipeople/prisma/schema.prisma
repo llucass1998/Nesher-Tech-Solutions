@@ -197,6 +197,30 @@ enum JobApplicationSource {
   OTHER
 }
 
+enum OnboardingPlanStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum OnboardingTaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  BLOCKED
+  CANCELLED
+}
+
+enum OnboardingTaskOwner {
+  HR
+  MANAGER
+  EMPLOYEE
+  IT
+  FACILITIES
+  OTHER
+}
+
 enum PeopleRole {
   SUPER_ADMIN
   PEOPLE_ADMIN
@@ -267,6 +291,7 @@ model Company {
   absenceRequests    AbsenceRequest[]
   vacationPeriods    VacationPeriod[]
   jobOpenings        JobOpening[]
+  onboardingPlans    OnboardingPlan[]
   roleAssignments    RoleAssignment[]
   accessScopes       AccessScope[]
   createdAt          DateTime             @default(now())
@@ -443,6 +468,8 @@ model Employee {
   benefitEnrollments    BenefitEnrollment[]
   absenceRequests       AbsenceRequest[]
   vacationPeriods       VacationPeriod[]
+  onboardingPlans       OnboardingPlan[]
+  onboardingTasks       OnboardingTask[]
   roleAssignments       RoleAssignment[]
   accessScopes          AccessScope[]
   fieldPermissions      FieldPermission[]
@@ -1000,6 +1027,58 @@ model JobApplication {
   @@unique([openingId, candidateId])
   @@index([openingId, status])
   @@index([candidateId, status])
+}
+
+model OnboardingPlan {
+  id                     String               @id @default(uuid())
+  companyId              String
+  company                Company              @relation(fields: [companyId], references: [id])
+  employeeId             String
+  employee               Employee             @relation(fields: [employeeId], references: [id])
+  name                   String
+  status                 OnboardingPlanStatus @default(DRAFT)
+  startDate              DateTime
+  targetEndDate          DateTime?
+  completedAt            DateTime?
+  recordedAt             DateTime             @default(now())
+  recordedBy             String
+  reason                 String
+  source                 String
+  legalValidationPending Boolean              @default(true)
+  dataClassification     DataClassification   @default(CONFIDENTIAL)
+  tasks                  OnboardingTask[]
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+
+  @@index([companyId, status])
+  @@index([employeeId, startDate])
+}
+
+model OnboardingTask {
+  id                     String                @id @default(uuid())
+  planId                 String
+  plan                   OnboardingPlan        @relation(fields: [planId], references: [id])
+  employeeId             String
+  employee               Employee              @relation(fields: [employeeId], references: [id])
+  title                  String
+  description            String?
+  owner                  OnboardingTaskOwner   @default(HR)
+  status                 OnboardingTaskStatus  @default(PENDING)
+  dueDate                DateTime?
+  completedAt            DateTime?
+  completedBy            String?
+  recordedAt             DateTime              @default(now())
+  recordedBy             String
+  reason                 String
+  source                 String
+  legalValidationPending Boolean               @default(true)
+  dataClassification     DataClassification    @default(CONFIDENTIAL)
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+
+  @@index([planId, status])
+  @@index([employeeId, status])
+  @@index([dueDate])
 }
 
 model RoleAssignment {
