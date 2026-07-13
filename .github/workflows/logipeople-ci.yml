@@ -1,0 +1,64 @@
+name: LogiPeople CI
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/logipeople-ci.yml"
+      - "apps/logipeople-api/**"
+      - "apps/logipeople-web/**"
+      - "apps/logipeople-worker/**"
+      - "databases/logipeople/**"
+      - "packages/auth/**"
+      - "packages/config/**"
+      - "packages/contracts/**"
+      - "packages/event-contracts/**"
+      - "packages/logger/**"
+      - "packages/eslint-config/**"
+      - "packages/typescript-config/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+  push:
+    branches: [master, main]
+    paths:
+      - ".github/workflows/logipeople-ci.yml"
+      - "apps/logipeople-api/**"
+      - "apps/logipeople-web/**"
+      - "apps/logipeople-worker/**"
+      - "databases/logipeople/**"
+      - "packages/auth/**"
+      - "packages/config/**"
+      - "packages/contracts/**"
+      - "packages/event-contracts/**"
+      - "packages/logger/**"
+      - "packages/eslint-config/**"
+      - "packages/typescript-config/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+
+concurrency:
+  group: logipeople-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: workspace checks
+    runs-on: ubuntu-latest
+    env:
+      LOGIPEOPLE_DATABASE_URL: postgresql://logipeople:logipeople@localhost:5432/logipeople?schema=public
+      LOGIPEOPLE_JWT_SECRET: ci-logipeople-secret
+      LOGIPEOPLE_WEB_ORIGIN: http://localhost:3400
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run logipeople:prisma:generate
+      - run: npm run lint:workspaces
+      - run: npm run typecheck
+      - run: npm run test:workspaces
+      - run: npm run build:workspaces
+      - run: npm audit --audit-level=high

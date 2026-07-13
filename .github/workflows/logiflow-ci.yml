@@ -1,0 +1,113 @@
+name: LogiFlow CI
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/logiflow-ci.yml"
+      - ".dockerignore"
+      - "Dockerfile.api"
+      - "Dockerfile.web"
+      - "docker-compose.yml"
+      - "app/**"
+      - "components/**"
+      - "lib/**"
+      - "prisma/**"
+      - "public/**"
+      - "src/**"
+      - "packages/ui/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - "next.config.ts"
+  push:
+    branches: [master, main]
+    paths:
+      - ".github/workflows/logiflow-ci.yml"
+      - ".dockerignore"
+      - "Dockerfile.api"
+      - "Dockerfile.web"
+      - "docker-compose.yml"
+      - "app/**"
+      - "components/**"
+      - "lib/**"
+      - "prisma/**"
+      - "public/**"
+      - "src/**"
+      - "packages/ui/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - "next.config.ts"
+
+concurrency:
+  group: logiflow-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: lint, typecheck, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npx tsc --noEmit
+      - run: npm test
+      - run: npm run build
+      - run: npm audit --audit-level=high
+
+  docker:
+    name: docker build and smoke
+    runs-on: ubuntu-latest
+    needs: verify
+    env:
+      LOGIFLOW_DB_NAME: logiflow
+      LOGIFLOW_DB_USER: logiflow
+      LOGIFLOW_DB_PASSWORD: ci-logiflow-password
+      LOGIFLOW_DB_PORT: 55432
+      LOGIFLOW_API_PORT: 3335
+      LOGIFLOW_WEB_PORT: 3005
+      WEB_ORIGIN: http://localhost:3005
+      NEXT_PUBLIC_API_URL: http://localhost:3335
+      JWT_SECRET: ci-jwt-secret
+      JWT_ISSUER: logiflow-identity
+      JWT_AUDIENCE: logiflow,logidesk
+      PAYMENTS_API_KEY: ci-payments-key
+      ACCESS_TOKEN_TTL_SECONDS: 900
+      REFRESH_TOKEN_TTL_DAYS: 7
+      LOG_LEVEL: info
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose config
+      - run: docker compose build logiflow-migrate logiflow-api logiflow-web
+      - run: docker compose up -d
+      - name: Wait for health checks
+        run: |
+          for i in $(seq 1 30); do
+            api_container="$(docker compose ps -q logiflow-api)"
+            web_container="$(docker compose ps -q logiflow-web)"
+            db_container="$(docker compose ps -q logiflow-db)"
+            api_status="$(docker inspect --format='{{.State.Health.Status}}' "$api_container" 2>/dev/null || true)"
+            web_status="$(docker inspect --format='{{.State.Health.Status}}' "$web_container" 2>/dev/null || true)"
+            db_status="$(docker inspect --format='{{.State.Health.Status}}' "$db_container" 2>/dev/null || true)"
+            if [ "$api_status" = "healthy" ] && [ "$web_status" = "healthy" ] && [ "$db_status" = "healthy" ]; then
+              exit 0
+            fi
+            sleep 5
+          done
+          docker compose ps
+          docker compose logs --tail=200
+          exit 1
+      - run: curl -fsS http://localhost:3335/api/v1/health/live
+      - run: curl -fsS http://localhost:3335/api/v1/health/ready
+      - run: curl -fsS http://localhost:3005
+      - name: Logs
+        if: always()
+        run: docker compose logs --tail=200
+      - name: Down
+        if: always()
+        run: docker compose down -v

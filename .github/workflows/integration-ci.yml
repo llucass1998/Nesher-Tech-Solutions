@@ -1,0 +1,79 @@
+name: Platform Integration CI
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/**"
+      - ".dockerignore"
+      - "Dockerfile.*"
+      - "docker-compose.yml"
+      - "apps/**"
+      - "databases/**"
+      - "docs/**"
+      - "packages/**"
+      - "prisma/**"
+      - "src/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+  push:
+    branches: [master, main]
+    paths:
+      - ".github/workflows/**"
+      - ".dockerignore"
+      - "Dockerfile.*"
+      - "docker-compose.yml"
+      - "apps/**"
+      - "databases/**"
+      - "docs/**"
+      - "packages/**"
+      - "prisma/**"
+      - "src/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+
+concurrency:
+  group: platform-integration-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  full-verification:
+    name: full platform verification
+    runs-on: ubuntu-latest
+    env:
+      LOGIFLOW_DB_NAME: logiflow
+      LOGIFLOW_DB_USER: logiflow
+      LOGIFLOW_DB_PASSWORD: ci-logiflow-password
+      LOGIFLOW_DB_PORT: 55432
+      LOGIFLOW_API_PORT: 3335
+      LOGIFLOW_WEB_PORT: 3005
+      DATABASE_URL: postgresql://logiflow:ci-logiflow-password@localhost:55432/logiflow?schema=public
+      WEB_ORIGIN: http://localhost:3005
+      NEXT_PUBLIC_API_URL: http://localhost:3335
+      JWT_SECRET: ci-jwt-secret
+      JWT_ISSUER: logiflow-identity
+      JWT_AUDIENCE: logiflow,logidesk
+      PAYMENTS_API_KEY: ci-payments-key
+      LOGIPEOPLE_DATABASE_URL: postgresql://logipeople:logipeople@localhost:5432/logipeople?schema=public
+      LOGIPEOPLE_JWT_SECRET: ci-logipeople-secret
+      LOGIPEOPLE_WEB_ORIGIN: http://localhost:3400
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run prisma:generate
+      - run: npm run logipeople:prisma:generate
+      - run: npm run lint
+      - run: npm run lint:workspaces
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run test:workspaces
+      - run: npm run build
+      - run: npm run build:workspaces
+      - run: npm audit --audit-level=high
+      - run: docker compose config
+      - run: docker compose build logiflow-migrate logiflow-api logiflow-web

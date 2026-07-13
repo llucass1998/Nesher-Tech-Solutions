@@ -41,4 +41,5 @@ Full rate limiting, OpenTelemetry, storage scanning, encrypted backups and compl
 - Host ports must be configurable through environment variables to avoid local and CI collisions.
 - A container in `running` state is not enough: health checks and logs must be verified.
 - API startup in Docker must be gated by successful `prisma migrate deploy`.
-- Dependency audit failures must be treated as release blockers unless explicitly accepted with documented risk.
+- High-severity dependency audit failures must block CI.
+- Moderate dependency audit findings may be accepted only with documented risk and a planned dependency-upgrade task.

@@ -23,3 +23,11 @@ Decisao: endpoints `/api/v1/driver/*` resolvem motorista por `JWT sub -> User ->
 Motivo: o frontend nunca deve enviar `driverId` como fonte de autorizacao.
 
 Consequencia: entregas alheias retornam `403`, motorista sem perfil retorna `403`.
+
+## 2026-07-13 - CI/CD com npm e workflows por dominio
+
+Decisao: criar workflows separados para LogiFlow, LogiPeople e integracao/plataforma usando Node.js 24 e `npm ci`.
+
+Motivo: o checkout atual possui `package-lock.json` e os comandos validados localmente usam npm. Tambem nao ha app LogiDesk neste checkout, entao criar um workflow LogiDesk dedicado seria artificial.
+
+Consequencia: alteracoes em LogiFlow, LogiPeople e pacotes compartilhados disparam pipelines adequados por path. O audit bloqueia vulnerabilidades altas; vulnerabilidades moderadas restantes ficam documentadas para uma fase dedicada de upgrade de dependencias.

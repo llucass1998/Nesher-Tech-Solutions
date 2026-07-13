@@ -17,6 +17,7 @@ Data: 2026-07-12
 | Fase 9 - Observabilidade | Concluida no escopo inicial | Logger estruturado com redaction, request/correlation id, health checks e metricas HTTP em texto Prometheus. |
 | Fase 10 - Testes completos | Concluida no escopo disponivel | Suite raiz ampliada para 39 testes cobrindo auth, ownership, operacoes, reprocessamento, health e metricas. |
 | Fase 11 - Docker e seguranca | Concluida com risco de dependencias pendente | Dockerfiles, Compose, migration one-shot, health checks, runtime nao privilegiado, Helmet e validacao real de containers. `npm audit` ainda aponta vulnerabilidades. |
+| Fase 12 - CI/CD | Concluida no escopo do checkout atual | Workflows GitHub Actions criados para LogiFlow, LogiPeople e integracao/plataforma com lint, typecheck, testes, build, audit alto, Prisma e Docker. |
 
 ## Matriz de regressao
 
@@ -415,11 +416,71 @@ Correcao aplicada:
 
 ### Risco de dependencias
 
-`npm audit --audit-level=high` encontrou vulnerabilidades em:
+Antes da Fase 12, `npm audit --audit-level=high` encontrou vulnerabilidades em:
 
 - `form-data` com severidade alta.
 - `ws` com severidade alta via `engine.io-client`.
 - `postcss` via `next`.
 - `@hono/node-server` via cadeia de `prisma`/`@prisma/dev`.
 
-Nao foi aplicado `npm audit fix --force` nesta fase porque o proprio npm indicou alteracoes potencialmente quebradoras, incluindo downgrade/alteracao grande de `next` e `prisma`. A correcao deve ser tratada como tarefa dedicada de upgrade de dependencias, com testes e build completos.
+Na Fase 12 foi executado `npm audit fix --package-lock-only`, atualizando:
+
+- `form-data` para `4.0.6`;
+- `engine.io-client` para `6.6.6`;
+- `ws` para `8.21.0`.
+
+Resultado atual:
+
+- `npm audit --audit-level=high` passa.
+- Restam 5 vulnerabilidades moderadas:
+  - `postcss` via `next`;
+  - `@hono/node-server` via cadeia de `prisma`/`@prisma/dev`.
+
+Nao foi aplicado `npm audit fix --force` porque o proprio npm indicou alteracoes potencialmente quebradoras, incluindo downgrade/alteracao grande de `next` e `prisma`. A correcao das moderadas deve ser tratada como tarefa dedicada de upgrade de dependencias, com testes e build completos.
+
+## Fase 12 - CI/CD
+
+Implementado:
+
+- `.github/workflows/logiflow-ci.yml`
+  - roda em alteracoes de LogiFlow raiz, Prisma raiz, Docker e `packages/ui`;
+  - executa `npm ci`, lint, typecheck raiz, testes, build e `npm audit --audit-level=high`;
+  - executa `docker compose config`;
+  - constrói `logiflow-migrate`, `logiflow-api` e `logiflow-web`;
+  - sobe a stack Docker;
+  - aguarda health checks reais de DB, API e web;
+  - consulta `/api/v1/health/live`, `/api/v1/health/ready` e a web;
+  - coleta logs e derruba a stack com volume ao final.
+- `.github/workflows/logipeople-ci.yml`
+  - roda em alteracoes de `apps/logipeople-*`, `databases/logipeople` e pacotes compartilhados;
+  - executa Prisma generate do LogiPeople;
+  - executa lint, typecheck, testes, build de workspaces e audit alto.
+- `.github/workflows/integration-ci.yml`
+  - roda em alteracoes compartilhadas, docs, Docker, Prisma, apps e packages;
+  - executa Prisma generate de LogiFlow e LogiPeople;
+  - executa lint, typecheck, testes, build raiz e workspaces;
+  - executa audit alto;
+  - valida Compose e build Docker.
+
+Decisoes:
+
+- CI usa `npm ci`, porque o projeto possui `package-lock.json` e os comandos locais validados usam npm.
+- LogiDesk nao ganhou workflow dedicado porque nao existe app LogiDesk neste checkout.
+- O audit bloqueia vulnerabilidades altas. Vulnerabilidades moderadas atuais seguem documentadas para uma fase de upgrade de dependencias.
+
+### Validacoes da Fase 12
+
+| Comando | Resultado | Observacao |
+| --- | --- | --- |
+| Parse YAML com PyYAML | PASS | `integration-ci.yml`, `logiflow-ci.yml` e `logipeople-ci.yml` validos. |
+| `npm audit --audit-level=high` | PASS | Restam 5 moderadas, nenhuma alta. |
+| `npm run prisma:generate` | PASS | Prisma Client raiz gerado. |
+| `npm run logipeople:prisma:generate` | PASS | Prisma Client LogiPeople gerado. |
+| `npm run lint` | PASS | Sem erros. |
+| `npm run typecheck` | PASS | Raiz e workspaces passaram. |
+| `npm test` | PASS | 6 arquivos, 39 testes passaram. |
+| `npm run build` | PASS | Next raiz compilou; aviso Node `DEP0169` permanece. |
+| `npm run lint:workspaces` | PASS | Sem erros; avisos conhecidos do Next sobre `pages` em pacotes nao-Next. |
+| `npm run test:workspaces` | PASS | LogiPeople API: 9 arquivos, 44 testes; demais workspaces sem testes e `passWithNoTests`. |
+| `npm run build:workspaces` | PASS | Workspaces passaram; aviso de root do Next permanece. |
+| `docker compose config` com env CI | PASS | Compose renderiza com segredos ficticios de CI. |

@@ -14,6 +14,7 @@ Implementar apenas:
 8. Fase 9 - Observabilidade.
 9. Fase 10 - Testes completos no escopo disponivel.
 10. Fase 11 - Docker e seguranca basica do runtime.
+11. Fase 12 - CI/CD.
 
 ## Ajuste de escopo por estado real
 
@@ -149,12 +150,25 @@ LogiDesk, workers, Redis, BullMQ, Outbox, DLQ, Socket.IO autenticado e SSO real 
 - Validar `docker compose config`, build, subida da stack, health checks e logs.
 - Registrar vulnerabilidades de dependencias encontradas por `npm audit`.
 
+### Fase 12
+
+- Criar workflows GitHub Actions separados para:
+  - LogiFlow;
+  - LogiPeople;
+  - integracao/plataforma.
+- Usar Node.js 24 e `npm ci`, alinhado ao lockfile atual.
+- Executar lint, typecheck, testes, build e audit de alta severidade.
+- Validar Prisma generate para LogiFlow e LogiPeople.
+- Validar Docker Compose e build Docker do LogiFlow.
+- Executar smoke test Docker do LogiFlow com health checks reais.
+- Usar filtros por path para evitar CI desnecessario.
+- Documentar que LogiDesk segue bloqueado por ausencia de app neste checkout.
+
 ## Fora de escopo nesta execucao
 
 - Reconstrucao completa do LogiDesk.
 - SSO real entre dois produtos.
 - Redis/BullMQ/Outbox/DLQ.
-- CI/CD completo.
 - Playwright E2E completo.
 
 Esses itens dependem de estrutura que ainda nao existe no checkout atual.
