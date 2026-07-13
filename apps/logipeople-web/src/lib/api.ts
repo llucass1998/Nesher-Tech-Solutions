@@ -129,6 +129,33 @@ export interface BenefitEnrollmentSummary {
   employee?: { employeeNumber: string; person?: { fullName: string; preferredName?: string | null } | null } | null;
 }
 
+export interface AbsenceRequestSummary {
+  id: string;
+  type: string;
+  status: string;
+  startDate: string;
+  endDate: string;
+  totalDays: number;
+  notes?: string | null;
+  legalValidationPending: boolean;
+  company?: { name: string } | null;
+  employee?: { employeeNumber: string; person?: { fullName: string; preferredName?: string | null } | null } | null;
+}
+
+export interface VacationPeriodSummary {
+  id: string;
+  accrualStart: string;
+  accrualEnd: string;
+  periodStart: string;
+  periodEnd: string;
+  days: number;
+  status: string;
+  notes?: string | null;
+  legalValidationPending: boolean;
+  company?: { name: string } | null;
+  employee?: { employeeNumber: string; person?: { fullName: string; preferredName?: string | null } | null } | null;
+}
+
 export async function getPeopleToken(): Promise<string | null> {
   return null;
 }

@@ -137,6 +137,31 @@ enum BenefitEnrollmentStatus {
   CANCELLED
 }
 
+enum AbsenceRequestType {
+  SICK_LEAVE
+  PERSONAL_LEAVE
+  UNPAID_LEAVE
+  MATERNITY
+  PATERNITY
+  BEREAVEMENT
+  OTHER
+}
+
+enum AbsenceRequestStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum VacationPeriodStatus {
+  PLANNED
+  REQUESTED
+  APPROVED
+  TAKEN
+  CANCELLED
+}
+
 enum PeopleRole {
   SUPER_ADMIN
   PEOPLE_ADMIN
@@ -204,6 +229,8 @@ model Company {
   payrollCycles      PayrollCycle[]
   payrollRuns        PayrollRun[]
   benefitPlans       BenefitPlan[]
+  absenceRequests    AbsenceRequest[]
+  vacationPeriods    VacationPeriod[]
   roleAssignments    RoleAssignment[]
   accessScopes       AccessScope[]
   createdAt          DateTime             @default(now())
@@ -377,6 +404,8 @@ model Employee {
   payrollRuns           PayrollRun[]
   payrollItems          PayrollItem[]
   benefitEnrollments    BenefitEnrollment[]
+  absenceRequests       AbsenceRequest[]
+  vacationPeriods       VacationPeriod[]
   roleAssignments       RoleAssignment[]
   accessScopes          AccessScope[]
   fieldPermissions      FieldPermission[]
@@ -809,6 +838,61 @@ model BenefitEnrollment {
   @@index([employeeId, status])
   @@index([planId, status])
   @@index([effectiveFrom, effectiveTo])
+}
+
+model AbsenceRequest {
+  id                     String               @id @default(uuid())
+  companyId              String
+  company                Company              @relation(fields: [companyId], references: [id])
+  employeeId             String
+  employee               Employee             @relation(fields: [employeeId], references: [id])
+  type                   AbsenceRequestType
+  status                 AbsenceRequestStatus @default(REQUESTED)
+  startDate              DateTime
+  endDate                DateTime
+  totalDays              Int
+  notes                  String?
+  reviewedAt             DateTime?
+  reviewedBy             String?
+  recordedAt             DateTime             @default(now())
+  recordedBy             String
+  reason                 String
+  source                 String
+  legalValidationPending Boolean              @default(true)
+  dataClassification     DataClassification   @default(CONFIDENTIAL)
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+
+  @@index([companyId, status])
+  @@index([employeeId, startDate, endDate])
+}
+
+model VacationPeriod {
+  id                     String               @id @default(uuid())
+  companyId              String
+  company                Company              @relation(fields: [companyId], references: [id])
+  employeeId             String
+  employee               Employee             @relation(fields: [employeeId], references: [id])
+  accrualStart           DateTime
+  accrualEnd             DateTime
+  periodStart            DateTime
+  periodEnd              DateTime
+  days                   Int
+  status                 VacationPeriodStatus @default(PLANNED)
+  notes                  String?
+  approvedAt             DateTime?
+  approvedBy             String?
+  recordedAt             DateTime             @default(now())
+  recordedBy             String
+  reason                 String
+  source                 String
+  legalValidationPending Boolean              @default(true)
+  dataClassification     DataClassification   @default(CONFIDENTIAL)
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+
+  @@index([companyId, status])
+  @@index([employeeId, periodStart, periodEnd])
 }
 
 model RoleAssignment {

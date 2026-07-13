@@ -173,6 +173,29 @@ export const createBenefitEnrollmentSchema = z.object({
   reason: z.string().min(3),
 });
 
+export const createAbsenceRequestSchema = z.object({
+  companyId: z.string().uuid(),
+  employeeId: z.string().uuid(),
+  type: z.enum(['SICK_LEAVE', 'PERSONAL_LEAVE', 'UNPAID_LEAVE', 'MATERNITY', 'PATERNITY', 'BEREAVEMENT', 'OTHER']),
+  startDate: z.string().date(),
+  endDate: z.string().date(),
+  totalDays: z.number().int().min(1),
+  notes: z.string().optional(),
+  reason: z.string().min(3),
+});
+
+export const createVacationPeriodSchema = z.object({
+  companyId: z.string().uuid(),
+  employeeId: z.string().uuid(),
+  accrualStart: z.string().date(),
+  accrualEnd: z.string().date(),
+  periodStart: z.string().date(),
+  periodEnd: z.string().date(),
+  days: z.number().int().min(1),
+  notes: z.string().optional(),
+  reason: z.string().min(3),
+});
+
 export type CreateCompanyInput = z.infer<typeof createCompanySchema>;
 export type CreateDepartmentInput = z.infer<typeof createDepartmentSchema>;
 export type CreatePositionInput = z.infer<typeof createPositionSchema>;
@@ -187,3 +210,5 @@ export type CreatePayrollItemInput = z.infer<typeof createPayrollItemSchema>;
 export type RequestPayrollReopeningInput = z.infer<typeof requestPayrollReopeningSchema>;
 export type CreateBenefitPlanInput = z.infer<typeof createBenefitPlanSchema>;
 export type CreateBenefitEnrollmentInput = z.infer<typeof createBenefitEnrollmentSchema>;
+export type CreateAbsenceRequestInput = z.infer<typeof createAbsenceRequestSchema>;
+export type CreateVacationPeriodInput = z.infer<typeof createVacationPeriodSchema>;
