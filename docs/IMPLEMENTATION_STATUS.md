@@ -19,7 +19,7 @@ Data: 2026-07-13
 | Fase 11 - Docker e seguranca | Concluida | Dockerfiles, Compose, migration one-shot, health checks, runtime nao privilegiado, Helmet e validacao real de containers. |
 | Fase 12 - CI/CD | Concluida no escopo do checkout atual | Workflows GitHub Actions criados para LogiFlow, LogiPeople e integracao/plataforma com lint, typecheck, testes, build, audit completo, Prisma e Docker. |
 | Fase 13 - Documentacao | Concluida | README e guias docs atualizados para refletir LogiFlow, LogiPeople, Docker, CI/CD, seguranca, integracao e pendencias reais. |
-| Fase 14 - Holerites demonstrativos LogiPeople | Em validacao | Fundacao preliminar restrita de holerites demonstrativos, sem publicacao ao colaborador, PDF oficial, assinatura, pagamento bancario ou eSocial. |
+| Fase 14 - Holerites demonstrativos LogiPeople | Concluida no escopo do checkout atual | Fundacao preliminar restrita de holerites demonstrativos validada com Prisma, testes, build, audit e documentacao; sem publicacao ao colaborador, PDF oficial, assinatura, pagamento bancario ou eSocial. |
 
 ## Matriz de regressao
 
@@ -559,9 +559,26 @@ Validacoes executadas em 2026-07-13:
 | `npm run test:workspaces` | PASS | LogiPeople API: 10 arquivos, 50 testes; demais workspaces sem testes e `passWithNoTests`. |
 | `npm run lint` | PASS | Sem erros. |
 | `npm run lint:workspaces` | PASS | Sem erros; avisos conhecidos do Next sobre `pages` em pacotes nao-Next. |
-| `npm run build` | PASS | Next raiz compilou. |
-| `npm run build:workspaces` | PASS | LogiPeople API/web/worker e pacotes passaram. |
+| `npm audit` | PASS | 0 vulnerabilidades. |
+| `npm run build` | PASS | Next raiz compilou; aviso Node `DEP0169` conhecido. |
+| `npm run build -w logipeople-web` | PASS | Next gerou 14 paginas, incluindo `/payslips`. |
+| `npm run build:workspaces` | PASS | LogiPeople API/web/worker e pacotes passaram; `/payslips` incluida no build do web. |
 | `git diff --check` | PASS | Sem erros de whitespace; apenas avisos CRLF do Git no Windows. |
+
+Validacoes Docker finais executadas em 2026-07-13:
+
+| Comando/verificacao | Resultado | Evidencia |
+| --- | --- | --- |
+| `docker compose config` com env CI | PASS | Compose renderizado com segredos ficticios. |
+| `docker compose build logiflow-migrate logiflow-api logiflow-web` | PASS | Imagens Docker construidas. |
+| `docker compose up -d` com portas `3335`, `3005`, `5435` | PASS | `logiflow-db`, `logiflow-api` e `logiflow-web` saudaveis; `logiflow-migrate` saiu com codigo 0. |
+| `GET http://localhost:3335/api/v1/health/live` | PASS | HTTP 200. |
+| `GET http://localhost:3335/api/v1/health/ready` | PASS | HTTP 200. |
+| `GET http://localhost:3005` | PASS | HTTP 200. |
+| `docker compose logs --tail=120 logiflow-api` | PASS | `server_started` e requests com `requestId`/`correlationId`; sem erro. |
+| `docker compose logs --tail=120 logiflow-migrate` | PASS | `All migrations have been successfully applied.` |
+| `docker compose logs --tail=120 logiflow-web` | PASS | Next `Ready`; sem erro. |
+| `docker compose down -v` | PASS | Stack temporaria removida. |
 
 Riscos residuais:
 
