@@ -16,7 +16,7 @@ Data: 2026-07-12
 | Fase 8 - UI/UX e design system | Concluida no escopo inicial | `packages/ui` criado e aplicado na tela de entregas com badges, empty/error states, skeleton e paginacao compartilhados. |
 | Fase 9 - Observabilidade | Concluida no escopo inicial | Logger estruturado com redaction, request/correlation id, health checks e metricas HTTP em texto Prometheus. |
 | Fase 10 - Testes completos | Concluida no escopo disponivel | Suite raiz ampliada para 39 testes cobrindo auth, ownership, operacoes, reprocessamento, health e metricas. |
-| Fase 11 - Docker e seguranca | Concluida com risco de dependencias pendente | Dockerfiles, Compose, migration one-shot, health checks, runtime nao privilegiado, Helmet e validacao real de containers. `npm audit` ainda aponta vulnerabilidades. |
+| Fase 11 - Docker e seguranca | Concluida | Dockerfiles, Compose, migration one-shot, health checks, runtime nao privilegiado, Helmet e validacao real de containers. |
 | Fase 12 - CI/CD | Concluida no escopo do checkout atual | Workflows GitHub Actions criados para LogiFlow, LogiPeople e integracao/plataforma com lint, typecheck, testes, build, audit alto, Prisma e Docker. |
 
 ## Matriz de regressao
@@ -429,14 +429,16 @@ Na Fase 12 foi executado `npm audit fix --package-lock-only`, atualizando:
 - `engine.io-client` para `6.6.6`;
 - `ws` para `8.21.0`.
 
+Na correcao seguinte, as 5 vulnerabilidades moderadas restantes foram eliminadas com overrides minimos:
+
+- `postcss` fixado em `8.5.19`;
+- `@hono/node-server` fixado em `1.19.13`.
+
 Resultado atual:
 
-- `npm audit --audit-level=high` passa.
-- Restam 5 vulnerabilidades moderadas:
-  - `postcss` via `next`;
-  - `@hono/node-server` via cadeia de `prisma`/`@prisma/dev`.
-
-Nao foi aplicado `npm audit fix --force` porque o proprio npm indicou alteracoes potencialmente quebradoras, incluindo downgrade/alteracao grande de `next` e `prisma`. A correcao das moderadas deve ser tratada como tarefa dedicada de upgrade de dependencias, com testes e build completos.
+- `npm audit` passa com 0 vulnerabilidades.
+- `npm ls postcss @hono/node-server prisma next` confirma `postcss@8.5.19` e `@hono/node-server@1.19.13`.
+- Next e Prisma foram preservados nas versoes atuais, sem downgrade por `npm audit fix --force`.
 
 ## Fase 12 - CI/CD
 
@@ -444,7 +446,7 @@ Implementado:
 
 - `.github/workflows/logiflow-ci.yml`
   - roda em alteracoes de LogiFlow raiz, Prisma raiz, Docker e `packages/ui`;
-  - executa `npm ci`, lint, typecheck raiz, testes, build e `npm audit --audit-level=high`;
+  - executa `npm ci`, lint, typecheck raiz, testes, build e `npm audit`;
   - executa `docker compose config`;
   - constrói `logiflow-migrate`, `logiflow-api` e `logiflow-web`;
   - sobe a stack Docker;
@@ -454,12 +456,12 @@ Implementado:
 - `.github/workflows/logipeople-ci.yml`
   - roda em alteracoes de `apps/logipeople-*`, `databases/logipeople` e pacotes compartilhados;
   - executa Prisma generate do LogiPeople;
-  - executa lint, typecheck, testes, build de workspaces e audit alto.
+  - executa lint, typecheck, testes, build de workspaces e audit completo.
 - `.github/workflows/integration-ci.yml`
   - roda em alteracoes compartilhadas, docs, Docker, Prisma, apps e packages;
   - executa Prisma generate de LogiFlow e LogiPeople;
   - executa lint, typecheck, testes, build raiz e workspaces;
-  - executa audit alto;
+  - executa audit completo;
   - valida Compose e build Docker.
 
 Decisoes:
@@ -473,7 +475,9 @@ Decisoes:
 | Comando | Resultado | Observacao |
 | --- | --- | --- |
 | Parse YAML com PyYAML | PASS | `integration-ci.yml`, `logiflow-ci.yml` e `logipeople-ci.yml` validos. |
-| `npm audit --audit-level=high` | PASS | Restam 5 moderadas, nenhuma alta. |
+| `npm audit --audit-level=high` | PASS | 0 vulnerabilidades. |
+| `npm audit` | PASS | 0 vulnerabilidades. |
+| `npm ci --ignore-scripts` | PASS | Instalacao limpa com lockfile novo; 0 vulnerabilidades. |
 | `npm run prisma:generate` | PASS | Prisma Client raiz gerado. |
 | `npm run logipeople:prisma:generate` | PASS | Prisma Client LogiPeople gerado. |
 | `npm run lint` | PASS | Sem erros. |

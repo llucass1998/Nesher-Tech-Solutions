@@ -74,6 +74,6 @@ jobs:
       - run: npm run test:workspaces
       - run: npm run build
       - run: npm run build:workspaces
-      - run: npm audit --audit-level=high
+      - run: npm audit
       - run: docker compose config
       - run: docker compose build logiflow-migrate logiflow-api logiflow-web

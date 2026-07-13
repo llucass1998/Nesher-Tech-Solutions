@@ -30,4 +30,4 @@ Decisao: criar workflows separados para LogiFlow, LogiPeople e integracao/plataf
 
 Motivo: o checkout atual possui `package-lock.json` e os comandos validados localmente usam npm. Tambem nao ha app LogiDesk neste checkout, entao criar um workflow LogiDesk dedicado seria artificial.
 
-Consequencia: alteracoes em LogiFlow, LogiPeople e pacotes compartilhados disparam pipelines adequados por path. O audit bloqueia vulnerabilidades altas; vulnerabilidades moderadas restantes ficam documentadas para uma fase dedicada de upgrade de dependencias.
+Consequencia: alteracoes em LogiFlow, LogiPeople e pacotes compartilhados disparam pipelines adequados por path. O audit completo deve permanecer com 0 vulnerabilidades conhecidas, exceto quando houver excecao documentada e aprovada.

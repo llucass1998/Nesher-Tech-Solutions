@@ -42,4 +42,4 @@ Full rate limiting, OpenTelemetry, storage scanning, encrypted backups and compl
 - A container in `running` state is not enough: health checks and logs must be verified.
 - API startup in Docker must be gated by successful `prisma migrate deploy`.
 - High-severity dependency audit failures must block CI.
-- Moderate dependency audit findings may be accepted only with documented risk and a planned dependency-upgrade task.
+- Dependency audit must remain at 0 known vulnerabilities unless a documented exception is explicitly approved.

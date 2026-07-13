@@ -58,7 +58,7 @@ jobs:
       - run: npx tsc --noEmit
       - run: npm test
       - run: npm run build
-      - run: npm audit --audit-level=high
+      - run: npm audit
 
   docker:
     name: docker build and smoke

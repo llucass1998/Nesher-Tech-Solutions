@@ -6,6 +6,10 @@
     "apps/*",
     "packages/*"
   ],
+  "overrides": {
+    "@hono/node-server": "1.19.13",
+    "postcss": "8.5.19"
+  },
   "scripts": {
     "dev": "next dev",
     "dev:api": "ts-node-dev --respawn --transpile-only src/server.ts",
