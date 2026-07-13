@@ -3,11 +3,12 @@ import { AuthController } from './controllers/Authcontrollers';
 import { DriverController } from './controllers/DriverController';
 import { VehicleController } from './controllers/VehicleController';
 import { DeliveryController } from './controllers/DeliveryController';
-import { deprecatedRoute, verificarAccessTokenV1, verificarApiKeyPagamento, verificarToken } from './middlewares/middllewares';
+import { deprecatedRoute, requireRoles, verificarAccessTokenV1, verificarApiKeyPagamento, verificarToken } from './middlewares/middllewares';
 import { UserController } from './controllers/UserController';
 import { AuthV1Controller } from './controllers/AuthV1Controller';
 import { DriverV1Controller } from './controllers/DriverV1Controller';
 import { DashboardController } from './controllers/DashboardController';
+import { LogiflowOperationsController } from './controllers/LogiflowOperationsController';
 
 const routes = Router();
 
@@ -20,6 +21,7 @@ const deliveryController = new DeliveryController();
 const authV1Controller = new AuthV1Controller();
 const driverV1Controller = new DriverV1Controller();
 const dashboardController = new DashboardController();
+const operationsController = new LogiflowOperationsController();
 
 // ==========================================
 // API V1 - AUTENTICACAO E MOTORISTA
@@ -36,6 +38,13 @@ routes.get('/api/v1/driver/deliveries/:id', verificarAccessTokenV1, (req, res) =
 routes.patch('/api/v1/driver/deliveries/:id/status', verificarAccessTokenV1, (req, res) => driverV1Controller.updateDeliveryStatus(req, res));
 
 routes.get('/api/v1/dashboard/metrics', (req, res) => dashboardController.metrics(req, res));
+routes.get('/api/v1/operations/deliveries', verificarAccessTokenV1, requireRoles(['ADMIN', 'OPERATOR']), (req, res) => operationsController.listDeliveries(req, res));
+routes.get('/api/v1/operations/deliveries/:id/timeline', verificarAccessTokenV1, requireRoles(['ADMIN', 'OPERATOR']), (req, res) => operationsController.deliveryTimeline(req, res));
+routes.patch('/api/v1/operations/deliveries/:id/status', verificarAccessTokenV1, requireRoles(['ADMIN', 'OPERATOR']), (req, res) => operationsController.updateDeliveryStatus(req, res));
+routes.post('/api/v1/operations/deliveries/:id/occurrences', verificarAccessTokenV1, requireRoles(['ADMIN', 'OPERATOR']), (req, res) => operationsController.createOccurrence(req, res));
+routes.post('/api/v1/operations/deliveries/:id/proofs', verificarAccessTokenV1, requireRoles(['ADMIN', 'OPERATOR']), (req, res) => operationsController.createProof(req, res));
+routes.patch('/api/v1/operations/occurrences/:id', verificarAccessTokenV1, requireRoles(['ADMIN', 'OPERATOR']), (req, res) => operationsController.updateOccurrence(req, res));
+routes.post('/api/v1/operations/occurrences/:id/reprocess', verificarAccessTokenV1, requireRoles(['ADMIN', 'OPERATOR']), (req, res) => operationsController.reprocessOccurrence(req, res));
 
 // ==========================================
 // ROTA DE LOGIN

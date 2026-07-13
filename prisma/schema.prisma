@@ -84,6 +84,57 @@ model Delivery {
   driver          Driver   @relation(fields: [driverId], references: [id])
   vehicleId       String
   vehicle         Vehicle  @relation(fields: [vehicleId], references: [id])
+  statusHistory   DeliveryStatusHistory[]
+  occurrences     Occurrence[]
+  proofs          DeliveryProof[]
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+model DeliveryStatusHistory {
+  id              String   @id @default(uuid())
+  deliveryId      String
+  delivery        Delivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  previousStatus  String
+  newStatus       String
+  changedByUserId String?
+  reason          String?
+  requestId       String?
+  correlationId   String?
+  createdAt       DateTime @default(now())
+
+  @@index([deliveryId, createdAt])
+}
+
+model Occurrence {
+  id                String   @id @default(uuid())
+  deliveryId        String
+  delivery          Delivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  title             String
+  description       String
+  severity          String   @default("MEDIUM")
+  status            String   @default("OPEN")
+  integrationStatus String   @default("NOT_REQUESTED")
+  retryCount        Int      @default(0)
+  lastError         String?
+  ticketNumber      String?
+  createdByUserId   String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([deliveryId, createdAt])
+  @@index([integrationStatus])
+}
+
+model DeliveryProof {
+  id              String   @id @default(uuid())
+  deliveryId      String
+  delivery        Delivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  type            String   @default("PHOTO")
+  url             String
+  description     String?
+  uploadedByUserId String?
+  createdAt       DateTime @default(now())
+
+  @@index([deliveryId, createdAt])
 }

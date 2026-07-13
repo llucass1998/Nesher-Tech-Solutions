@@ -74,6 +74,13 @@ LogiDesk, workers, Redis, BullMQ, Outbox, DLQ, Socket.IO autenticado e SSO real 
 - Manter `GET /dashboard/metrics` como alias legado depreciado.
 - Calcular metricas reais de veiculos, motoristas, veiculos em rota, entregas concluidas e serie de 7 dias.
 - Cobrir agregacao e compatibilidade legada com testes.
+- Criar fundacao operacional de entregas com filtros, paginacao e busca.
+- Criar historico/timeline de entrega.
+- Registrar ocorrencias operacionais.
+- Registrar comprovantes.
+- Permitir reprocessamento seguro de ocorrencias em `FAILED` ou `DEAD_LETTER`.
+- Aplicar RBAC `ADMIN`/`OPERATOR` nos endpoints operacionais.
+- Atualizar a tela de entregas mantendo fallback legado quando nao houver token v1.
 
 ## Fora de escopo nesta execucao
 

@@ -78,6 +78,20 @@ export const deprecatedRoute = ({ successor, sunset = defaultLegacySunset }: Dep
   };
 };
 
+export const requireRoles = (roles: string[]) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.auth) {
+      return sendError(res, 401, 'AUTHENTICATION_REQUIRED', 'Autenticacao obrigatoria.');
+    }
+
+    if (!roles.includes(req.auth.role)) {
+      return sendError(res, 403, 'ACCESS_DENIED', 'Permissao insuficiente.');
+    }
+
+    return next();
+  };
+};
+
 export const verificarAccessTokenV1 = async (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
 

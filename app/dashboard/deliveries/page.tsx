@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { FormEventHandler, useEffect, useState } from 'react';
+import { FormEventHandler, useCallback, useEffect, useState } from 'react';
 import { socket } from '../../../socket';
 import axios from 'axios';
 
@@ -27,6 +27,24 @@ interface Delivery {
 
 interface Driver { id: string; name: string; }
 interface Vehicle { id: string; model: string; plate: string; }
+interface PaginationState { page: number; pageSize: number; total: number; totalPages: number; }
+interface TimelineItem {
+  type: 'STATUS' | 'OCCURRENCE' | 'PROOF';
+  createdAt: string;
+  data: {
+    id: string;
+    previousStatus?: string;
+    newStatus?: string;
+    title?: string;
+    description?: string | null;
+    severity?: string;
+    integrationStatus?: string;
+    url?: string;
+    type?: string;
+  };
+}
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
 
 function isToday(dateValue?: string) {
   if (!dateValue) return false;
@@ -70,7 +88,22 @@ const STORE_ADDRESS = 'Rua do Terço, 340 - Vaz Lobo, Rio de Janeiro - RJ, 21361
 export default function DeliveriesPage() {
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [selectedDeliveryId, setSelectedDeliveryId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState<PaginationState>({
+    page: 1,
+    pageSize: 10,
+    total: 0,
+    totalPages: 1,
+  });
+  const [timeline, setTimeline] = useState<TimelineItem[]>([]);
+  const [timelineLoading, setTimelineLoading] = useState(false);
+  const [newOccurrenceTitle, setNewOccurrenceTitle] = useState('');
+  const [newOccurrenceDescription, setNewOccurrenceDescription] = useState('');
+  const [newProofUrl, setNewProofUrl] = useState('');
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -92,19 +125,59 @@ export default function DeliveriesPage() {
   const [newDriverId, setNewDriverId] = useState('');
   const [newVehicleId, setNewVehicleId] = useState('');
 
-  useEffect(() => {
-    async function loadDeliveries() {
-      try {
-        const response = await axios.get('http://localhost:3333/deliveries');
-        setDeliveries(response.data);
-      } catch (error) {
-        logRequestWarning('Erro ao buscar entregas', error);
-      } finally {
-        setLoading(false);
+  const loadDeliveries = useCallback(async () => {
+    setLoading(true);
+    setLoadError('');
+
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('logiflow_token') : null;
+
+      if (token) {
+        const response = await axios.get(`${API_URL}/api/v1/operations/deliveries`, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: {
+            page,
+            pageSize: pagination.pageSize,
+            ...(statusFilter && { status: statusFilter }),
+            ...(searchTerm.trim() && { search: searchTerm.trim() }),
+          },
+        });
+
+        setDeliveries(response.data.data);
+        setPagination(response.data.pagination);
+        return;
       }
+
+      const response = await axios.get(`${API_URL}/deliveries`);
+      const allDeliveries = response.data as Delivery[];
+      const filtered = allDeliveries.filter((delivery) => {
+        const matchesStatus = statusFilter ? delivery.status === statusFilter : true;
+        const normalizedSearch = searchTerm.trim().toLowerCase();
+        const matchesSearch = normalizedSearch
+          ? `${delivery.description} ${delivery.pickupAddress ?? ''} ${delivery.deliveryAddress ?? ''}`.toLowerCase().includes(normalizedSearch)
+          : true;
+
+        return matchesStatus && matchesSearch;
+      });
+      const pageSize = pagination.pageSize;
+      const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+      const safePage = Math.min(page, totalPages);
+
+      setDeliveries(filtered.slice((safePage - 1) * pageSize, safePage * pageSize));
+      setPagination({ page: safePage, pageSize, total: filtered.length, totalPages });
+    } catch (error) {
+      logRequestWarning('Erro ao buscar entregas', error);
+      setLoadError('Nao foi possivel carregar as entregas.');
+    } finally {
+      setLoading(false);
     }
-    loadDeliveries();
-  }, []);
+  }, [page, pagination.pageSize, searchTerm, statusFilter]);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      void loadDeliveries();
+    });
+  }, [loadDeliveries]);
 
   useEffect(() => {
     const handleDeliveryStatusUpdate = (updatedDelivery: Delivery) => {
@@ -125,6 +198,37 @@ export default function DeliveriesPage() {
       socket.off('deliveryStatusUpdate', handleDeliveryStatusUpdate);
     };
   }, []);
+
+  const loadTimeline = useCallback(async (deliveryId: string) => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('logiflow_token') : null;
+
+    if (!token) {
+      setTimeline([]);
+      return;
+    }
+
+    setTimelineLoading(true);
+
+    try {
+      const response = await axios.get(`${API_URL}/api/v1/operations/deliveries/${deliveryId}/timeline`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setTimeline(response.data.timeline);
+    } catch (error) {
+      logRequestWarning('Erro ao carregar timeline da entrega', error);
+      setTimeline([]);
+    } finally {
+      setTimelineLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (selectedDeliveryId) {
+      queueMicrotask(() => {
+        void loadTimeline(selectedDeliveryId);
+      });
+    }
+  }, [loadTimeline, selectedDeliveryId]);
 
   const openEditModal = async () => {
     if (!selectedDeliveryId) return;
@@ -297,7 +401,80 @@ export default function DeliveriesPage() {
   };
 
   const toggleSelection = (id: string) => {
-    setSelectedDeliveryId(selectedDeliveryId === id ? null : id);
+    if (selectedDeliveryId === id) {
+      setSelectedDeliveryId(null);
+      setTimeline([]);
+      return;
+    }
+
+    setSelectedDeliveryId(id);
+  };
+
+  const handleCreateOccurrence = async () => {
+    if (!selectedDeliveryId) return;
+
+    const token = typeof window !== 'undefined' ? localStorage.getItem('logiflow_token') : null;
+    if (!token) {
+      alert('Entre com uma sessao v1 de operador para registrar ocorrencias.');
+      return;
+    }
+
+    if (!newOccurrenceTitle.trim() || !newOccurrenceDescription.trim()) {
+      alert('Informe titulo e descricao da ocorrencia.');
+      return;
+    }
+
+    try {
+      await axios.post(
+        `${API_URL}/api/v1/operations/deliveries/${selectedDeliveryId}/occurrences`,
+        {
+          title: newOccurrenceTitle,
+          description: newOccurrenceDescription,
+          severity: 'MEDIUM',
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setNewOccurrenceTitle('');
+      setNewOccurrenceDescription('');
+      await loadTimeline(selectedDeliveryId);
+      await loadDeliveries();
+    } catch (error) {
+      logRequestWarning('Erro ao criar ocorrencia', error);
+      alert('Erro ao registrar ocorrencia.');
+    }
+  };
+
+  const handleCreateProof = async () => {
+    if (!selectedDeliveryId) return;
+
+    const token = typeof window !== 'undefined' ? localStorage.getItem('logiflow_token') : null;
+    if (!token) {
+      alert('Entre com uma sessao v1 de operador para registrar comprovantes.');
+      return;
+    }
+
+    if (!newProofUrl.trim()) {
+      alert('Informe a URL do comprovante.');
+      return;
+    }
+
+    try {
+      await axios.post(
+        `${API_URL}/api/v1/operations/deliveries/${selectedDeliveryId}/proofs`,
+        {
+          url: newProofUrl,
+          type: 'PHOTO',
+          description: 'Comprovante operacional',
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setNewProofUrl('');
+      await loadTimeline(selectedDeliveryId);
+      await loadDeliveries();
+    } catch (error) {
+      logRequestWarning('Erro ao registrar comprovante', error);
+      alert('Erro ao registrar comprovante.');
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -347,6 +524,43 @@ export default function DeliveriesPage() {
         <div className="px-4 py-3 border-b border-[var(--color-border-secondary)] dark:border-gray-700">
           <h2 className="text-base font-semibold text-[var(--color-text-primary)] dark:text-white">Gerenciamento</h2>
           <p className="text-sm text-[var(--color-text-secondary)] dark:text-gray-400 mt-1">Selecione uma entrega para acompanhar no mapa.</p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_180px_120px] gap-3 mt-4">
+            <input
+              value={searchTerm}
+              onChange={(event) => {
+                setSearchTerm(event.target.value);
+                setPage(1);
+              }}
+              placeholder="Buscar por descricao ou endereco"
+              className="h-[40px] rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-900 outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5]/20 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+            />
+            <select
+              value={statusFilter}
+              onChange={(event) => {
+                setStatusFilter(event.target.value);
+                setPage(1);
+              }}
+              className="h-[40px] rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-900 outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5]/20 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+            >
+              <option value="">Todos os status</option>
+              <option value="PENDING">Pendente</option>
+              <option value="ASSIGNED">Atribuida</option>
+              <option value="ACCEPTED">Aceita</option>
+              <option value="IN_TRANSIT">Em transito</option>
+              <option value="ARRIVED">No destino</option>
+              <option value="DELIVERED">Entregue</option>
+              <option value="FAILED">Falhou</option>
+              <option value="CANCELED">Cancelada</option>
+            </select>
+            <button
+              type="button"
+              onClick={() => void loadDeliveries()}
+              className="h-[40px] rounded-md border border-gray-300 bg-white px-3 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+            >
+              Atualizar
+            </button>
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
             <button 
@@ -429,6 +643,101 @@ export default function DeliveriesPage() {
             </tbody>
           </table>
         </div>
+        {loadError && (
+          <div className="border-t border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-300">
+            {loadError}
+          </div>
+        )}
+        <div className="border-t border-[var(--color-border-secondary)] dark:border-gray-700 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm text-[var(--color-text-secondary)] dark:text-gray-400">
+          <span>
+            {pagination.total} entrega{pagination.total === 1 ? '' : 's'} encontrada{pagination.total === 1 ? '' : 's'}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={pagination.page <= 1}
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
+              className="h-[34px] px-3 rounded-md border border-gray-300 disabled:opacity-50 dark:border-gray-600"
+            >
+              Anterior
+            </button>
+            <span>Pagina {pagination.page} de {pagination.totalPages}</span>
+            <button
+              type="button"
+              disabled={pagination.page >= pagination.totalPages}
+              onClick={() => setPage((current) => current + 1)}
+              className="h-[34px] px-3 rounded-md border border-gray-300 disabled:opacity-50 dark:border-gray-600"
+            >
+              Proxima
+            </button>
+          </div>
+        </div>
+        {selectedDeliveryId && (
+          <div className="border-t border-[var(--color-border-secondary)] dark:border-gray-700 p-4 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-4">
+            <div>
+              <h3 className="text-sm font-semibold text-[var(--color-text-primary)] dark:text-white">Timeline operacional</h3>
+              <div className="mt-3 space-y-2">
+                {timelineLoading && <p className="text-sm text-gray-500">Carregando timeline...</p>}
+                {!timelineLoading && timeline.length === 0 && (
+                  <p className="text-sm text-gray-500">Nenhum historico operacional registrado para esta entrega.</p>
+                )}
+                {!timelineLoading && timeline.map((item) => (
+                  <div key={`${item.type}-${item.data.id}`} className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900/40">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-medium text-gray-800 dark:text-gray-100">
+                        {item.type === 'STATUS' && `Status: ${item.data.previousStatus} -> ${item.data.newStatus}`}
+                        {item.type === 'OCCURRENCE' && `Ocorrencia: ${item.data.title}`}
+                        {item.type === 'PROOF' && `Comprovante: ${item.data.type}`}
+                      </span>
+                      <span className="text-xs text-gray-500">{formatDateTime(item.createdAt)}</span>
+                    </div>
+                    {item.data.description && <p className="mt-1 text-gray-600 dark:text-gray-400">{item.data.description}</p>}
+                    {item.data.integrationStatus && (
+                      <p className="mt-1 text-xs text-gray-500">Integracao: {item.data.integrationStatus}</p>
+                    )}
+                    {item.data.url && (
+                      <a href={item.data.url} target="_blank" rel="noreferrer" className="mt-1 inline-block text-xs font-medium text-[#185FA5]">
+                        Abrir comprovante
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-4">
+              <div className="rounded-md border border-gray-200 p-3 dark:border-gray-700">
+                <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Registrar ocorrencia</h4>
+                <input
+                  value={newOccurrenceTitle}
+                  onChange={(event) => setNewOccurrenceTitle(event.target.value)}
+                  placeholder="Titulo"
+                  className={`${inputClass} mt-3`}
+                />
+                <textarea
+                  value={newOccurrenceDescription}
+                  onChange={(event) => setNewOccurrenceDescription(event.target.value)}
+                  placeholder="Descricao"
+                  className={`${inputClass} mt-2 min-h-[78px] py-2 resize-none`}
+                />
+                <button type="button" onClick={handleCreateOccurrence} className="mt-3 h-[38px] w-full rounded-md bg-[#185FA5] text-sm font-medium text-white">
+                  Salvar ocorrencia
+                </button>
+              </div>
+              <div className="rounded-md border border-gray-200 p-3 dark:border-gray-700">
+                <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Registrar comprovante</h4>
+                <input
+                  value={newProofUrl}
+                  onChange={(event) => setNewProofUrl(event.target.value)}
+                  placeholder="https://..."
+                  className={`${inputClass} mt-3`}
+                />
+                <button type="button" onClick={handleCreateProof} className="mt-3 h-[38px] w-full rounded-md bg-[#185FA5] text-sm font-medium text-white">
+                  Salvar comprovante
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="border-t border-[var(--color-border-secondary)] dark:border-gray-700">
           <div className="px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div>

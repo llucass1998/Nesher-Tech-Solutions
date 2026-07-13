@@ -12,7 +12,7 @@ Data: 2026-07-12
 | Fase 4 - Ownership motorista | Implementada | `/api/v1/driver/me`, `/deliveries`, `/deliveries/:id`, `/status`; teste de entrega alheia retorna 403. |
 | Fase 5 - Depreciacao das rotas legadas | Implementada sem remocao | Middleware `deprecatedRoute`; headers `Deprecation`, `Sunset`, `Link`; teste de regressao atualizado. |
 | Fase 6 - LogiDesk operacional | Bloqueada | Nao existem `apps/logidesk-*` nem arquivos de ticket/suporte/SLA neste checkout; ver `docs/LOGIDESK.md`. |
-| Fase 7 - LogiFlow operacional | Iniciada | Dashboard operacional agora usa `GET /api/v1/dashboard/metrics`; alias legado depreciado preservado. |
+| Fase 7 - LogiFlow operacional | Concluida no escopo do checkout atual | Dashboard, entregas v1, filtros, paginacao, timeline, historico, ocorrencias, comprovantes e reprocessamento seguro implementados. |
 
 ## Matriz de regressao
 
@@ -28,6 +28,11 @@ Data: 2026-07-12
 | Ownership motorista | Nao existia | Nao | Sim | PASS |
 | Depreciacao de rota legada | Rotas antigas sem aviso | Nao | Sim | PASS |
 | Dashboard operacional | Frontend chamava rota inexistente `/dashboard/metrics` | Nao | Sim | PASS |
+| Entregas operacionais | Rotas legadas sem filtros/paginacao v1 | Nao | Sim | PASS |
+| Timeline de entrega | Nao existia | Nao | Sim | PASS |
+| Ocorrencias operacionais | Nao existia | Nao | Sim | PASS |
+| Comprovantes | Apenas campo `proofUrl` solto | Nao | Sim | PASS |
+| Reprocessamento seguro | Nao existia | Nao | Sim | PASS |
 | LogiDesk/ticket | Nao existe no checkout | Nao | Nao aplicavel | Bloqueado por ausencia de modulo |
 | Outbox/Redis/retry | Nao existe no LogiFlow legado | Nao | Nao aplicavel | Bloqueado por ausencia de modulo |
 
@@ -117,7 +122,7 @@ Decisao: nao criar LogiDesk do zero sem confirmacao explicita, porque o prompt m
 
 ## Fase 7 - LogiFlow operacional
 
-Primeiro incremento implementado:
+Implementado:
 
 - `GET /api/v1/dashboard/metrics` criado.
 - `GET /dashboard/metrics` mantido como alias legado depreciado.
@@ -129,26 +134,50 @@ Primeiro incremento implementado:
   - entregas concluidas;
   - serie de entregas concluidas dos ultimos 7 dias.
 - Chave diaria do grafico usa data local para evitar erro de fuso horario em UTC.
+- Modelos Prisma adicionados:
+  - `DeliveryStatusHistory`;
+  - `Occurrence`;
+  - `DeliveryProof`.
+- Migration criada: `20260712100000_logiflow_operations_foundation`.
+- Endpoints operacionais criados:
+  - `GET /api/v1/operations/deliveries`;
+  - `GET /api/v1/operations/deliveries/:id/timeline`;
+  - `PATCH /api/v1/operations/deliveries/:id/status`;
+  - `POST /api/v1/operations/deliveries/:id/occurrences`;
+  - `POST /api/v1/operations/deliveries/:id/proofs`;
+  - `PATCH /api/v1/operations/occurrences/:id`;
+  - `POST /api/v1/operations/occurrences/:id/reprocess`.
+- RBAC operacional aplicado com `ADMIN` e `OPERATOR`.
+- Reprocessamento permitido apenas para ocorrencias `FAILED` ou `DEAD_LETTER`.
+- Tela de entregas ganhou:
+  - busca;
+  - filtro por status;
+  - paginacao;
+  - fallback legado sem token;
+  - consumo da API operacional v1 com token;
+  - painel de timeline;
+  - registro rapido de ocorrencia;
+  - registro rapido de comprovante.
 
-Itens da Fase 7 ainda pendentes:
+Fora do escopo tecnico possivel neste checkout:
 
-- filtros e paginacao completos em entregas;
-- timeline e historico de entrega;
-- comprovantes;
-- ocorrencias operacionais;
-- estados de integracao;
-- reprocessamento seguro;
-- mapa autenticado por ownership;
-- testes E2E do fluxo operacional completo.
+- Escalonamento real para LogiDesk, porque a Fase 6 esta bloqueada por ausencia de LogiDesk.
+- Outbox/Redis/DLQ reais, porque esses modulos nao existem no LogiFlow legado.
+- E2E completo Playwright, porque ainda nao ha ambiente Docker/servicos integrados localizados.
+- Mapa autenticado por ownership completo, porque o mapa atual usa fluxo legado e a auth operacional depende de sessao v1 no frontend.
 
 ### Validacoes da Fase 7
 
 | Comando | Resultado | Observacao |
 | --- | --- | --- |
-| `npm test` | PASS | 4 arquivos, 20 testes passaram. |
+| `npm run prisma:generate` | PASS | Prisma Client raiz gerado apos novos modelos operacionais. |
+| `npm test` | PASS | 5 arquivos, 25 testes passaram. |
 | `npm run typecheck` | PASS | Raiz e workspaces passaram. |
-| `npm run lint` | PASS | Sem erros. |
+| `npm run lint` | PASS | Sem erros apos ajustes React 19. |
 | `npm run build` | PASS | Next raiz compilou; aviso Node `DEP0169` permanece. |
+| `npm run test:workspaces` | PASS | LogiPeople API: 5 arquivos, 25 testes; demais pacotes sem testes e `passWithNoTests`. |
+| `npm run lint:workspaces` | PASS | Sem erros; avisos do Next sobre `pages` em pacotes nao-Next. |
+| `npm run build:workspaces` | PASS | LogiPeople API/web/worker e pacotes passaram; aviso de lockfiles multiplos no Next. |
 
 ## Evidencias de seguranca
 

@@ -1,0 +1,368 @@
+import { Request, Response } from 'express';
+import { Prisma } from '../generated/prisma';
+import { prisma } from '../lib/prisma';
+import { sendError } from '../lib/api-error';
+
+const deliveryStatuses = ['PENDING', 'ASSIGNED', 'ACCEPTED', 'IN_TRANSIT', 'ARRIVED', 'DELIVERED', 'FAILED', 'CANCELED'];
+const occurrenceSeverities = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+const occurrenceStatuses = ['OPEN', 'IN_REVIEW', 'RESOLVED', 'CANCELED'];
+const reprocessableIntegrationStatuses = ['FAILED', 'DEAD_LETTER'];
+
+function getParamValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function getQueryValue(value: unknown) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function parsePositiveInt(value: unknown, fallback: number, max: number) {
+  const parsed = Number(getQueryValue(value));
+  if (!Number.isInteger(parsed) || parsed < 1) return fallback;
+  return Math.min(parsed, max);
+}
+
+function asOptionalString(value: unknown) {
+  const normalized = getQueryValue(value);
+  return typeof normalized === 'string' && normalized.trim() ? normalized.trim() : undefined;
+}
+
+function buildDeliveryWhere(query: Request['query']): Prisma.DeliveryWhereInput {
+  const status = asOptionalString(query.status);
+  const driverId = asOptionalString(query.driverId);
+  const vehicleId = asOptionalString(query.vehicleId);
+  const search = asOptionalString(query.search);
+
+  return {
+    ...(status && { status }),
+    ...(driverId && { driverId }),
+    ...(vehicleId && { vehicleId }),
+    ...(search && {
+      OR: [
+        { description: { contains: search, mode: 'insensitive' } },
+        { pickupAddress: { contains: search, mode: 'insensitive' } },
+        { deliveryAddress: { contains: search, mode: 'insensitive' } },
+      ],
+    }),
+  };
+}
+
+function getRequestId(req: Request) {
+  const value = req.headers['x-request-id'];
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function getCorrelationId(req: Request) {
+  const value = req.headers['x-correlation-id'];
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export class LogiflowOperationsController {
+  async listDeliveries(req: Request, res: Response) {
+    const page = parsePositiveInt(req.query.page, 1, 10_000);
+    const pageSize = parsePositiveInt(req.query.pageSize, 20, 100);
+    const where = buildDeliveryWhere(req.query);
+
+    try {
+      const [total, data] = await Promise.all([
+        prisma.delivery.count({ where }),
+        prisma.delivery.findMany({
+          where,
+          include: {
+            driver: { select: { id: true, name: true, email: true, phone: true, status: true } },
+            vehicle: { select: { id: true, model: true, plate: true, status: true } },
+            occurrences: {
+              orderBy: { createdAt: 'desc' },
+              take: 3,
+            },
+            proofs: {
+              orderBy: { createdAt: 'desc' },
+              take: 3,
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+          skip: (page - 1) * pageSize,
+          take: pageSize,
+        }),
+      ]);
+
+      return res.json({
+        data,
+        pagination: {
+          page,
+          pageSize,
+          total,
+          totalPages: Math.max(1, Math.ceil(total / pageSize)),
+        },
+      });
+    } catch (error) {
+      console.error(error);
+      return sendError(res, 500, 'INTERNAL_ERROR', 'Erro ao listar entregas.');
+    }
+  }
+
+  async deliveryTimeline(req: Request, res: Response) {
+    const deliveryId = getParamValue(req.params.id);
+
+    if (!deliveryId) {
+      return sendError(res, 400, 'VALIDATION_ERROR', 'ID da entrega e obrigatorio.');
+    }
+
+    try {
+      const delivery = await prisma.delivery.findUnique({
+        where: { id: deliveryId },
+        include: {
+          driver: { select: { id: true, name: true, email: true, phone: true, status: true } },
+          vehicle: { select: { id: true, model: true, plate: true, status: true } },
+          statusHistory: { orderBy: { createdAt: 'asc' } },
+          occurrences: { orderBy: { createdAt: 'asc' } },
+          proofs: { orderBy: { createdAt: 'asc' } },
+        },
+      });
+
+      if (!delivery) {
+        return sendError(res, 404, 'RESOURCE_NOT_FOUND', 'Entrega nao encontrada.');
+      }
+
+      return res.json({
+        delivery,
+        timeline: [
+          ...delivery.statusHistory.map((item) => ({
+            type: 'STATUS',
+            createdAt: item.createdAt,
+            data: item,
+          })),
+          ...delivery.occurrences.map((item) => ({
+            type: 'OCCURRENCE',
+            createdAt: item.createdAt,
+            data: item,
+          })),
+          ...delivery.proofs.map((item) => ({
+            type: 'PROOF',
+            createdAt: item.createdAt,
+            data: item,
+          })),
+        ].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()),
+      });
+    } catch (error) {
+      console.error(error);
+      return sendError(res, 500, 'INTERNAL_ERROR', 'Erro ao carregar timeline da entrega.');
+    }
+  }
+
+  async updateDeliveryStatus(req: Request, res: Response) {
+    const deliveryId = getParamValue(req.params.id);
+    const { status, reason } = req.body as { status?: string; reason?: string };
+
+    if (!deliveryId) {
+      return sendError(res, 400, 'VALIDATION_ERROR', 'ID da entrega e obrigatorio.');
+    }
+
+    if (!status || !deliveryStatuses.includes(status)) {
+      return sendError(res, 422, 'INVALID_STATUS_TRANSITION', 'Status invalido.');
+    }
+
+    try {
+      const currentDelivery = await prisma.delivery.findUnique({ where: { id: deliveryId } });
+
+      if (!currentDelivery) {
+        return sendError(res, 404, 'RESOURCE_NOT_FOUND', 'Entrega nao encontrada.');
+      }
+
+      const result = await prisma.$transaction(async (tx) => {
+        const delivery = await tx.delivery.update({
+          where: { id: deliveryId },
+          data: { status },
+          include: {
+            driver: { select: { id: true, name: true, email: true, phone: true, status: true } },
+            vehicle: { select: { id: true, model: true, plate: true, status: true } },
+          },
+        });
+
+        const history = await tx.deliveryStatusHistory.create({
+          data: {
+            deliveryId,
+            previousStatus: currentDelivery.status,
+            newStatus: status,
+            changedByUserId: req.auth?.id,
+            reason,
+            requestId: getRequestId(req),
+            correlationId: getCorrelationId(req),
+          },
+        });
+
+        return { delivery, history };
+      });
+
+      return res.json(result);
+    } catch (error) {
+      console.error(error);
+      return sendError(res, 500, 'INTERNAL_ERROR', 'Erro ao atualizar status da entrega.');
+    }
+  }
+
+  async createOccurrence(req: Request, res: Response) {
+    const deliveryId = getParamValue(req.params.id);
+    const { title, description, severity = 'MEDIUM' } = req.body as {
+      title?: string;
+      description?: string;
+      severity?: string;
+    };
+
+    if (!deliveryId) {
+      return sendError(res, 400, 'VALIDATION_ERROR', 'ID da entrega e obrigatorio.');
+    }
+
+    if (!title || !description) {
+      return sendError(res, 400, 'VALIDATION_ERROR', 'Titulo e descricao sao obrigatorios.');
+    }
+
+    if (!occurrenceSeverities.includes(severity)) {
+      return sendError(res, 400, 'VALIDATION_ERROR', 'Severidade invalida.');
+    }
+
+    try {
+      const delivery = await prisma.delivery.findUnique({ where: { id: deliveryId } });
+
+      if (!delivery) {
+        return sendError(res, 404, 'RESOURCE_NOT_FOUND', 'Entrega nao encontrada.');
+      }
+
+      const occurrence = await prisma.occurrence.create({
+        data: {
+          deliveryId,
+          title,
+          description,
+          severity,
+          status: 'OPEN',
+          integrationStatus: 'NOT_REQUESTED',
+          createdByUserId: req.auth?.id,
+        },
+      });
+
+      return res.status(201).json(occurrence);
+    } catch (error) {
+      console.error(error);
+      return sendError(res, 500, 'INTERNAL_ERROR', 'Erro ao criar ocorrencia.');
+    }
+  }
+
+  async updateOccurrence(req: Request, res: Response) {
+    const occurrenceId = getParamValue(req.params.id);
+    const { status, severity, integrationStatus, lastError, ticketNumber } = req.body as {
+      status?: string;
+      severity?: string;
+      integrationStatus?: string;
+      lastError?: string | null;
+      ticketNumber?: string | null;
+    };
+
+    if (!occurrenceId) {
+      return sendError(res, 400, 'VALIDATION_ERROR', 'ID da ocorrencia e obrigatorio.');
+    }
+
+    if (status && !occurrenceStatuses.includes(status)) {
+      return sendError(res, 400, 'VALIDATION_ERROR', 'Status de ocorrencia invalido.');
+    }
+
+    if (severity && !occurrenceSeverities.includes(severity)) {
+      return sendError(res, 400, 'VALIDATION_ERROR', 'Severidade invalida.');
+    }
+
+    try {
+      const occurrence = await prisma.occurrence.update({
+        where: { id: occurrenceId },
+        data: {
+          ...(status != null && { status }),
+          ...(severity != null && { severity }),
+          ...(integrationStatus != null && { integrationStatus }),
+          ...(lastError !== undefined && { lastError }),
+          ...(ticketNumber !== undefined && { ticketNumber }),
+        },
+      });
+
+      return res.json(occurrence);
+    } catch (error: unknown) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        return sendError(res, 404, 'RESOURCE_NOT_FOUND', 'Ocorrencia nao encontrada.');
+      }
+
+      console.error(error);
+      return sendError(res, 500, 'INTERNAL_ERROR', 'Erro ao atualizar ocorrencia.');
+    }
+  }
+
+  async reprocessOccurrence(req: Request, res: Response) {
+    const occurrenceId = getParamValue(req.params.id);
+
+    if (!occurrenceId) {
+      return sendError(res, 400, 'VALIDATION_ERROR', 'ID da ocorrencia e obrigatorio.');
+    }
+
+    try {
+      const occurrence = await prisma.occurrence.findUnique({ where: { id: occurrenceId } });
+
+      if (!occurrence) {
+        return sendError(res, 404, 'RESOURCE_NOT_FOUND', 'Ocorrencia nao encontrada.');
+      }
+
+      if (!reprocessableIntegrationStatuses.includes(occurrence.integrationStatus)) {
+        return sendError(res, 409, 'INTEGRATION_UNAVAILABLE', 'Ocorrencia nao esta em estado reprocessavel.');
+      }
+
+      const updated = await prisma.occurrence.update({
+        where: { id: occurrenceId },
+        data: {
+          integrationStatus: 'PENDING',
+          retryCount: { increment: 1 },
+          lastError: null,
+        },
+      });
+
+      return res.json(updated);
+    } catch (error) {
+      console.error(error);
+      return sendError(res, 500, 'INTERNAL_ERROR', 'Erro ao reprocessar ocorrencia.');
+    }
+  }
+
+  async createProof(req: Request, res: Response) {
+    const deliveryId = getParamValue(req.params.id);
+    const { url, type = 'PHOTO', description } = req.body as {
+      url?: string;
+      type?: string;
+      description?: string;
+    };
+
+    if (!deliveryId) {
+      return sendError(res, 400, 'VALIDATION_ERROR', 'ID da entrega e obrigatorio.');
+    }
+
+    if (!url) {
+      return sendError(res, 400, 'VALIDATION_ERROR', 'URL do comprovante e obrigatoria.');
+    }
+
+    try {
+      const delivery = await prisma.delivery.findUnique({ where: { id: deliveryId } });
+
+      if (!delivery) {
+        return sendError(res, 404, 'RESOURCE_NOT_FOUND', 'Entrega nao encontrada.');
+      }
+
+      const proof = await prisma.deliveryProof.create({
+        data: {
+          deliveryId,
+          url,
+          type,
+          description,
+          uploadedByUserId: req.auth?.id,
+        },
+      });
+
+      return res.status(201).json(proof);
+    } catch (error) {
+      console.error(error);
+      return sendError(res, 500, 'INTERNAL_ERROR', 'Erro ao registrar comprovante.');
+    }
+  }
+}
