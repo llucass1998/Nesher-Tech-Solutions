@@ -6,9 +6,9 @@ LogiFlow remains responsible for logistics operations: drivers, vehicles, delive
 
 ## LogiPeople
 
-LogiPeople is an independent HR and Departamento Pessoal system. In phases 1-8, the foundation, Organization, Core People, preliminary Time and Attendance and preliminary Payroll foundation are implemented.
+LogiPeople is an independent HR and Departamento Pessoal system. In phases 1-9, the foundation, Organization, Core People, preliminary Time and Attendance, preliminary Payroll and preliminary Benefits foundation are implemented.
 
-### Implemented in phases 1-8
+### Implemented in phases 1-9
 
 - Identity integration boundary.
 - RBAC and ABAC primitives.
@@ -19,6 +19,7 @@ LogiPeople is an independent HR and Departamento Pessoal system. In phases 1-8, 
 - Employee history with effective dating.
 - Time and Attendance foundation with work schedules, time entries and preliminary attendance periods.
 - Payroll foundation with cycles, preliminary runs, payroll items and audited reopening requests.
+- Benefits foundation with plans and preliminary enrollments.
 
 ### Deferred domains
 
@@ -28,7 +29,7 @@ The following domains are documented as future modules and must not be represent
 - Onboarding beyond foundation records.
 - Time and Attendance legal/payroll rule validation.
 - Absence and Vacation.
-- Benefits.
+- Benefits provider integrations, eligibility/legal validation and definitive payroll deductions.
 - Payroll legal calculation, homologation and payment execution.
 - Payslips.
 - Termination.
@@ -45,4 +46,4 @@ Core People defines people and employment records: person, employee, employment,
 
 ## Departamento Pessoal boundary
 
-DP-sensitive records such as contracts, compensation history, documents, time-attendance evidence and preliminary payroll records are modeled with data classification and audit from the beginning, but payroll legal calculations, payment execution and eSocial real submission are not implemented in phases 1-8.
+DP-sensitive records such as contracts, compensation history, documents, time-attendance evidence, preliminary payroll records and preliminary benefits records are modeled with data classification and audit from the beginning, but payroll legal calculations, benefits provider integrations, payment execution and eSocial real submission are not implemented in phases 1-9.

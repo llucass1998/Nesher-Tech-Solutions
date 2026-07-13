@@ -99,6 +99,36 @@ export interface PayrollItemSummary {
   employee?: { employeeNumber: string; person?: { fullName: string; preferredName?: string | null } | null } | null;
 }
 
+export interface BenefitPlanSummary {
+  id: string;
+  name: string;
+  providerName: string;
+  type: string;
+  status: string;
+  employerCostAmount: string;
+  employeeCostAmount: string;
+  currency: string;
+  effectiveFrom: string;
+  effectiveTo?: string | null;
+  legalValidationPending: boolean;
+  company?: { name: string } | null;
+  _count?: { enrollments: number };
+}
+
+export interface BenefitEnrollmentSummary {
+  id: string;
+  status: string;
+  coverageLevel: string;
+  employeeCostAmount: string;
+  employerCostAmount: string;
+  currency: string;
+  effectiveFrom: string;
+  effectiveTo?: string | null;
+  legalValidationPending: boolean;
+  plan?: { name: string; providerName: string; type: string; company?: { name: string } | null } | null;
+  employee?: { employeeNumber: string; person?: { fullName: string; preferredName?: string | null } | null } | null;
+}
+
 export async function getPeopleToken(): Promise<string | null> {
   return null;
 }

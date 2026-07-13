@@ -147,6 +147,32 @@ export const requestPayrollReopeningSchema = z.object({
   reason: z.string().min(10),
 });
 
+export const createBenefitPlanSchema = z.object({
+  companyId: z.string().uuid(),
+  name: z.string().min(2),
+  providerName: z.string().min(2),
+  type: z.enum(['HEALTH', 'DENTAL', 'MEAL', 'FOOD', 'TRANSPORT', 'LIFE_INSURANCE', 'WELLNESS', 'OTHER']),
+  employerCostAmount: z.string().regex(/^\d+(\.\d{1,2})?$/).default('0'),
+  employeeCostAmount: z.string().regex(/^\d+(\.\d{1,2})?$/).default('0'),
+  currency: z.string().length(3).default('BRL'),
+  effectiveFrom: z.string().date(),
+  effectiveTo: z.string().date().optional(),
+  reason: z.string().min(3),
+});
+
+export const createBenefitEnrollmentSchema = z.object({
+  companyId: z.string().uuid(),
+  planId: z.string().uuid(),
+  employeeId: z.string().uuid(),
+  coverageLevel: z.string().min(2),
+  employeeCostAmount: z.string().regex(/^\d+(\.\d{1,2})?$/).default('0'),
+  employerCostAmount: z.string().regex(/^\d+(\.\d{1,2})?$/).default('0'),
+  currency: z.string().length(3).default('BRL'),
+  effectiveFrom: z.string().date(),
+  effectiveTo: z.string().date().optional(),
+  reason: z.string().min(3),
+});
+
 export type CreateCompanyInput = z.infer<typeof createCompanySchema>;
 export type CreateDepartmentInput = z.infer<typeof createDepartmentSchema>;
 export type CreatePositionInput = z.infer<typeof createPositionSchema>;
@@ -159,3 +185,5 @@ export type CreatePayrollCycleInput = z.infer<typeof createPayrollCycleSchema>;
 export type CreatePayrollRunInput = z.infer<typeof createPayrollRunSchema>;
 export type CreatePayrollItemInput = z.infer<typeof createPayrollItemSchema>;
 export type RequestPayrollReopeningInput = z.infer<typeof requestPayrollReopeningSchema>;
+export type CreateBenefitPlanInput = z.infer<typeof createBenefitPlanSchema>;
+export type CreateBenefitEnrollmentInput = z.infer<typeof createBenefitEnrollmentSchema>;

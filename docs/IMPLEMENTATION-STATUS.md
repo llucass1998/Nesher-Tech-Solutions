@@ -2,7 +2,7 @@
 
 ## Scope for this execution
 
-Phases 1-8 are in scope:
+Phases 1-9 are in scope:
 
 1. Study and diagnosis.
 2. Reference and license documentation.
@@ -12,6 +12,7 @@ Phases 1-8 are in scope:
 6. Organization and Core People.
 7. Time and Attendance foundation.
 8. Payroll foundation.
+9. Benefits foundation.
 
 ## Current status
 
@@ -25,12 +26,13 @@ Phases 1-8 are in scope:
 | Organization/Core People | Implemented | Initial models, services, endpoints and web pages are implemented for phases 1-6. |
 | Time and Attendance foundation | Implemented | Phase 7 adds work schedules, time entries, preliminary attendance periods, API endpoints, tests and a web page. Legal/payroll validation remains pending. |
 | Payroll foundation | Implemented | Phase 8 adds preliminary payroll cycles, runs, items, audited reopening requests, API endpoints, tests and a web page. Legal calculation, payments and eSocial remain out of scope. |
+| Benefits foundation | Implemented | Phase 9 adds preliminary benefit plans, enrollments, API endpoints, tests and a web page. Provider integrations, eligibility/legal validation and payroll deductions remain out of scope. |
 
 ## Explicitly not complete
 
 - Payroll legal calculation and homologation are not implemented.
 - Payroll payment execution is not implemented.
-- Benefits are not implemented.
+- Benefits provider integrations and definitive payroll deductions are not implemented.
 - eSocial real submission is not implemented.
 - Legal/tax compliance is not validated.
 - Time and attendance is implemented only as a preliminary foundation and is not legally validated.
@@ -42,3 +44,4 @@ Phases 1-8 are in scope:
 - LogiPeople web still uses a placeholder LogiIdentity token provider, so authenticated pages render the no-credential state until real identity integration is wired.
 - Time and attendance records are preliminary evidence and summaries only; they must not be used for payroll or compliance decisions without legal and DP validation.
 - Payroll records are preliminary restricted evidence only; they must not trigger bank payments, payslip publication, eSocial events or legal compliance claims without specialized validation.
+- Benefits records are preliminary restricted evidence only; they must not trigger provider communications, payroll deductions or eligibility/compliance claims without specialized validation.
