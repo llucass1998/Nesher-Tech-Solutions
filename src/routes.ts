@@ -3,7 +3,7 @@ import { AuthController } from './controllers/Authcontrollers';
 import { DriverController } from './controllers/DriverController';
 import { VehicleController } from './controllers/VehicleController';
 import { DeliveryController } from './controllers/DeliveryController';
-import { verificarAccessTokenV1, verificarApiKeyPagamento, verificarToken } from './middlewares/middllewares';
+import { deprecatedRoute, verificarAccessTokenV1, verificarApiKeyPagamento, verificarToken } from './middlewares/middllewares';
 import { UserController } from './controllers/UserController';
 import { AuthV1Controller } from './controllers/AuthV1Controller';
 import { DriverV1Controller } from './controllers/DriverV1Controller';
@@ -36,44 +36,44 @@ routes.patch('/api/v1/driver/deliveries/:id/status', verificarAccessTokenV1, (re
 // ==========================================
 // ROTA DE LOGIN
 // ==========================================
-routes.post('/login', (req, res) => authController.login(req, res));
+routes.post('/login', deprecatedRoute({ successor: '/api/v1/auth/login' }), (req, res) => authController.login(req, res));
 
 // ==========================================
 // ROTAS DE MOTORISTAS
 // ==========================================
-routes.post('/drivers', (req, res) => driverController.create(req, res));
-routes.get('/drivers', (req, res) => driverController.index(req, res));
+routes.post('/drivers', deprecatedRoute({ successor: '/api/v1/auth/register' }), (req, res) => driverController.create(req, res));
+routes.get('/drivers', deprecatedRoute(), (req, res) => driverController.index(req, res));
 // NOVAS ROTAS (Editar e Excluir)
-routes.put('/drivers/:id', (req, res) => driverController.update(req, res));
-routes.delete('/drivers/:id', (req, res) => driverController.delete(req, res));
-routes.patch('/drivers/:id/status', (req, res) => driverController.updateStatus(req, res));
+routes.put('/drivers/:id', deprecatedRoute(), (req, res) => driverController.update(req, res));
+routes.delete('/drivers/:id', deprecatedRoute(), (req, res) => driverController.delete(req, res));
+routes.patch('/drivers/:id/status', deprecatedRoute(), (req, res) => driverController.updateStatus(req, res));
 
 // ==========================================
 // ROTAS DE USUÁRIOS
 // ==========================================
-routes.post('/users', (req, res) => userController.create(req, res));
+routes.post('/users', deprecatedRoute({ successor: '/api/v1/auth/register' }), (req, res) => userController.create(req, res));
 
 // ==========================================
 // ROTAS DE VEÍCULOS
 // ==========================================
-routes.post('/vehicles', (req, res) => vehicleController.create(req, res));
-routes.get('/vehicles', (req, res) => vehicleController.index(req, res));
+routes.post('/vehicles', deprecatedRoute(), (req, res) => vehicleController.create(req, res));
+routes.get('/vehicles', deprecatedRoute(), (req, res) => vehicleController.index(req, res));
 // NOVAS ROTAS (Editar e Excluir)
-routes.put('/vehicles/:id', (req, res) => vehicleController.update(req, res));
-routes.delete('/vehicles/:id', (req, res) => vehicleController.delete(req, res));
-routes.patch('/vehicles/:id/status', (req, res) => vehicleController.updateStatus(req, res));
+routes.put('/vehicles/:id', deprecatedRoute(), (req, res) => vehicleController.update(req, res));
+routes.delete('/vehicles/:id', deprecatedRoute(), (req, res) => vehicleController.delete(req, res));
+routes.patch('/vehicles/:id/status', deprecatedRoute(), (req, res) => vehicleController.updateStatus(req, res));
 
 // ==========================================
 // ROTAS DE ENTREGAS
 // ==========================================
-routes.post('/deliveries', verificarApiKeyPagamento, (req, res) => { deliveryController.create(req, res); });
-routes.get('/deliveries', (req, res) => { deliveryController.index(req, res); });
-routes.get('/deliveries/:id', (req, res) => { deliveryController.show(req, res); });
+routes.post('/deliveries', deprecatedRoute(), verificarApiKeyPagamento, (req, res) => { deliveryController.create(req, res); });
+routes.get('/deliveries', deprecatedRoute(), (req, res) => { deliveryController.index(req, res); });
+routes.get('/deliveries/:id', deprecatedRoute(), (req, res) => { deliveryController.show(req, res); });
 // NOVAS ROTAS (Editar e Excluir)
-routes.put('/deliveries/:id', verificarApiKeyPagamento, (req, res) => { deliveryController.update(req, res); });
-routes.delete('/deliveries/:id', (req, res) => { deliveryController.delete(req, res); });
+routes.put('/deliveries/:id', deprecatedRoute(), verificarApiKeyPagamento, (req, res) => { deliveryController.update(req, res); });
+routes.delete('/deliveries/:id', deprecatedRoute(), (req, res) => { deliveryController.delete(req, res); });
 
 // 🔒 Rota Protegida com o Middleware JWT
-routes.patch('/deliveries/:id/status', verificarToken, (req, res) => { deliveryController.updateStatus(req, res); });
+routes.patch('/deliveries/:id/status', deprecatedRoute({ successor: '/api/v1/driver/deliveries/:id/status' }), verificarToken, (req, res) => { deliveryController.updateStatus(req, res); });
 
 export { routes };

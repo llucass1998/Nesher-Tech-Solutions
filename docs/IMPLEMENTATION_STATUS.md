@@ -10,6 +10,7 @@ Data: 2026-07-12
 | Fase 2 - User e DriverProfile | Implementada | `prisma/schema.prisma`; migration `20260712050000_identity_foundation`; `npm run prisma:generate` passou. |
 | Fase 3 - Auth versionada | Implementada | `POST /api/v1/auth/register`, `login`, `refresh`, `logout`, `GET /me`; testes em `auth-driver-v1.test.ts`. |
 | Fase 4 - Ownership motorista | Implementada | `/api/v1/driver/me`, `/deliveries`, `/deliveries/:id`, `/status`; teste de entrega alheia retorna 403. |
+| Fase 5 - Depreciacao das rotas legadas | Implementada sem remocao | Middleware `deprecatedRoute`; headers `Deprecation`, `Sunset`, `Link`; teste de regressao atualizado. |
 
 ## Matriz de regressao
 
@@ -23,6 +24,7 @@ Data: 2026-07-12
 | API key pagamento | `price` exige `x-api-key` | Sim | Existente | PASS |
 | Auth versionada | Nao existia | Nao | Sim | PASS |
 | Ownership motorista | Nao existia | Nao | Sim | PASS |
+| Depreciacao de rota legada | Rotas antigas sem aviso | Nao | Sim | PASS |
 | LogiDesk/ticket | Nao existe no checkout | Nao | Nao aplicavel | Bloqueado por ausencia de modulo |
 | Outbox/Redis/retry | Nao existe no LogiFlow legado | Nao | Nao aplicavel | Bloqueado por ausencia de modulo |
 
@@ -37,6 +39,48 @@ Data: 2026-07-12
 | `npm run lint:workspaces` | PASS | Sem erros; avisos do Next sobre `pages` em pacotes nao-Next. |
 | `npm run build` | PASS | Next raiz compilou e gerou 12 paginas estaticas. |
 | `npm run build:workspaces` | PASS | LogiPeople API/web/worker e pacotes passaram; aviso de lockfiles multiplos no Next. |
+
+### Validacoes da Fase 5
+
+| Comando | Resultado | Observacao |
+| --- | --- | --- |
+| `npm test` | PASS | 3 arquivos, 18 testes passaram. |
+| `npm run test:workspaces` | PASS | LogiPeople API: 5 arquivos, 25 testes; demais pacotes sem testes e `passWithNoTests`. |
+| `npm run typecheck` | PASS | Raiz e workspaces passaram. |
+| `npm run lint` | PASS | Sem erros. |
+| `npm run lint:workspaces` | PASS | Sem erros; avisos do Next sobre `pages` em pacotes nao-Next. |
+| `npm run build` | PASS | Next raiz compilou; aviso Node `DEP0169` de dependencia/transitivo. |
+| `npm run build:workspaces` | PASS | LogiPeople API/web/worker e pacotes passaram; aviso de lockfiles multiplos no Next. |
+
+## Fase 5 - rotas legadas
+
+| Rota legada | Sucessor declarado | Status |
+| --- | --- | --- |
+| `POST /login` | `POST /api/v1/auth/login` | Deprecated |
+| `POST /users` | `POST /api/v1/auth/register` | Deprecated |
+| `POST /drivers` | `POST /api/v1/auth/register` | Deprecated |
+| `GET /drivers` | Pendente endpoint operacional v1 | Deprecated |
+| `PUT /drivers/:id` | Pendente endpoint operacional v1 | Deprecated |
+| `DELETE /drivers/:id` | Pendente endpoint operacional v1 | Deprecated |
+| `PATCH /drivers/:id/status` | Pendente endpoint operacional v1 | Deprecated |
+| `POST /vehicles` | Pendente endpoint operacional v1 | Deprecated |
+| `GET /vehicles` | Pendente endpoint operacional v1 | Deprecated |
+| `PUT /vehicles/:id` | Pendente endpoint operacional v1 | Deprecated |
+| `DELETE /vehicles/:id` | Pendente endpoint operacional v1 | Deprecated |
+| `PATCH /vehicles/:id/status` | Pendente endpoint operacional v1 | Deprecated |
+| `POST /deliveries` | Pendente endpoint operacional v1 | Deprecated |
+| `GET /deliveries` | Pendente endpoint operacional v1 | Deprecated |
+| `GET /deliveries/:id` | Pendente endpoint operacional v1 | Deprecated |
+| `PUT /deliveries/:id` | Pendente endpoint operacional v1 | Deprecated |
+| `DELETE /deliveries/:id` | Pendente endpoint operacional v1 | Deprecated |
+| `PATCH /deliveries/:id/status` | `PATCH /api/v1/driver/deliveries/:id/status` para fluxo do motorista | Deprecated |
+
+Todas as rotas legadas preservam o controller atual e passam a emitir:
+
+- `Deprecation: true`
+- `Sunset: 2026-10-31`
+- `Link: </api/v1/...>; rel="successor-version"` somente quando existe sucessor real
+- log estruturado `legacy_route_used`
 
 ## Bloqueios conhecidos
 

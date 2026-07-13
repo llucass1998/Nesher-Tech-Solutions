@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt';
 import express from 'express';
 import request from 'supertest';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { prisma } from '../lib/prisma';
 import { routes } from '../routes';
 import { Prisma } from '../generated/prisma';
@@ -37,8 +37,13 @@ describe('regressao da API legada LogiFlow', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     process.env.JWT_SECRET = 'legacy-test-secret';
     process.env.PAYMENTS_API_KEY = 'test-payment-api-key';
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('registra usuario pela rota legada sem retornar password', async () => {
@@ -65,6 +70,10 @@ describe('regressao da API legada LogiFlow', () => {
       email: 'driver@example.com',
     });
     expect(response.body).not.toHaveProperty('password');
+    expect(response.headers.deprecation).toBe('true');
+    expect(response.headers.sunset).toBe('2026-10-31');
+    expect(response.headers.link).toBe('</api/v1/auth/register>; rel="successor-version"');
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('"event":"legacy_route_used"'));
   });
 
   it('faz login legado e retorna token', async () => {
@@ -89,6 +98,8 @@ describe('regressao da API legada LogiFlow', () => {
       id: 'driver-1',
       email: 'driver@example.com',
     });
+    expect(response.headers.deprecation).toBe('true');
+    expect(response.headers.link).toBe('</api/v1/auth/login>; rel="successor-version"');
   });
 
   it('cria motorista pela rota legada sem retornar password', async () => {
@@ -162,5 +173,8 @@ describe('regressao da API legada LogiFlow', () => {
 
     expect(response.status).toBe(201);
     expect(response.body).toMatchObject({ id: 'delivery-1' });
+    expect(response.headers.deprecation).toBe('true');
+    expect(response.headers.sunset).toBe('2026-10-31');
+    expect(response.headers.link).toBeUndefined();
   });
 });

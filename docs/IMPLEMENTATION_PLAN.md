@@ -8,6 +8,7 @@ Implementar apenas:
 2. Fase 2 - Consolidacao gradual de `User` e `DriverProfile`.
 3. Fase 3 - Autenticacao versionada em `/api/v1/auth/*`.
 4. Fase 4 - Ownership do motorista em `/api/v1/driver/*`.
+5. Fase 5 - Depreciacao controlada das rotas legadas.
 
 ## Ajuste de escopo por estado real
 
@@ -56,6 +57,14 @@ LogiDesk, workers, Redis, BullMQ, Outbox, DLQ, Socket.IO autenticado e SSO real 
 - Obter motorista via `JWT sub -> User -> DriverProfile`.
 - Retornar 403 para entrega alheia.
 - Retornar 422 para status invalido.
+
+### Fase 5
+
+- Mapear consumidores atuais das rotas legadas no frontend raiz.
+- Preservar comportamento das rotas antigas durante a transicao.
+- Adicionar headers `Deprecation`, `Sunset` e `Link` quando houver sucessor versionado real.
+- Registrar warning estruturado para uso de rota legada.
+- Nao remover rota ate existir endpoint v1 equivalente, migracao do frontend e ausencia de uso observada em logs.
 
 ## Fora de escopo nesta execucao
 

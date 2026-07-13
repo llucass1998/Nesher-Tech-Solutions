@@ -49,6 +49,35 @@ export const verificarApiKeyPagamento = (req: Request, res: Response, next: Next
   return next();
 };
 
+type DeprecatedRouteOptions = {
+  successor?: string;
+  sunset?: string;
+};
+
+const defaultLegacySunset = process.env.LEGACY_API_SUNSET ?? '2026-10-31';
+
+export const deprecatedRoute = ({ successor, sunset = defaultLegacySunset }: DeprecatedRouteOptions = {}) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    res.setHeader('Deprecation', 'true');
+    res.setHeader('Sunset', sunset);
+
+    if (successor) {
+      res.setHeader('Link', `<${successor}>; rel="successor-version"`);
+    }
+
+    console.warn(JSON.stringify({
+      level: 'warn',
+      event: 'legacy_route_used',
+      method: req.method,
+      path: req.originalUrl || req.path,
+      successor,
+      sunset,
+    }));
+
+    return next();
+  };
+};
+
 export const verificarAccessTokenV1 = async (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
 
