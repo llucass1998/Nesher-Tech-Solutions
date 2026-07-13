@@ -147,6 +147,11 @@ export const requestPayrollReopeningSchema = z.object({
   reason: z.string().min(10),
 });
 
+export const createPayslipSchema = z.object({
+  payrollRunId: z.string().uuid(),
+  reason: z.string().min(3),
+});
+
 export const createBenefitPlanSchema = z.object({
   companyId: z.string().uuid(),
   name: z.string().min(2),
@@ -270,6 +275,7 @@ export const analyticsOverviewSchema = z.object({
   }),
   administration: z.object({
     payrollCyclesByStatus: z.array(analyticsMetricRowSchema),
+    payslipsByStatus: z.array(analyticsMetricRowSchema),
     benefitEnrollmentsByStatus: z.array(analyticsMetricRowSchema),
   }),
   governance: z.object({
@@ -278,6 +284,8 @@ export const analyticsOverviewSchema = z.object({
       payrollCycles: z.number().int().min(0),
       payrollRuns: z.number().int().min(0),
       payrollItems: z.number().int().min(0),
+      payslips: z.number().int().min(0),
+      payslipLines: z.number().int().min(0),
       benefitPlans: z.number().int().min(0),
       benefitEnrollments: z.number().int().min(0),
       absenceRequests: z.number().int().min(0),
@@ -303,6 +311,7 @@ export type CreatePayrollCycleInput = z.infer<typeof createPayrollCycleSchema>;
 export type CreatePayrollRunInput = z.infer<typeof createPayrollRunSchema>;
 export type CreatePayrollItemInput = z.infer<typeof createPayrollItemSchema>;
 export type RequestPayrollReopeningInput = z.infer<typeof requestPayrollReopeningSchema>;
+export type CreatePayslipInput = z.infer<typeof createPayslipSchema>;
 export type CreateBenefitPlanInput = z.infer<typeof createBenefitPlanSchema>;
 export type CreateBenefitEnrollmentInput = z.infer<typeof createBenefitEnrollmentSchema>;
 export type CreateAbsenceRequestInput = z.infer<typeof createAbsenceRequestSchema>;

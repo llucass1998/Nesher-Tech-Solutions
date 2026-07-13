@@ -11,6 +11,7 @@ import { HealthModule } from './modules/health/health.module';
 import { OnboardingModule } from './modules/onboarding/onboarding.module';
 import { OrganizationModule } from './modules/organization/organization.module';
 import { PayrollModule } from './modules/payroll/payroll.module';
+import { PayslipsModule } from './modules/payslips/payslips.module';
 import { PeopleModule } from './modules/people/people.module';
 import { RecruitmentModule } from './modules/recruitment/recruitment.module';
 import { TimeAttendanceModule } from './modules/time-attendance/time-attendance.module';
@@ -28,6 +29,7 @@ import { TimeAttendanceModule } from './modules/time-attendance/time-attendance.
     HealthModule,
     OnboardingModule,
     OrganizationModule,
+    PayslipsModule,
     PeopleModule,
     RecruitmentModule,
     TimeAttendanceModule,

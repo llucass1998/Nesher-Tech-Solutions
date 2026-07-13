@@ -113,6 +113,19 @@ enum PayrollReopeningStatus {
   APPLIED
 }
 
+enum PayslipStatus {
+  DRAFT
+  READY_FOR_REVIEW
+  CANCELLED
+}
+
+enum PayslipLineType {
+  EARNING
+  DEDUCTION
+  EMPLOYER_CHARGE
+  INFORMATIONAL
+}
+
 enum BenefitPlanType {
   HEALTH
   DENTAL
@@ -287,6 +300,7 @@ model Company {
   attendancePeriods  AttendancePeriod[]
   payrollCycles      PayrollCycle[]
   payrollRuns        PayrollRun[]
+  payslips           Payslip[]
   benefitPlans       BenefitPlan[]
   absenceRequests    AbsenceRequest[]
   vacationPeriods    VacationPeriod[]
@@ -465,6 +479,8 @@ model Employee {
   attendancePeriods     AttendancePeriod[]
   payrollRuns           PayrollRun[]
   payrollItems          PayrollItem[]
+  payslips              Payslip[]
+  payslipLines          PayslipLine[]
   benefitEnrollments    BenefitEnrollment[]
   absenceRequests       AbsenceRequest[]
   vacationPeriods       VacationPeriod[]
@@ -796,6 +812,7 @@ model PayrollRun {
   reason                 String
   source                 String
   items                  PayrollItem[]
+  payslip                Payslip?
   dataClassification     DataClassification @default(RESTRICTED)
   createdAt              DateTime           @default(now())
   updatedAt              DateTime           @updatedAt
@@ -824,6 +841,7 @@ model PayrollItem {
   recordedBy             String
   reason                 String
   dataClassification     DataClassification @default(RESTRICTED)
+  payslipLines           PayslipLine[]
   createdAt              DateTime           @default(now())
   updatedAt              DateTime           @updatedAt
 
@@ -848,6 +866,65 @@ model PayrollReopening {
   updatedAt          DateTime               @updatedAt
 
   @@index([cycleId, status])
+}
+
+model Payslip {
+  id                     String             @id @default(uuid())
+  payrollRunId           String             @unique
+  payrollRun             PayrollRun         @relation(fields: [payrollRunId], references: [id])
+  companyId              String
+  company                Company            @relation(fields: [companyId], references: [id])
+  employeeId             String
+  employee               Employee           @relation(fields: [employeeId], references: [id])
+  status                 PayslipStatus      @default(DRAFT)
+  referenceMonth         Int
+  referenceYear          Int
+  grossAmount            Decimal            @default(0) @db.Decimal(14, 2)
+  deductionAmount        Decimal            @default(0) @db.Decimal(14, 2)
+  netAmount              Decimal            @default(0) @db.Decimal(14, 2)
+  currency               String             @default("BRL")
+  visibleToEmployee      Boolean            @default(false)
+  publishedAt            DateTime?
+  cancelledAt            DateTime?
+  cancelledBy            String?
+  recordedAt             DateTime           @default(now())
+  recordedBy             String
+  reason                 String
+  source                 String
+  legalValidationPending Boolean            @default(true)
+  dataClassification     DataClassification @default(RESTRICTED)
+  lines                  PayslipLine[]
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  @@index([companyId, status])
+  @@index([employeeId, referenceYear, referenceMonth])
+}
+
+model PayslipLine {
+  id                     String             @id @default(uuid())
+  payslipId              String
+  payslip                Payslip            @relation(fields: [payslipId], references: [id])
+  payrollItemId          String?
+  payrollItem            PayrollItem?       @relation(fields: [payrollItemId], references: [id])
+  employeeId             String
+  employee               Employee           @relation(fields: [employeeId], references: [id])
+  type                   PayslipLineType
+  code                   String
+  description            String
+  quantity               Decimal?           @db.Decimal(14, 4)
+  amount                 Decimal            @db.Decimal(14, 2)
+  currency               String             @default("BRL")
+  legalValidationPending Boolean            @default(true)
+  recordedAt             DateTime           @default(now())
+  recordedBy             String
+  reason                 String
+  dataClassification     DataClassification @default(RESTRICTED)
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  @@index([payslipId, type])
+  @@index([employeeId, code])
 }
 
 model BenefitPlan {

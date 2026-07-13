@@ -10,7 +10,7 @@ export default async function AnalyticsPage() {
   return (
     <div className="space-y-6">
       <section className="rounded-2xl border border-[var(--color-border-secondary)] bg-[var(--color-background-primary)] p-6 shadow-sm">
-        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-brand-primary)]">Fase 13</p>
+        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-brand-primary)]">Fase 14</p>
         <h2 className="mt-2 text-3xl font-bold tracking-tight">Analytics agregados</h2>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--color-text-secondary)]">
           Visao preliminar de indicadores agregados de RH/DP por status e governanca. Esta tela nao exibe salario,
@@ -55,8 +55,9 @@ export default async function AnalyticsPage() {
               <MetricList title="Ferias" rows={data.operations.vacationPeriodsByStatus} />
             </Panel>
 
-            <Panel title="Administracao preliminar" helper="Folha e beneficios agregados sem valores monetarios ou dados sensiveis.">
+            <Panel title="Administracao preliminar" helper="Folha, holerites e beneficios agregados sem valores monetarios ou dados sensiveis.">
               <MetricList title="Ciclos de folha" rows={data.administration.payrollCyclesByStatus} />
+              <MetricList title="Holerites demonstrativos" rows={data.administration.payslipsByStatus} />
               <MetricList title="Beneficios" rows={data.administration.benefitEnrollmentsByStatus} />
             </Panel>
           </section>
@@ -153,8 +154,10 @@ function formatGovernanceLabel(key: string) {
   const labels: Record<string, string> = {
     attendancePeriods: 'Periodos de ponto',
     payrollCycles: 'Ciclos de folha',
-    payrollRuns: 'Demonstrativos',
+    payrollRuns: 'Demonstrativos de folha',
     payrollItems: 'Itens de folha',
+    payslips: 'Holerites demonstrativos',
+    payslipLines: 'Linhas de holerite',
     benefitPlans: 'Planos de beneficio',
     benefitEnrollments: 'Adesoes a beneficio',
     absenceRequests: 'Ausencias',

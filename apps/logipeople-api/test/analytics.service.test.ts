@@ -12,6 +12,7 @@ function createAnalyticsService() {
   const onboardingTaskGroupBy = vi.fn().mockResolvedValue(groupByRows({ PENDING: 3, COMPLETED: 5 }));
   const attendancePeriodGroupBy = vi.fn().mockResolvedValue(groupByRows({ OPEN: 2, REVIEWED: 1 }));
   const payrollCycleGroupBy = vi.fn().mockResolvedValue(groupByRows({ DRAFT: 1 }));
+  const payslipGroupBy = vi.fn().mockResolvedValue(groupByRows({ DRAFT: 2 }));
   const benefitEnrollmentGroupBy = vi.fn().mockResolvedValue(groupByRows({ REQUESTED: 2 }));
   const absenceRequestGroupBy = vi.fn().mockResolvedValue(groupByRows({ REQUESTED: 1 }));
   const vacationPeriodGroupBy = vi.fn().mockResolvedValue(groupByRows({ PLANNED: 2 }));
@@ -26,6 +27,8 @@ function createAnalyticsService() {
     payrollCycle: { groupBy: payrollCycleGroupBy, count },
     payrollRun: { count },
     payrollItem: { count },
+    payslip: { groupBy: payslipGroupBy, count },
+    payslipLine: { count },
     benefitPlan: { count },
     benefitEnrollment: { groupBy: benefitEnrollmentGroupBy, count },
     absenceRequest: { groupBy: absenceRequestGroupBy, count },
@@ -57,9 +60,12 @@ describe('AnalyticsService', () => {
           { label: 'ON_LEAVE', count: 1 },
         ],
       },
+      administration: {
+        payslipsByStatus: [{ label: 'DRAFT', count: 2 }],
+      },
       governance: {
         pendingLegalValidation: {
-          total: 12,
+          total: 14,
         },
       },
     });

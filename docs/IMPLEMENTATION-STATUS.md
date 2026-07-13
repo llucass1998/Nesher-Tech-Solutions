@@ -2,7 +2,7 @@
 
 ## Scope for this execution
 
-Phases 1-13 are in scope:
+Phases 1-14 are in scope:
 
 1. Study and diagnosis.
 2. Reference and license documentation.
@@ -17,6 +17,7 @@ Phases 1-13 are in scope:
 11. Recruitment foundation.
 12. Onboarding foundation.
 13. Analytics foundation.
+14. Preliminary payslip foundation.
 
 ## Current status
 
@@ -33,6 +34,7 @@ Phases 1-13 are in scope:
 | Onboarding foundation | Implemented | Phase 12 adds preliminary internal onboarding plans, checklist tasks, API endpoints, tests and a web page. Admission approval, candidate-to-employee conversion, external provisioning and workflow automation remain out of scope. |
 | Time and Attendance foundation | Implemented | Phase 7 adds work schedules, time entries, preliminary attendance periods, API endpoints, tests and a web page. Legal/payroll validation remains pending. |
 | Payroll foundation | Implemented | Phase 8 adds preliminary payroll cycles, runs, items, audited reopening requests, API endpoints, tests and a web page. Legal calculation, payments and eSocial remain out of scope. |
+| Preliminary payslip foundation | Implemented | Phase 14 adds restricted demonstrative payslips derived from payroll runs, line copies from payroll items, API endpoints, tests and a web page. Employee publication, official PDF/signature, legal calculation, bank payment and eSocial remain out of scope. |
 | Benefits foundation | Implemented | Phase 9 adds preliminary benefit plans, enrollments, API endpoints, tests and a web page. Provider integrations, eligibility/legal validation and payroll deductions remain out of scope. |
 | Absence and Vacation foundation | Implemented | Phase 10 adds preliminary absence requests, vacation periods, API endpoints, tests and a web page. Legal balance calculations, automatic approvals, payroll effects and eSocial remain out of scope. |
 
@@ -40,6 +42,7 @@ Phases 1-13 are in scope:
 
 - Payroll legal calculation and homologation are not implemented.
 - Payroll payment execution is not implemented.
+- Official payslip publication, employee release, PDF generation, signature workflow and legal payslip validation are not implemented.
 - Benefits provider integrations and definitive payroll deductions are not implemented.
 - Recruitment job-board publishing, offer management, hiring automation and candidate-to-employee conversion are not implemented.
 - Onboarding admission approval, candidate-to-employee conversion, external provisioning and workflow automation are not implemented.
@@ -56,6 +59,7 @@ Phases 1-13 are in scope:
 - LogiPeople web still uses a placeholder LogiIdentity token provider, so authenticated pages render the no-credential state until real identity integration is wired.
 - Time and attendance records are preliminary evidence and summaries only; they must not be used for payroll or compliance decisions without legal and DP validation.
 - Payroll records are preliminary restricted evidence only; they must not trigger bank payments, payslip publication, eSocial events or legal compliance claims without specialized validation.
+- Payslip records are preliminary restricted evidence only; they must not be published to employees, signed, converted into official PDFs, paid, sent to eSocial or treated as legally validated without specialized DP/legal review.
 - Benefits records are preliminary restricted evidence only; they must not trigger provider communications, payroll deductions or eligibility/compliance claims without specialized validation.
 - Absence and vacation records are preliminary confidential evidence only; they must not trigger automatic approvals, payroll effects, eSocial events or legal compliance claims without DP and legal validation.
 - Recruitment records are preliminary confidential evidence only; they must not trigger hiring, onboarding, offer commitments or external publication without HR governance and consent validation.

@@ -13,6 +13,7 @@ export class AnalyticsService {
       onboardingByStatus,
       timeByStatus,
       payrollByStatus,
+      payslipsByStatus,
       benefitsByStatus,
       absenceByStatus,
       vacationByStatus,
@@ -24,6 +25,7 @@ export class AnalyticsService {
       this.prisma.onboardingTask.groupBy({ by: ['status'], _count: { _all: true } }),
       this.prisma.attendancePeriod.groupBy({ by: ['status'], _count: { _all: true } }),
       this.prisma.payrollCycle.groupBy({ by: ['status'], _count: { _all: true } }),
+      this.prisma.payslip.groupBy({ by: ['status'], _count: { _all: true } }),
       this.prisma.benefitEnrollment.groupBy({ by: ['status'], _count: { _all: true } }),
       this.prisma.absenceRequest.groupBy({ by: ['status'], _count: { _all: true } }),
       this.prisma.vacationPeriod.groupBy({ by: ['status'], _count: { _all: true } }),
@@ -52,6 +54,7 @@ export class AnalyticsService {
       },
       administration: {
         payrollCyclesByStatus: this.toMetricRows(payrollByStatus),
+        payslipsByStatus: this.toMetricRows(payslipsByStatus),
         benefitEnrollmentsByStatus: this.toMetricRows(benefitsByStatus),
       },
       governance: {
@@ -61,11 +64,13 @@ export class AnalyticsService {
   }
 
   private async countPendingLegalValidation() {
-    const [attendancePeriods, payrollCycles, payrollRuns, payrollItems, benefitPlans, benefitEnrollments, absenceRequests, vacationPeriods, jobOpenings, jobApplications, onboardingPlans, onboardingTasks] = await Promise.all([
+    const [attendancePeriods, payrollCycles, payrollRuns, payrollItems, payslips, payslipLines, benefitPlans, benefitEnrollments, absenceRequests, vacationPeriods, jobOpenings, jobApplications, onboardingPlans, onboardingTasks] = await Promise.all([
       this.prisma.attendancePeriod.count({ where: { legalValidationPending: true } }),
       this.prisma.payrollCycle.count({ where: { legalValidationPending: true } }),
       this.prisma.payrollRun.count({ where: { legalValidationPending: true } }),
       this.prisma.payrollItem.count({ where: { legalValidationPending: true } }),
+      this.prisma.payslip.count({ where: { legalValidationPending: true } }),
+      this.prisma.payslipLine.count({ where: { legalValidationPending: true } }),
       this.prisma.benefitPlan.count({ where: { legalValidationPending: true } }),
       this.prisma.benefitEnrollment.count({ where: { legalValidationPending: true } }),
       this.prisma.absenceRequest.count({ where: { legalValidationPending: true } }),
@@ -81,6 +86,8 @@ export class AnalyticsService {
       payrollCycles,
       payrollRuns,
       payrollItems,
+      payslips,
+      payslipLines,
       benefitPlans,
       benefitEnrollments,
       absenceRequests,
@@ -94,6 +101,8 @@ export class AnalyticsService {
         payrollCycles +
         payrollRuns +
         payrollItems +
+        payslips +
+        payslipLines +
         benefitPlans +
         benefitEnrollments +
         absenceRequests +

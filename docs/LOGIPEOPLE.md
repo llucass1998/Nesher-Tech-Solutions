@@ -31,6 +31,7 @@ Pacotes compartilhados:
 - Onboarding preliminar.
 - Ponto e frequencia preliminar.
 - Folha preliminar.
+- Holerites demonstrativos preliminares.
 - Beneficios preliminares.
 - Ausencias e ferias preliminares.
 - Analytics agregado.
@@ -81,5 +82,6 @@ Paginas atuais incluem:
 - ponto;
 - ausencias/ferias;
 - folha;
+- holerites;
 - beneficios;
 - configuracoes.

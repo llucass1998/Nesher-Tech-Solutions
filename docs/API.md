@@ -73,3 +73,43 @@ Formato alvo:
 ```
 
 Nem todos os controllers legados seguem integralmente esse formato. Novas rotas devem seguir.
+
+## LogiPeople modulos principais
+
+Base local: `http://localhost:3433/api/v1`.
+
+Rotas presentes no checkout:
+
+- `GET/POST /people`
+- `GET/POST /organization/*`
+- `GET/POST /recruitment/*`
+- `GET/POST /onboarding/*`
+- `GET/POST /time-attendance/*`
+- `GET/POST /payroll/*`
+- `GET/POST /benefits/*`
+- `GET/POST /absence-vacation/*`
+- `GET /analytics/overview`
+
+## LogiPeople holerites demonstrativos
+
+- `GET /payslips`
+- `POST /payslips`
+- `GET /payslips/lines`
+
+`POST /payslips` aceita:
+
+```json
+{
+  "payrollRunId": "uuid",
+  "reason": "Generate demonstrative payroll evidence"
+}
+```
+
+Regras:
+
+- requer JWT LogiPeople e roles `PEOPLE_ADMIN` ou `PAYROLL_MANAGER`;
+- cria apenas registro demonstrativo restrito;
+- `visibleToEmployee` permanece `false`;
+- `legalValidationPending` permanece `true`;
+- a operacao e idempotente por `payrollRunId`;
+- folha fechada exige reabertura auditada antes de gerar novo demonstrativo.

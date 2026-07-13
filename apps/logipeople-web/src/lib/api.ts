@@ -99,6 +99,37 @@ export interface PayrollItemSummary {
   employee?: { employeeNumber: string; person?: { fullName: string; preferredName?: string | null } | null } | null;
 }
 
+export interface PayslipSummary {
+  id: string;
+  status: string;
+  referenceMonth: number;
+  referenceYear: number;
+  grossAmount: string;
+  deductionAmount: string;
+  netAmount: string;
+  currency: string;
+  visibleToEmployee: boolean;
+  publishedAt?: string | null;
+  legalValidationPending: boolean;
+  payrollRun?: { status: string; cycle?: { name: string; referenceMonth: number; referenceYear: number } | null } | null;
+  company?: { name: string } | null;
+  employee?: { employeeNumber: string; person?: { fullName: string; preferredName?: string | null } | null } | null;
+  _count?: { lines: number };
+}
+
+export interface PayslipLineSummary {
+  id: string;
+  type: string;
+  code: string;
+  description: string;
+  quantity?: string | null;
+  amount: string;
+  currency: string;
+  legalValidationPending: boolean;
+  payslip?: { payrollRun?: { cycle?: { name: string; referenceMonth: number; referenceYear: number } | null } | null } | null;
+  employee?: { employeeNumber: string; person?: { fullName: string; preferredName?: string | null } | null } | null;
+}
+
 export interface BenefitPlanSummary {
   id: string;
   name: string;
@@ -245,6 +276,7 @@ export interface AnalyticsOverview {
   };
   administration: {
     payrollCyclesByStatus: AnalyticsMetricRow[];
+    payslipsByStatus: AnalyticsMetricRow[];
     benefitEnrollmentsByStatus: AnalyticsMetricRow[];
   };
   governance: {
@@ -253,6 +285,8 @@ export interface AnalyticsOverview {
       payrollCycles: number;
       payrollRuns: number;
       payrollItems: number;
+      payslips: number;
+      payslipLines: number;
       benefitPlans: number;
       benefitEnrollments: number;
       absenceRequests: number;

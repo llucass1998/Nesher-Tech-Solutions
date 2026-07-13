@@ -1,6 +1,6 @@
 # Implementation Status
 
-Data: 2026-07-12
+Data: 2026-07-13
 
 ## Status geral
 
@@ -19,6 +19,7 @@ Data: 2026-07-12
 | Fase 11 - Docker e seguranca | Concluida | Dockerfiles, Compose, migration one-shot, health checks, runtime nao privilegiado, Helmet e validacao real de containers. |
 | Fase 12 - CI/CD | Concluida no escopo do checkout atual | Workflows GitHub Actions criados para LogiFlow, LogiPeople e integracao/plataforma com lint, typecheck, testes, build, audit completo, Prisma e Docker. |
 | Fase 13 - Documentacao | Concluida | README e guias docs atualizados para refletir LogiFlow, LogiPeople, Docker, CI/CD, seguranca, integracao e pendencias reais. |
+| Fase 14 - Holerites demonstrativos LogiPeople | Em validacao | Fundacao preliminar restrita de holerites demonstrativos, sem publicacao ao colaborador, PDF oficial, assinatura, pagamento bancario ou eSocial. |
 
 ## Matriz de regressao
 
@@ -103,10 +104,9 @@ Todas as rotas legadas preservam o controller atual e passam a emitir:
 
 - O prompt mestre descreve apps LogiFlow/LogiDesk que nao existem neste checkout.
 - Fase 6 esta bloqueada por ausencia completa de LogiDesk no workspace.
-- Nao ha Docker Compose ou GitHub Actions localizados.
-- Working tree contem alteracoes nao minhas em LogiPeople.
-- Health checks Docker e logs de containers nao foram executados porque nao ha `docker-compose*.yml` localizado.
-- Commit semantico desta entrega foi criado apenas com os arquivos das fases 1-4; alteracoes pre-existentes de LogiPeople ficaram fora do commit.
+- Outbox, Redis/BullMQ, DLQ, Socket.IO distribuido e testes E2E LogiFlow/LogiDesk seguem bloqueados pela ausencia dos modulos LogiDesk/workers reais neste checkout.
+- O Compose validado cobre a stack LogiFlow raiz (`logiflow-db`, `logiflow-migrate`, `logiflow-api`, `logiflow-web`).
+- Os workflows GitHub Actions existem para LogiFlow, LogiPeople e integracao/plataforma; nao ha workflow dedicado de LogiDesk porque nao ha app LogiDesk.
 
 ## Fase 6 - evidencia do bloqueio
 
@@ -522,3 +522,49 @@ Implementado:
 | `npm test` | PASS | 6 arquivos, 39 testes passaram. |
 | `npm run build` | PASS | Next raiz compilou; aviso Node `DEP0169` permanece. |
 | `npm audit` | PASS | 0 vulnerabilidades. |
+
+## Fase 14 - Holerites demonstrativos LogiPeople
+
+Implementado nesta fase:
+
+- Prisma LogiPeople ganhou a fundacao de `Payslip` e `PayslipLine` com valores `Decimal`, classificacao restrita, validacao legal pendente e relacao idempotente com `PayrollRun`.
+- Migration `databases/logipeople/prisma/migrations/20260713030000_payslip_foundation/migration.sql` criada para os demonstrativos restritos de folha.
+- Modulo `apps/logipeople-api/src/modules/payslips` integrado ao `AppModule`.
+- `POST /api/v1/payslips`, `GET /api/v1/payslips` e `GET /api/v1/payslips/lines` adicionados com RBAC, campo sensivel `salary`, auditoria e checagem explicita de escopo de empresa.
+- Contrato compartilhado `createPayslipSchema` criado em `packages/contracts`.
+- Analytics LogiPeople passou a contar holerites e linhas pendentes de validacao legal sem expor valores individuais.
+- Tela `apps/logipeople-web/app/(app)/payslips/page.tsx` criada para listar holerites demonstrativos e linhas, sempre deixando explicito que nao ha publicacao ao colaborador.
+- Testes de regressao adicionados para holerites demonstrativos:
+  - cria holerite restrito de uma folha aberta;
+  - operacao idempotente para a mesma folha;
+  - rejeita folha fechada sem reabertura auditada;
+  - rejeita criacao fora do escopo de empresa do principal.
+
+Fora do escopo da fase 14:
+
+- Publicacao de holerite ao colaborador.
+- PDF oficial.
+- Assinatura ou aceite formal.
+- Calculo legal/homologado.
+- Pagamento bancario real.
+- Eventos reais ao eSocial.
+
+Validacoes executadas em 2026-07-13:
+
+| Comando/verificacao | Resultado | Evidencia |
+| --- | --- | --- |
+| `npm run logipeople:prisma:generate` | PASS | Prisma Client LogiPeople gerado com sucesso. |
+| `npm run typecheck` | PASS | Raiz e todos os workspaces passaram. |
+| `npm test` | PASS | 6 arquivos, 39 testes passaram. |
+| `npm run test:workspaces` | PASS | LogiPeople API: 10 arquivos, 50 testes; demais workspaces sem testes e `passWithNoTests`. |
+| `npm run lint` | PASS | Sem erros. |
+| `npm run lint:workspaces` | PASS | Sem erros; avisos conhecidos do Next sobre `pages` em pacotes nao-Next. |
+| `npm run build` | PASS | Next raiz compilou. |
+| `npm run build:workspaces` | PASS | LogiPeople API/web/worker e pacotes passaram. |
+| `git diff --check` | PASS | Sem erros de whitespace; apenas avisos CRLF do Git no Windows. |
+
+Riscos residuais:
+
+- A web ainda usa provedor placeholder de token do LogiIdentity; paginas autenticadas exibem estado sem credencial ate a integracao real.
+- Holerites seguem como evidencia preliminar restrita e nao podem ser usados como recibo legal, pagamento, PDF oficial, assinatura ou eSocial.
+- A rota `/payslips` foi validada via servidor `logipeople-web` em `127.0.0.1:3400`, com HTTP 200 e estado sem credencial renderizado; nao houve navegacao manual em browser grafico.

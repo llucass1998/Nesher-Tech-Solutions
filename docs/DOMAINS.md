@@ -6,9 +6,9 @@ LogiFlow remains responsible for logistics operations: drivers, vehicles, delive
 
 ## LogiPeople
 
-LogiPeople is an independent HR and Departamento Pessoal system. In phases 1-13, the foundation, Organization, Core People, preliminary Analytics, preliminary Recruitment, preliminary Onboarding, preliminary Time and Attendance, preliminary Payroll, preliminary Benefits and preliminary Absence and Vacation foundations are implemented.
+LogiPeople is an independent HR and Departamento Pessoal system. In phases 1-14, the foundation, Organization, Core People, preliminary Analytics, preliminary Recruitment, preliminary Onboarding, preliminary Time and Attendance, preliminary Payroll, preliminary Payslips, preliminary Benefits and preliminary Absence and Vacation foundations are implemented.
 
-### Implemented in phases 1-13
+### Implemented in phases 1-14
 
 - Identity integration boundary.
 - RBAC and ABAC primitives.
@@ -22,6 +22,7 @@ LogiPeople is an independent HR and Departamento Pessoal system. In phases 1-13,
 - Onboarding foundation with preliminary internal plans and checklist tasks.
 - Time and Attendance foundation with work schedules, time entries and preliminary attendance periods.
 - Payroll foundation with cycles, preliminary runs, payroll items and audited reopening requests.
+- Preliminary payslip foundation with restricted demonstrative records derived from payroll runs and lines copied from payroll items.
 - Benefits foundation with plans and preliminary enrollments.
 - Absence and Vacation foundation with preliminary absence requests and vacation periods.
 
@@ -35,7 +36,7 @@ The following domains are documented as future modules and must not be represent
 - Absence and Vacation legal balance calculation, automatic approvals, payroll effects and eSocial events.
 - Benefits provider integrations, eligibility/legal validation and definitive payroll deductions.
 - Payroll legal calculation, homologation and payment execution.
-- Payslips.
+- Official payslip publication, legally validated payslip calculation, PDF generation, signature workflow and employee-facing payslip release.
 - Termination.
 - Government reporting and eSocial.
 - AI assistants.
@@ -50,4 +51,4 @@ Core People defines people and employment records: person, employee, employment,
 
 ## Departamento Pessoal boundary
 
-DP-sensitive records such as contracts, compensation history, documents, time-attendance evidence, preliminary analytics aggregates, preliminary recruitment records, preliminary onboarding records, preliminary absence/vacation records, preliminary payroll records and preliminary benefits records are modeled with data classification and audit from the beginning, but individual-level BI, predictive analytics, candidate-to-employee conversion, onboarding automation, absence/vacation legal balance calculations, payroll legal calculations, benefits provider integrations, payment execution and eSocial real submission are not implemented in phases 1-13.
+DP-sensitive records such as contracts, compensation history, documents, time-attendance evidence, preliminary analytics aggregates, preliminary recruitment records, preliminary onboarding records, preliminary absence/vacation records, preliminary payroll records, preliminary payslip records and preliminary benefits records are modeled with data classification and audit from the beginning, but individual-level BI, predictive analytics, candidate-to-employee conversion, onboarding automation, absence/vacation legal balance calculations, payroll legal calculations, official payslip publication, benefits provider integrations, payment execution and eSocial real submission are not implemented in phases 1-14.
