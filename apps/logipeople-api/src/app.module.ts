@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './prisma/prisma.module';
 import { AccessControlModule } from './modules/access-control/access-control.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { BenefitsModule } from './modules/benefits/benefits.module';
@@ -18,6 +19,7 @@ import { TimeAttendanceModule } from './modules/time-attendance/time-attendance.
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
+    AnalyticsModule,
     AuditModule,
     AccessControlModule,
     AuthModule,
