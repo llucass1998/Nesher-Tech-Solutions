@@ -1,0 +1,18 @@
+import { Response } from 'express';
+
+export function sendError(
+  res: Response,
+  status: number,
+  code: string,
+  message: string,
+  details: Record<string, unknown> = {}
+) {
+  return res.status(status).json({
+    error: {
+      code,
+      message,
+      requestId: res.locals.requestId ?? 'unknown',
+      details,
+    },
+  });
+}

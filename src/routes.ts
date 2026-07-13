@@ -3,8 +3,10 @@ import { AuthController } from './controllers/Authcontrollers';
 import { DriverController } from './controllers/DriverController';
 import { VehicleController } from './controllers/VehicleController';
 import { DeliveryController } from './controllers/DeliveryController';
-import { verificarApiKeyPagamento, verificarToken } from './middlewares/middllewares';
+import { verificarAccessTokenV1, verificarApiKeyPagamento, verificarToken } from './middlewares/middllewares';
 import { UserController } from './controllers/UserController';
+import { AuthV1Controller } from './controllers/AuthV1Controller';
+import { DriverV1Controller } from './controllers/DriverV1Controller';
 
 const routes = Router();
 
@@ -14,6 +16,22 @@ const userController = new UserController();
 const driverController = new DriverController();
 const vehicleController = new VehicleController();
 const deliveryController = new DeliveryController();
+const authV1Controller = new AuthV1Controller();
+const driverV1Controller = new DriverV1Controller();
+
+// ==========================================
+// API V1 - AUTENTICACAO E MOTORISTA
+// ==========================================
+routes.post('/api/v1/auth/register', (req, res) => authV1Controller.register(req, res));
+routes.post('/api/v1/auth/login', (req, res) => authV1Controller.login(req, res));
+routes.post('/api/v1/auth/refresh', (req, res) => authV1Controller.refresh(req, res));
+routes.post('/api/v1/auth/logout', (req, res) => authV1Controller.logout(req, res));
+routes.get('/api/v1/auth/me', verificarAccessTokenV1, (req, res) => authV1Controller.me(req, res));
+
+routes.get('/api/v1/driver/me', verificarAccessTokenV1, (req, res) => driverV1Controller.me(req, res));
+routes.get('/api/v1/driver/deliveries', verificarAccessTokenV1, (req, res) => driverV1Controller.deliveries(req, res));
+routes.get('/api/v1/driver/deliveries/:id', verificarAccessTokenV1, (req, res) => driverV1Controller.delivery(req, res));
+routes.patch('/api/v1/driver/deliveries/:id/status', verificarAccessTokenV1, (req, res) => driverV1Controller.updateDeliveryStatus(req, res));
 
 // ==========================================
 // ROTA DE LOGIN

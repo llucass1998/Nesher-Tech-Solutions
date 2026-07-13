@@ -1,5 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt, { JwtPayload } from 'jsonwebtoken';
+import { prisma } from '../lib/prisma';
+import { sendError } from '../lib/api-error';
+import { verifyAccessToken } from '../lib/auth-tokens';
 
 interface AuthenticatedRequest extends Request {
   user?: string | JwtPayload;
@@ -44,4 +47,35 @@ export const verificarApiKeyPagamento = (req: Request, res: Response, next: Next
   }
 
   return next();
+};
+
+export const verificarAccessTokenV1 = async (req: Request, res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader?.startsWith('Bearer ')) {
+    return sendError(res, 401, 'AUTHENTICATION_REQUIRED', 'Token nao fornecido.');
+  }
+
+  const token = authHeader.slice('Bearer '.length);
+
+  try {
+    const decoded = verifyAccessToken(token);
+    const user = await prisma.user.findUnique({ where: { id: decoded.sub } });
+
+    if (!user || user.status !== 'ACTIVE') {
+      return sendError(res, 401, 'TOKEN_EXPIRED', 'Usuario inativo ou inexistente.');
+    }
+
+    req.auth = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      status: user.status,
+    };
+
+    return next();
+  } catch {
+    return sendError(res, 401, 'TOKEN_EXPIRED', 'Token invalido ou expirado.');
+  }
 };
