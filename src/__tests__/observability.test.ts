@@ -71,6 +71,18 @@ describe('observabilidade da API', () => {
     });
   });
 
+  it('readiness retorna 503 quando o banco falha', async () => {
+    vi.mocked(prisma.$queryRaw).mockRejectedValue(new Error('database offline'));
+
+    const response = await request(app).get('/api/v1/health/ready');
+
+    expect(response.status).toBe(503);
+    expect(response.body).toMatchObject({
+      status: 'not_ready',
+      checks: { database: 'error' },
+    });
+  });
+
   it('exibe metricas HTTP em formato Prometheus text', async () => {
     await request(app).get('/api/v1/health/live');
 

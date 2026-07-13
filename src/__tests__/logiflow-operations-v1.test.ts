@@ -243,6 +243,48 @@ describe('LogiFlow operacional v1', () => {
     expect(proof.body.url).toBe('https://example.com/proof.jpg');
   });
 
+  it('nao cria ocorrencia com severidade invalida', async () => {
+    await mockLogin();
+    const login = await request(app).post('/api/v1/auth/login').send({
+      email: 'operator@example.com',
+      password: 'secret123',
+    });
+
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(operatorUser);
+
+    const response = await request(app)
+      .post('/api/v1/operations/deliveries/delivery-1/occurrences')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
+      .send({
+        title: 'Cliente ausente',
+        description: 'Nao havia ninguem no local',
+        severity: 'INVALID',
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error.code).toBe('VALIDATION_ERROR');
+    expect(prisma.occurrence.create).not.toHaveBeenCalled();
+  });
+
+  it('nao registra comprovante sem URL', async () => {
+    await mockLogin();
+    const login = await request(app).post('/api/v1/auth/login').send({
+      email: 'operator@example.com',
+      password: 'secret123',
+    });
+
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(operatorUser);
+
+    const response = await request(app)
+      .post('/api/v1/operations/deliveries/delivery-1/proofs')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
+      .send({ description: 'Sem URL' });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error.code).toBe('VALIDATION_ERROR');
+    expect(prisma.deliveryProof.create).not.toHaveBeenCalled();
+  });
+
   it('reprocessa apenas ocorrencia em falha permanente ou temporaria', async () => {
     await mockLogin();
     const login = await request(app).post('/api/v1/auth/login').send({
@@ -295,5 +337,38 @@ describe('LogiFlow operacional v1', () => {
         lastError: null,
       },
     });
+  });
+
+  it('bloqueia reprocessamento de ocorrencia que nao esta em falha', async () => {
+    await mockLogin();
+    const login = await request(app).post('/api/v1/auth/login').send({
+      email: 'operator@example.com',
+      password: 'secret123',
+    });
+
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(operatorUser);
+    vi.mocked(prisma.occurrence.findUnique).mockResolvedValue({
+      id: 'occurrence-1',
+      deliveryId: 'delivery-1',
+      title: 'Em processamento',
+      description: 'Aguardando worker',
+      severity: 'MEDIUM',
+      status: 'OPEN',
+      integrationStatus: 'PROCESSING',
+      retryCount: 0,
+      lastError: null,
+      ticketNumber: null,
+      createdByUserId: 'operator-1',
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    });
+
+    const response = await request(app)
+      .post('/api/v1/operations/occurrences/occurrence-1/reprocess')
+      .set('Authorization', `Bearer ${login.body.accessToken}`);
+
+    expect(response.status).toBe(409);
+    expect(response.body.error.code).toBe('INTEGRATION_UNAVAILABLE');
+    expect(prisma.occurrence.update).not.toHaveBeenCalled();
   });
 });

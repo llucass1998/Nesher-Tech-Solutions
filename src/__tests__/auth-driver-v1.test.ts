@@ -160,6 +160,34 @@ describe('auth versionada e ownership do motorista', () => {
     expect(cookieHeader).toContain('refreshToken=');
   });
 
+  it('registro com email duplicado retorna 409', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(driverUser);
+
+    const response = await request(app).post('/api/v1/auth/register').send({
+      name: 'Motorista',
+      email: 'driver@example.com',
+      password: 'secret123',
+      role: 'DRIVER',
+    });
+
+    expect(response.status).toBe(409);
+    expect(response.body.error.code).toBe('DUPLICATE_EMAIL');
+  });
+
+  it('registro publico de administrador retorna 403', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
+
+    const response = await request(app).post('/api/v1/auth/register').send({
+      name: 'Admin',
+      email: 'admin@example.com',
+      password: 'secret123',
+      role: 'ADMIN',
+    });
+
+    expect(response.status).toBe(403);
+    expect(response.body.error.code).toBe('ACCESS_DENIED');
+  });
+
   it('faz login versionado com User', async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       ...driverUser,
@@ -187,6 +215,29 @@ describe('auth versionada e ownership do motorista', () => {
     expect(response.body.user.roles).toEqual(['DRIVER']);
   });
 
+  it('login com senha invalida retorna 401 sem token', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      ...driverUser,
+      passwordHash: await bcrypt.hash('secret123', 4),
+    });
+
+    const response = await request(app).post('/api/v1/auth/login').send({
+      email: 'driver@example.com',
+      password: 'wrong-password',
+    });
+
+    expect(response.status).toBe(401);
+    expect(response.body.error.code).toBe('INVALID_CREDENTIALS');
+    expect(response.body).not.toHaveProperty('accessToken');
+  });
+
+  it('/me sem token retorna 401 estruturado', async () => {
+    const response = await request(app).get('/api/v1/auth/me');
+
+    expect(response.status).toBe(401);
+    expect(response.body.error.code).toBe('AUTHENTICATION_REQUIRED');
+  });
+
   it('motorista autenticado lista apenas suas entregas', async () => {
     await mockSuccessfulLogin();
 
@@ -210,6 +261,45 @@ describe('auth versionada e ownership do motorista', () => {
       })
     );
     expect(response.body).toHaveLength(1);
+  });
+
+  it('motorista sem DriverProfile recebe 403', async () => {
+    await mockSuccessfulLogin();
+
+    const login = await request(app).post('/api/v1/auth/login').send({
+      email: 'driver@example.com',
+      password: 'secret123',
+    });
+
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(driverUser);
+    vi.mocked(prisma.driverProfile.findUnique).mockResolvedValue(null);
+
+    const response = await request(app)
+      .get('/api/v1/driver/deliveries')
+      .set('Authorization', `Bearer ${login.body.accessToken}`);
+
+    expect(response.status).toBe(403);
+    expect(response.body.error.code).toBe('ACCESS_DENIED');
+  });
+
+  it('entrega inexistente retorna 404 para motorista autenticado', async () => {
+    await mockSuccessfulLogin();
+
+    const login = await request(app).post('/api/v1/auth/login').send({
+      email: 'driver@example.com',
+      password: 'secret123',
+    });
+
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(driverUser);
+    vi.mocked(prisma.driverProfile.findUnique).mockResolvedValue(driverProfile);
+    vi.mocked(prisma.delivery.findUnique).mockResolvedValue(null);
+
+    const response = await request(app)
+      .get('/api/v1/driver/deliveries/missing-delivery')
+      .set('Authorization', `Bearer ${login.body.accessToken}`);
+
+    expect(response.status).toBe(404);
+    expect(response.body.error.code).toBe('RESOURCE_NOT_FOUND');
   });
 
   it('motorista A acessa entrega alheia e recebe 403', async () => {
@@ -255,5 +345,34 @@ describe('auth versionada e ownership do motorista', () => {
 
     expect(response.status).toBe(422);
     expect(response.body.error.code).toBe('INVALID_STATUS_TRANSITION');
+  });
+
+  it('status valido atualiza entrega propria', async () => {
+    await mockSuccessfulLogin();
+
+    const login = await request(app).post('/api/v1/auth/login').send({
+      email: 'driver@example.com',
+      password: 'secret123',
+    });
+
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(driverUser);
+    vi.mocked(prisma.driverProfile.findUnique).mockResolvedValue(driverProfile);
+    vi.mocked(prisma.delivery.findUnique).mockResolvedValue(ownedDelivery);
+    vi.mocked(prisma.delivery.update).mockResolvedValue({
+      ...ownedDelivery,
+      status: 'IN_TRANSIT',
+    });
+
+    const response = await request(app)
+      .patch('/api/v1/driver/deliveries/delivery-owned/status')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
+      .send({ status: 'IN_TRANSIT' });
+
+    expect(response.status).toBe(200);
+    expect(response.body.status).toBe('IN_TRANSIT');
+    expect(prisma.delivery.update).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: 'delivery-owned' },
+      data: { status: 'IN_TRANSIT' },
+    }));
   });
 });

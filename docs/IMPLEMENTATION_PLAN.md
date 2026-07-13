@@ -12,6 +12,7 @@ Implementar apenas:
 6. Fase 7 - Primeiro incremento operacional do LogiFlow.
 7. Fase 8 - UI/UX e design system compartilhado.
 8. Fase 9 - Observabilidade.
+9. Fase 10 - Testes completos no escopo disponivel.
 
 ## Ajuste de escopo por estado real
 
@@ -111,6 +112,25 @@ LogiDesk, workers, Redis, BullMQ, Outbox, DLQ, Socket.IO autenticado e SSO real 
 - Criar endpoint de metricas em texto Prometheus:
   - `GET /api/v1/metrics`.
 - Manter Prometheus/Grafana/OpenTelemetry como preparacao futura, sem obrigar ambiente local.
+
+### Fase 10
+
+- Ampliar testes de autenticacao v1:
+  - email duplicado;
+  - role publica proibida;
+  - credenciais invalidas;
+  - `/me` sem token.
+- Ampliar testes de ownership do motorista:
+  - motorista sem perfil;
+  - entrega inexistente;
+  - atualizacao valida de status.
+- Ampliar testes operacionais:
+  - severidade invalida;
+  - comprovante sem URL;
+  - reprocessamento bloqueado fora de `FAILED`/`DEAD_LETTER`.
+- Ampliar testes de observabilidade:
+  - readiness com banco indisponivel.
+- Registrar limites dos testes que dependem de LogiDesk, Redis, Docker e Playwright.
 
 ## Fora de escopo nesta execucao
 

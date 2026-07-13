@@ -15,6 +15,7 @@ Data: 2026-07-12
 | Fase 7 - LogiFlow operacional | Concluida no escopo do checkout atual | Dashboard, entregas v1, filtros, paginacao, timeline, historico, ocorrencias, comprovantes e reprocessamento seguro implementados. |
 | Fase 8 - UI/UX e design system | Concluida no escopo inicial | `packages/ui` criado e aplicado na tela de entregas com badges, empty/error states, skeleton e paginacao compartilhados. |
 | Fase 9 - Observabilidade | Concluida no escopo inicial | Logger estruturado com redaction, request/correlation id, health checks e metricas HTTP em texto Prometheus. |
+| Fase 10 - Testes completos | Concluida no escopo disponivel | Suite raiz ampliada para 39 testes cobrindo auth, ownership, operacoes, reprocessamento, health e metricas. |
 
 ## Matriz de regressao
 
@@ -37,6 +38,7 @@ Data: 2026-07-12
 | Reprocessamento seguro | Nao existia | Nao | Sim | PASS |
 | Design system compartilhado | `packages/ui` nao existia | Nao | Sim | PASS |
 | Observabilidade HTTP | Nao havia request context, health ou metricas | Nao | Sim | PASS |
+| Testes criticos adicionais | Cobertura parcial de bordas auth/operacionais | Parcial | Sim | PASS |
 | LogiDesk/ticket | Nao existe no checkout | Nao | Nao aplicavel | Bloqueado por ausencia de modulo |
 | Outbox/Redis/retry | Nao existe no LogiFlow legado | Nao | Nao aplicavel | Bloqueado por ausencia de modulo |
 
@@ -264,6 +266,44 @@ Fora do escopo inicial:
 | `npm run lint` | PASS | Sem erros. |
 | `npm run build` | PASS | Next raiz compilou; aviso Node `DEP0169` permanece. |
 | `npm run test:workspaces` | PASS | LogiPeople API: 6 arquivos, 31 testes; demais pacotes sem testes e `passWithNoTests`. |
+| `npm run lint:workspaces` | PASS | Sem erros; avisos do Next sobre `pages` em pacotes nao-Next. |
+| `npm run build:workspaces` | PASS | LogiPeople API/web/worker, pacotes e `@logiflow/ui` passaram; aviso de lockfiles multiplos no Next. |
+
+## Fase 10 - Testes completos
+
+Implementado no escopo disponivel do checkout:
+
+- Auth v1:
+  - email duplicado retorna `409 DUPLICATE_EMAIL`;
+  - criacao publica de `ADMIN` retorna `403 ACCESS_DENIED`;
+  - senha invalida retorna `401 INVALID_CREDENTIALS`;
+  - `/api/v1/auth/me` sem token retorna `401 AUTHENTICATION_REQUIRED`.
+- Ownership motorista:
+  - motorista sem `DriverProfile` retorna `403`;
+  - entrega inexistente retorna `404 RESOURCE_NOT_FOUND`;
+  - status valido em entrega propria atualiza normalmente.
+- Operacoes LogiFlow:
+  - severidade invalida em ocorrencia retorna `400 VALIDATION_ERROR`;
+  - comprovante sem URL retorna `400 VALIDATION_ERROR`;
+  - reprocessamento fora de `FAILED`/`DEAD_LETTER` retorna `409 INTEGRATION_UNAVAILABLE`.
+- Observabilidade:
+  - readiness retorna `503` quando o banco falha.
+
+Fora do escopo possivel neste checkout:
+
+- Testes de contrato LogiFlow/LogiDesk, porque LogiDesk nao existe.
+- Testes Redis/BullMQ/Outbox/DLQ, porque os modulos nao existem no LogiFlow legado.
+- Testes E2E Playwright completos, porque nao ha Docker Compose/stack integrada localizada.
+
+### Validacoes da Fase 10
+
+| Comando | Resultado | Observacao |
+| --- | --- | --- |
+| `npm test` | PASS | 6 arquivos, 39 testes passaram. |
+| `npm run typecheck` | PASS | Raiz e workspaces passaram. |
+| `npm run lint` | PASS | Sem erros. |
+| `npm run build` | PASS | Next raiz compilou; aviso Node `DEP0169` permanece. |
+| `npm run test:workspaces` | PASS | LogiPeople API: 7 arquivos, 37 testes; demais pacotes sem testes e `passWithNoTests`. |
 | `npm run lint:workspaces` | PASS | Sem erros; avisos do Next sobre `pages` em pacotes nao-Next. |
 | `npm run build:workspaces` | PASS | LogiPeople API/web/worker, pacotes e `@logiflow/ui` passaram; aviso de lockfiles multiplos no Next. |
 
