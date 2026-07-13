@@ -11,7 +11,7 @@ O repositorio possui hoje duas frentes:
 - LogiFlow legado na raiz: frontend Next.js em `app/`, API Express em `src/`, banco Prisma em `prisma/`.
 - LogiPeople em monorepo: `apps/logipeople-*`, `packages/*` e `databases/logipeople`, com alteracoes nao relacionadas ja presentes no working tree.
 
-Esta execucao aplica as Fases 1-4 somente ao LogiFlow legado da raiz, preservando LogiPeople e evitando sobrescrever alteracoes existentes.
+Esta execucao aplicou as Fases 1-5 somente ao LogiFlow legado da raiz, preservando LogiPeople e evitando sobrescrever alteracoes existentes.
 
 ## Estrutura encontrada
 
@@ -46,6 +46,7 @@ Riscos confirmados:
 - Ainda nao existe `DriverProfile`.
 - Endpoints versionados `/api/v1/auth/*` e `/api/v1/driver/*` ainda nao existem.
 - LogiDesk operacional nao existe neste checkout.
+- Nao ha arquivos relacionados a ticket, chamado, suporte, SLA, inbox, kanban ou LogiDesk.
 - Docker Compose e GitHub Actions nao foram encontrados por busca filtrada.
 
 ## LogiPeople
@@ -59,6 +60,8 @@ LogiPeople ja possui NestJS, Prisma separado, guards, modulos, testes e document
 
 Essas alteracoes serao preservadas.
 
-## Validacao inicial pendente
+## Estado da Fase 6
 
-As validacoes completas serao registradas em `docs/IMPLEMENTATION_STATUS.md` apos a implementacao das Fases 1-4.
+A Fase 6 pede evoluir o LogiDesk operacional, mas nao ha base de LogiDesk neste workspace. Criar `apps/logidesk-*` do zero seria uma reconstrucao, contrariando a regra do prompt mestre de nao reconstruir o projeto do zero.
+
+O estado e os pre-requisitos da Fase 6 estao documentados em `docs/LOGIDESK.md`.

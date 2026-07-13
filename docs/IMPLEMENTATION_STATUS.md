@@ -11,6 +11,7 @@ Data: 2026-07-12
 | Fase 3 - Auth versionada | Implementada | `POST /api/v1/auth/register`, `login`, `refresh`, `logout`, `GET /me`; testes em `auth-driver-v1.test.ts`. |
 | Fase 4 - Ownership motorista | Implementada | `/api/v1/driver/me`, `/deliveries`, `/deliveries/:id`, `/status`; teste de entrega alheia retorna 403. |
 | Fase 5 - Depreciacao das rotas legadas | Implementada sem remocao | Middleware `deprecatedRoute`; headers `Deprecation`, `Sunset`, `Link`; teste de regressao atualizado. |
+| Fase 6 - LogiDesk operacional | Bloqueada | Nao existem `apps/logidesk-*` nem arquivos de ticket/suporte/SLA neste checkout; ver `docs/LOGIDESK.md`. |
 
 ## Matriz de regressao
 
@@ -85,10 +86,29 @@ Todas as rotas legadas preservam o controller atual e passam a emitir:
 ## Bloqueios conhecidos
 
 - O prompt mestre descreve apps LogiFlow/LogiDesk que nao existem neste checkout.
+- Fase 6 esta bloqueada por ausencia completa de LogiDesk no workspace.
 - Nao ha Docker Compose ou GitHub Actions localizados.
 - Working tree contem alteracoes nao minhas em LogiPeople.
 - Health checks Docker e logs de containers nao foram executados porque nao ha `docker-compose*.yml` localizado.
 - Commit semantico desta entrega foi criado apenas com os arquivos das fases 1-4; alteracoes pre-existentes de LogiPeople ficaram fora do commit.
+
+## Fase 6 - evidencia do bloqueio
+
+| Verificacao | Resultado |
+| --- | --- |
+| `rg --files \| rg -i "(logidesk\|ticket\|support\|chamado\|sla\|message\|inbox\|kanban\|atendimento\|suporte)"` | Sem resultados |
+| `Get-ChildItem -Directory apps` | Apenas `logipeople-api`, `logipeople-web`, `logipeople-worker` |
+
+Decisao: nao criar LogiDesk do zero sem confirmacao explicita, porque o prompt mestre orienta preservar e evoluir a base existente.
+
+### Validacoes da Fase 6
+
+| Comando | Resultado | Observacao |
+| --- | --- | --- |
+| `npm run typecheck` | PASS | Raiz e workspaces passaram. |
+| `npm test` | PASS apos repeticao | Primeira execucao teve falha de worker do Vitest sem teste quebrado; repeticao passou com 3 arquivos e 18 testes. |
+| `npm run lint` | PASS | Sem erros. |
+| `npm run build` | PASS | Next raiz compilou; aviso Node `DEP0169` permanece. |
 
 ## Evidencias de seguranca
 
