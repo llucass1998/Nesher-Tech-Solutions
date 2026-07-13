@@ -16,6 +16,7 @@ Data: 2026-07-12
 | Fase 8 - UI/UX e design system | Concluida no escopo inicial | `packages/ui` criado e aplicado na tela de entregas com badges, empty/error states, skeleton e paginacao compartilhados. |
 | Fase 9 - Observabilidade | Concluida no escopo inicial | Logger estruturado com redaction, request/correlation id, health checks e metricas HTTP em texto Prometheus. |
 | Fase 10 - Testes completos | Concluida no escopo disponivel | Suite raiz ampliada para 39 testes cobrindo auth, ownership, operacoes, reprocessamento, health e metricas. |
+| Fase 11 - Docker e seguranca | Concluida com risco de dependencias pendente | Dockerfiles, Compose, migration one-shot, health checks, runtime nao privilegiado, Helmet e validacao real de containers. `npm audit` ainda aponta vulnerabilidades. |
 
 ## Matriz de regressao
 
@@ -314,3 +315,111 @@ Fora do escopo possivel neste checkout:
 - Driver endpoints resolvem ownership por `JWT sub -> User -> DriverProfile -> driverId`.
 - Entrega alheia retorna `403 OWNERSHIP_REQUIRED`.
 - Status invalido do motorista retorna `422 INVALID_STATUS_TRANSITION`.
+
+## Fase 11 - Docker e seguranca
+
+Implementado:
+
+- `.dockerignore` criado para reduzir contexto e excluir `.env`, logs, build local e `node_modules`.
+- `Dockerfile.api` criado para a API Express.
+- `Dockerfile.web` criado para a web Next.
+- `docker-compose.yml` criado com:
+  - `logiflow-db`;
+  - `logiflow-migrate`;
+  - `logiflow-api`;
+  - `logiflow-web`.
+- `logiflow-migrate` executa `npx prisma migrate deploy` antes da API subir.
+- API depende de `logiflow-migrate` com `condition: service_completed_successfully`.
+- Containers de API e web rodam com usuario `logiflow`, sem privilegio root no runtime.
+- Health checks configurados para banco, API e web.
+- Portas configuraveis por:
+  - `LOGIFLOW_DB_PORT`;
+  - `LOGIFLOW_API_PORT`;
+  - `LOGIFLOW_WEB_PORT`.
+- Segredos sensiveis exigidos por variavel de ambiente no Compose:
+  - `LOGIFLOW_DB_PASSWORD`;
+  - `JWT_SECRET`;
+  - `PAYMENTS_API_KEY`.
+- `.env.example` atualizado apenas com placeholders, sem segredos reais.
+- `src/server.ts` passou a usar:
+  - `helmet`;
+  - `PORT`;
+  - `WEB_ORIGIN`;
+  - log estruturado de inicializacao.
+- `package-lock.json` atualizado para refletir o workspace `@logiflow/ui`, necessario para `npm ci` em Docker.
+- Migration `20260712050000_identity_foundation` corrigida para criar `Driver.status` e `Vehicle.status` antes de migrar perfis em banco limpo.
+- Migration defensiva `20260713030000_driver_vehicle_status_columns` criada com `ADD COLUMN IF NOT EXISTS` para bancos parcialmente migrados.
+
+Evidencias reais:
+
+| Verificacao | Resultado | Evidencia |
+| --- | --- | --- |
+| `docker compose --env-file .env.example config` | PASS | Compose renderiza corretamente com placeholders. |
+| `docker compose config` sem env | PASS de seguranca | Falha intencional: `required variable LOGIFLOW_DB_PASSWORD is missing a value`. |
+| `docker compose --env-file .env.example build --progress=plain` | PASS | Imagens `logiflow-logiflow-api`, `logiflow-logiflow-migrate` e `logiflow-logiflow-web` geradas. |
+| `docker compose --env-file .env.example up -d` em portas padrao | FAIL esperado no ambiente local | Porta `3333` ja estava em uso. |
+| `LOGIFLOW_API_PORT=3335 LOGIFLOW_WEB_PORT=3005 LOGIFLOW_DB_PORT=5435 docker compose --env-file .env.example up -d` | PASS | `logiflow-migrate` saiu com `0`; `logiflow-db`, `logiflow-api` e `logiflow-web` subiram. |
+| `docker compose ps` | PASS | DB, API e web ficaram `healthy`; migration ficou `Exited (0)`. |
+| `docker compose logs --tail=120 logiflow-migrate` | PASS | `All migrations have been successfully applied.` |
+| `GET http://localhost:3335/api/v1/health/live` | PASS | HTTP 200. |
+| `GET http://localhost:3335/api/v1/health/ready` | PASS | HTTP 200. |
+| `GET http://localhost:3005` | PASS | HTTP 200. |
+| `docker compose logs --tail=80 logiflow-api` | PASS | API registrou `server_started` e requests com `requestId`/`correlationId`. |
+| `docker compose logs --tail=80 logiflow-web` | PASS | Next iniciou com `Ready`. |
+| `docker compose logs --tail=80 logiflow-db` | PASS | Postgres aceitando conexoes. |
+| `docker compose --env-file .env.example down` | PASS | Stack desligada apos validacao. |
+
+### Validacoes da Fase 11
+
+| Comando | Resultado | Observacao |
+| --- | --- | --- |
+| `npm test` | PASS | 6 arquivos, 39 testes passaram. |
+| `npm run typecheck` | PASS | Raiz e workspaces passaram. |
+| `npm run lint` | PASS | Sem erros. |
+| `npm run build` | PASS | Next raiz compilou; aviso Node `DEP0169` permanece. |
+| `docker compose --env-file .env.example config` | PASS | Compose valido com variaveis de exemplo. |
+| `docker compose config` | FAIL esperado | Sem env, bloqueia subida por ausencia de segredo obrigatorio. |
+| `docker compose --env-file .env.example build --progress=plain` | PASS | Build de API e web concluido. |
+| `docker compose --env-file .env.example up -d` | PASS com portas alternativas | Portas locais `3335`, `3005` e `5435` usadas por conflito em `3333`; migration concluiu antes da API. |
+| `npm audit --audit-level=high` | FAIL | 8 vulnerabilidades: 5 moderadas, 3 altas. |
+| `npm run lint` apos correcoes | PASS | Sem erros. |
+| `npm run typecheck` apos correcoes | PASS | Raiz e workspaces passaram. |
+| `npm test` apos correcoes | PASS | 6 arquivos, 39 testes passaram. |
+| `npm run build` apos correcoes | PASS | Next raiz compilou; aviso Node `DEP0169` permanece. |
+| `npm run test:workspaces` apos correcoes | PASS | LogiPeople API: 9 arquivos, 44 testes; demais workspaces sem testes e `passWithNoTests`. |
+| `npm run lint:workspaces` apos correcoes | PASS | Sem erros; avisos conhecidos do Next sobre `pages` em pacotes nao-Next. |
+| `npm run build:workspaces` apos correcoes | PASS | LogiPeople API/web/worker, pacotes e `@logiflow/ui` passaram; aviso de root do Next permanece. |
+
+### Falha encontrada e corrigida
+
+Durante a validacao Docker em banco limpo, `logiflow-migrate` falhou com:
+
+`ERROR: column d.status does not exist`
+
+Causa raiz: a migration inicial criava `Driver` sem `status`, mas `20260712050000_identity_foundation` usava `d."status"` ao criar `DriverProfile`.
+
+Correcao aplicada:
+
+- `20260712050000_identity_foundation` agora adiciona `Driver.status` e `Vehicle.status` antes da migracao de dados.
+- `20260713030000_driver_vehicle_status_columns` adiciona as mesmas colunas de forma defensiva com `IF NOT EXISTS`.
+- A stack foi reexecutada em banco limpo e `prisma migrate deploy` aplicou as 4 migrations com sucesso.
+
+Outra falha encontrada na validacao final:
+
+`npm run typecheck` falhou em `apps/logipeople-api/src/modules/analytics/analytics.service.ts` porque a variavel declarada era `pendingValidation`, mas o retorno usava `pendingLegalValidation`.
+
+Correcao aplicada:
+
+- O destructuring foi padronizado para `pendingLegalValidation`.
+- `npm run lint`, `npm run typecheck`, `npm test` e `npm run build` passaram apos a correcao.
+
+### Risco de dependencias
+
+`npm audit --audit-level=high` encontrou vulnerabilidades em:
+
+- `form-data` com severidade alta.
+- `ws` com severidade alta via `engine.io-client`.
+- `postcss` via `next`.
+- `@hono/node-server` via cadeia de `prisma`/`@prisma/dev`.
+
+Nao foi aplicado `npm audit fix --force` nesta fase porque o proprio npm indicou alteracoes potencialmente quebradoras, incluindo downgrade/alteracao grande de `next` e `prisma`. A correcao deve ser tratada como tarefa dedicada de upgrade de dependencias, com testes e build completos.

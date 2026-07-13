@@ -1,0 +1,86 @@
+services:
+  logiflow-db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${LOGIFLOW_DB_NAME:-logiflow}
+      POSTGRES_USER: ${LOGIFLOW_DB_USER:-logiflow}
+      POSTGRES_PASSWORD: ${LOGIFLOW_DB_PASSWORD:?set LOGIFLOW_DB_PASSWORD}
+    ports:
+      - "${LOGIFLOW_DB_PORT:-5432}:5432"
+    volumes:
+      - logiflow-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  logiflow-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    environment:
+      NODE_ENV: production
+      PORT: 3333
+      WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:3000}
+      DATABASE_URL: postgresql://${LOGIFLOW_DB_USER:-logiflow}:${LOGIFLOW_DB_PASSWORD:?set LOGIFLOW_DB_PASSWORD}@logiflow-db:5432/${LOGIFLOW_DB_NAME:-logiflow}?schema=public
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+      JWT_ISSUER: ${JWT_ISSUER:-logiflow-identity}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-logiflow,logidesk}
+      JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:-}
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:-}
+      PAYMENTS_API_KEY: ${PAYMENTS_API_KEY:?set PAYMENTS_API_KEY}
+      ACCESS_TOKEN_TTL_SECONDS: ${ACCESS_TOKEN_TTL_SECONDS:-900}
+      REFRESH_TOKEN_TTL_DAYS: ${REFRESH_TOKEN_TTL_DAYS:-7}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      logiflow-db:
+        condition: service_healthy
+      logiflow-migrate:
+        condition: service_completed_successfully
+    ports:
+      - "${LOGIFLOW_API_PORT:-3333}:3333"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3333/api/v1/health/live >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  logiflow-migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    command: ["npx", "prisma", "migrate", "deploy"]
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${LOGIFLOW_DB_USER:-logiflow}:${LOGIFLOW_DB_PASSWORD:?set LOGIFLOW_DB_PASSWORD}@logiflow-db:5432/${LOGIFLOW_DB_NAME:-logiflow}?schema=public
+    depends_on:
+      logiflow-db:
+        condition: service_healthy
+    restart: "no"
+
+  logiflow-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3333}
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3333}
+    depends_on:
+      logiflow-api:
+        condition: service_healthy
+    ports:
+      - "${LOGIFLOW_WEB_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000 >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  logiflow-db-data:

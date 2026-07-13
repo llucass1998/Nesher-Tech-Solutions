@@ -13,6 +13,7 @@ Implementar apenas:
 7. Fase 8 - UI/UX e design system compartilhado.
 8. Fase 9 - Observabilidade.
 9. Fase 10 - Testes completos no escopo disponivel.
+10. Fase 11 - Docker e seguranca basica do runtime.
 
 ## Ajuste de escopo por estado real
 
@@ -132,12 +133,27 @@ LogiDesk, workers, Redis, BullMQ, Outbox, DLQ, Socket.IO autenticado e SSO real 
   - readiness com banco indisponivel.
 - Registrar limites dos testes que dependem de LogiDesk, Redis, Docker e Playwright.
 
+### Fase 11
+
+- Criar Dockerfiles separados para API Express e web Next.
+- Criar `docker-compose.yml` para LogiFlow DB, API e web.
+- Criar servico one-shot de migration com `prisma migrate deploy`.
+- Fazer a API depender da conclusao bem-sucedida das migrations.
+- Exigir segredos e senhas por variavel de ambiente no Compose.
+- Permitir portas configuraveis por variavel de ambiente.
+- Rodar containers com usuario nao privilegiado.
+- Adicionar health checks para banco, API e web.
+- Adicionar `helmet` na API.
+- Tornar `PORT` e `WEB_ORIGIN` configuraveis.
+- Atualizar `.env.example` sem segredos reais.
+- Validar `docker compose config`, build, subida da stack, health checks e logs.
+- Registrar vulnerabilidades de dependencias encontradas por `npm audit`.
+
 ## Fora de escopo nesta execucao
 
 - Reconstrucao completa do LogiDesk.
 - SSO real entre dois produtos.
 - Redis/BullMQ/Outbox/DLQ.
-- Docker completo.
 - CI/CD completo.
 - Playwright E2E completo.
 

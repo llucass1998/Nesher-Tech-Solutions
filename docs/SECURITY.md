@@ -29,3 +29,16 @@
 ## Deferred security work
 
 Full rate limiting, OpenTelemetry, storage scanning, encrypted backups and complete incident workflows are future phases and must be validated before production.
+
+## LogiFlow Docker/runtime hardening
+
+- Do not commit real secrets. `.env.example` must contain placeholders only.
+- Runtime secrets must come from environment variables, especially database password, JWT secret and payment API key.
+- Docker Compose must fail fast when required secrets are absent.
+- API and web containers must run as a non-root user.
+- API must keep `helmet` enabled before route handling.
+- CORS origin must be configured by `WEB_ORIGIN`, not hard-coded for production.
+- Host ports must be configurable through environment variables to avoid local and CI collisions.
+- A container in `running` state is not enough: health checks and logs must be verified.
+- API startup in Docker must be gated by successful `prisma migrate deploy`.
+- Dependency audit failures must be treated as release blockers unless explicitly accepted with documented risk.

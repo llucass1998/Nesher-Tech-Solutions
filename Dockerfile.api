@@ -1,0 +1,20 @@
+FROM node:24-alpine AS deps
+WORKDIR /app
+COPY . .
+RUN npm ci
+
+FROM node:24-alpine AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=deps /app/node_modules ./node_modules
+COPY package*.json ./
+COPY prisma ./prisma
+COPY prisma.config.ts ./prisma.config.ts
+COPY src ./src
+COPY packages ./packages
+COPY tsconfig.json ./tsconfig.json
+RUN addgroup -S logiflow && adduser -S logiflow -G logiflow \
+  && chown -R logiflow:logiflow /app
+USER logiflow
+EXPOSE 3333
+CMD ["npx", "tsx", "src/server.ts"]

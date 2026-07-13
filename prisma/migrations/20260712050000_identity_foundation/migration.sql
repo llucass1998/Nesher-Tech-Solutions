@@ -1,6 +1,9 @@
 -- Gradual identity foundation for LogiFlow legacy.
 -- Keeps Driver and Driver.password during the transition.
 
+ALTER TABLE "Driver" ADD COLUMN IF NOT EXISTS "status" TEXT NOT NULL DEFAULT 'AVAILABLE';
+ALTER TABLE "Vehicle" ADD COLUMN IF NOT EXISTS "status" TEXT NOT NULL DEFAULT 'AVAILABLE';
+
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
