@@ -11,6 +11,7 @@ const navItems = [
   { href: '/tickets', label: 'Chamados' },
   { href: '/tickets?view=kanban', label: 'Kanban' },
   { href: '/sla', label: 'SLA' },
+  { href: '/notifications', label: 'Notificacoes' },
   { href: '/settings', label: 'Configuracoes' },
 ];
 

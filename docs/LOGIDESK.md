@@ -41,7 +41,7 @@ Banco:
 - Dead-letter table.
 - Auditoria.
 - Health checks `GET /api/v1/health/live` e `GET /api/v1/health/ready`.
-- Web com dashboard baseado em relatorio agregado, lista de chamados, Kanban, SLA e configuracoes.
+- Web com dashboard baseado em relatorio agregado, lista de chamados, Kanban, SLA, notificacoes e configuracoes.
 
 ## API principal
 
@@ -114,6 +114,8 @@ O endpoint cria historico, auditoria e outbox. Upload binario, object storage, v
 `GET /reports/summary` retorna agregados operacionais sem dados sensiveis: totais, chamados ativos, chamados sem responsavel, notificacoes nao lidas, distribuicao por status, prioridade, origem e SLA.
 
 O dashboard web consome `/reports/summary` para os cards e distribuicoes, e `/tickets` apenas para a fila recente.
+
+A pagina `/notifications` consome `GET /notifications?unread=true` e exibe alertas pendentes de atribuicao, SLA e eventos operacionais. A marcacao como lida ainda esta disponivel apenas na API.
 
 ## Limites atuais
 

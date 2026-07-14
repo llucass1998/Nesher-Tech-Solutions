@@ -42,7 +42,7 @@ Phases 1-14 are in scope:
 | LogiDesk Identity validation | Partially implemented | LogiDesk exposes `GET /api/v1/auth/me` backed by Identity JWKS. Full frontend SSO remains pending. |
 | Platform event contracts | Implemented in shared package | `packages/event-contracts` now defines the strict versioned event envelope and namespaced events for LogiFlow, LogiDesk, LogiPeople and LogiPayroll. Runtime producers/consumers still need migration from legacy names. |
 | LogiFlow and LogiDesk dispatch | Partially implemented | `logiflow-worker` dispatches LogiFlow outbox records to LogiDesk. `logidesk-worker` dispatches ticket events with LogiFlow references back to LogiFlow. Redis Streams, progressive backoff and E2E remain pending. |
-| LogiDesk operational expansion | Implemented in current scope | Manual tickets, status and priority changes, teams, categories, tags, assignments, editable internal notes, attachment metadata, internal notifications, SLA lifecycle, automatic SLA warning/breach worker, aggregate reporting, dashboard backed by aggregate data, archive/cancel actions and database migration are implemented and validated. |
+| LogiDesk operational expansion | Implemented in current scope | Manual tickets, status and priority changes, teams, categories, tags, assignments, editable internal notes, attachment metadata, internal notifications, SLA lifecycle, automatic SLA warning/breach worker, aggregate reporting, dashboard backed by aggregate data, notifications page, archive/cancel actions and database migration are implemented and validated. |
 
 ## Identity validation evidence
 
@@ -68,7 +68,7 @@ Phases 1-14 are in scope:
 | `npm run typecheck -w logidesk-worker` | PASS | LogiDesk worker compiles with automatic SLA evaluation. |
 | `npm run build -w logidesk-worker` | PASS | LogiDesk worker build passed with SLA warning/breach handling. |
 | `npm run typecheck -w logidesk-web` | PASS | LogiDesk dashboard compiles using `/reports/summary`. |
-| `npm run build -w logidesk-web` | PASS | LogiDesk Next build passed; known root/multiple lockfile warning remains. |
+| `npm run build -w logidesk-web` | PASS | LogiDesk Next build passed with dashboard and notifications; known root/multiple lockfile warning remains. |
 | `npm run lint` | PASS | No errors after ticket attachment metadata. |
 | `npm run typecheck` | PASS | Root and workspace typechecks passed. |
 | `npm run test:workspaces` | PASS | Identity, LogiDesk, LogiPeople and contracts passed; packages without tests used `passWithNoTests`. |
@@ -92,6 +92,7 @@ Phases 1-14 are in scope:
 - Real LogiFlow/LogiDesk integration events are not enabled.
 - LogiDesk attachments currently store metadata only; binary upload, object storage, antivirus scanning and retention policies are not implemented.
 - LogiDesk notifications are persisted and readable, but real-time Socket.IO delivery and user preference settings are not implemented.
+- LogiDesk web lists unread notifications, but marking notifications as read is still API-only.
 - LogiDesk SLA records first response, pause, resume, resolution and automatic warning/breach events, but business calendars and holidays are not implemented.
 
 ## Known risks

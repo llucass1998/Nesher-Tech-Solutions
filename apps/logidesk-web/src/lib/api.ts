@@ -66,6 +66,26 @@ export interface SupportReportSummary {
   slaByStatus: CountGroup[];
 }
 
+export interface SupportNotification {
+  id: string;
+  ticketId?: string | null;
+  userId?: string | null;
+  teamId?: string | null;
+  type: string;
+  title: string;
+  body: string;
+  readAt?: string | null;
+  correlationId: string;
+  createdAt: string;
+  ticket?: {
+    id: string;
+    number: string;
+    subject: string;
+    status: string;
+    priority: string;
+  } | null;
+}
+
 export type LogiDeskResult<T> = Promise<{ data?: T; error?: string }>;
 
 export async function fetchLogiDesk<T>(path: string): LogiDeskResult<T> {
