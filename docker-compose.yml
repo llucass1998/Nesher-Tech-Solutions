@@ -187,6 +187,7 @@ services:
     environment:
       NODE_ENV: production
       REDIS_URL: redis://redis:6379
+      DATABASE_URL: postgresql://${LOGIFLOW_DB_USER:-logiflow}:${LOGIFLOW_DB_PASSWORD:?set LOGIFLOW_DB_PASSWORD}@logiflow-db:5432/${LOGIFLOW_DB_NAME:-logiflow}?schema=public
       LOGIDESK_API_URL: ${LOGIDESK_API_URL:-http://logidesk-api:3533/api/v1}
       LOGIDESK_SERVICE_TOKEN: ${LOGIDESK_SERVICE_TOKEN:?set LOGIDESK_SERVICE_TOKEN}
       IDENTITY_JWKS_URL: ${IDENTITY_JWKS_URL:-http://identity-api:3633/.well-known/jwks.json}

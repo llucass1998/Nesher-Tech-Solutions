@@ -420,7 +420,7 @@ describe('LogiFlow operacional v1', () => {
     });
     vi.mocked(prisma.outboxEvent.upsert).mockResolvedValue({
       id: 'outbox-1',
-      eventType: 'logiflow.occurrence_escalated',
+      eventType: 'logiflow.occurrence.escalated',
       eventVersion: 1,
       payload: {},
       status: 'PENDING',
@@ -451,7 +451,7 @@ describe('LogiFlow operacional v1', () => {
     expect(prisma.outboxEvent.upsert).toHaveBeenCalledWith(expect.objectContaining({
       where: { idempotencyKey: 'logiflow:occurrence:occurrence-1:ticket' },
       create: expect.objectContaining({
-        eventType: 'logiflow.occurrence_escalated',
+        eventType: 'logiflow.occurrence.escalated',
         correlationId: '11111111-1111-4111-8111-111111111111',
         payload: expect.objectContaining({
           priority: 'URGENT',

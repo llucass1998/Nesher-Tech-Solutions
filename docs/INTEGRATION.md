@@ -1,65 +1,94 @@
 # Integration
 
+Data: 2026-07-14
+
 ## Estado atual
 
-A fundacao da integracao LogiFlow -> LogiDesk foi criada.
+A integração LogiFlow -> LogiDesk possui outbox persistida e dispatcher HTTP no `logiflow-worker`.
 
 Componentes:
 
 - LogiFlow `POST /api/v1/operations/occurrences/:id/escalate`.
 - `OutboxEvent` e `DeadLetterEvent` no banco LogiFlow.
-- Contrato `logiflow.occurrence_escalated` em `packages/event-contracts`.
+- Evento `logiflow.occurrence.escalated`.
+- `apps/logiflow-worker` com polling da outbox no PostgreSQL.
 - LogiDesk `POST /api/v1/tickets/from-logiflow`.
-- `IdempotencyRecord`, `OutboxEvent`, `DeadLetterEvent`, `AuditLog` no banco LogiDesk.
-- Workers `apps/logiflow-worker` e `apps/logidesk-worker` com BullMQ/Redis.
-- Redis no Docker Compose.
+- `IdempotencyRecord`, `OutboxEvent`, `DeadLetterEvent` e `AuditLog` no banco LogiDesk.
+- Workers `apps/logiflow-worker` e `apps/logidesk-worker`.
+- Redis no Docker Compose para filas BullMQ existentes.
 
 ## Fluxo implementado
 
 ```mermaid
 flowchart TD
   Occurrence[Ocorrencia LogiFlow] --> Escalate[Endpoint escalate]
-  Escalate --> LFOutbox[Outbox LogiFlow]
-  LFOutbox --> LFWorker[LogiFlow worker BullMQ]
+  Escalate --> LFOutbox[OutboxEvent LogiFlow]
+  LFOutbox --> LFWorker[LogiFlow worker]
   LFWorker --> DeskAPI[LogiDesk tickets/from-logiflow]
   DeskAPI --> Ticket[Ticket LogiDesk]
-  DeskAPI --> DeskOutbox[Outbox LogiDesk]
+  DeskAPI --> DeskOutbox[OutboxEvent LogiDesk]
 ```
 
+## Dispatcher LogiFlow
+
+O `logiflow-worker`:
+
+1. busca eventos `PENDING` ou `FAILED` na tabela `OutboxEvent`;
+2. bloqueia o registro com `FOR UPDATE SKIP LOCKED`;
+3. marca o evento como `PROCESSING`;
+4. envia `POST /api/v1/tickets/from-logiflow`;
+5. envia `x-service-token`, `idempotency-key` e `x-correlation-id`;
+6. marca sucesso como `COMPLETED`;
+7. marca falha temporária como `FAILED`;
+8. envia falha permanente ou excesso de tentativas para `DeadLetterEvent`.
+
+Variáveis:
+
+- `DATABASE_URL`
+- `LOGIDESK_API_URL`
+- `LOGIDESK_SERVICE_TOKEN`
+- `LOGIFLOW_OUTBOX_POLL_INTERVAL_MS`
+- `LOGIFLOW_OUTBOX_MAX_ATTEMPTS`
+
 ## Contratos
+
+Eventos distribuídos devem usar `packages/event-contracts`.
+
+Nomes atuais:
+
+- `logiflow.occurrence.escalated`
+- `logidesk.ticket.created`
+- `logidesk.ticket.status_changed`
+- `logidesk.ticket.message_created`
+- `logidesk.ticket.resolved`
+
+Nomes legados ainda encontrados no código ou dados antigos:
 
 - `logiflow.occurrence_escalated`
 - `ticket.created`
 - `ticket.updated`
 
-Todos devem carregar:
-
-- `eventId`
-- `eventType`
-- `eventVersion`
-- `occurredAt`
-- `correlationId`
-- payload validado por Zod
+Esses nomes antigos devem ser aceitos apenas durante migração e removidos depois de não haver eventos pendentes.
 
 ## Regra absoluta
 
-Nunca considerar integracao concluida apenas porque uma API retornou HTTP 200.
+Nunca considerar integração concluída apenas porque uma API retornou HTTP 200.
 
-Para marcar integracao como pronta, confirmar:
+Para marcar integração como pronta, confirmar:
 
-- persistencia nos dois bancos;
+- persistência nos dois bancos;
 - evento salvo na Outbox;
-- evento publicado;
-- consumidor processou;
-- idempotencia;
-- status sincronizado;
+- evento processado pelo worker;
+- consumidor idempotente;
+- atualização de status no emissor;
 - logs correlacionados;
-- teste de falha e recuperacao;
+- teste de falha e recuperação;
 - E2E completo.
 
 ## Limites atuais
 
-- O worker ainda nao faz dispatch HTTP real da outbox para LogiDesk.
-- Retry/backoff e DLQ existem como estrutura, mas precisam de processamento completo.
-- Socket.IO distribuido ainda nao foi conectado.
-- E2E completo ainda nao foi automatizado.
+- O retorno LogiDesk -> LogiFlow ainda não atualiza ocorrência automaticamente.
+- O dispatcher usa polling PostgreSQL; Redis Streams ainda não foi adotado para este fluxo.
+- Backoff é limitado por polling e contagem de tentativas; agendamento progressivo ainda precisa ser refinado.
+- Socket.IO distribuído ainda não foi conectado.
+- E2E completo ainda não foi automatizado.

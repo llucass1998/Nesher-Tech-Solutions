@@ -1,32 +1,246 @@
 import { Worker } from 'bullmq';
+import { Pool } from 'pg';
 import { createPlatformLogger } from '@logipeople/logger';
 
 const logger = createPlatformLogger('logiflow-worker');
 const redisUrl = process.env.REDIS_URL ?? 'redis://localhost:6379';
-const logideskApiUrl = process.env.LOGIDESK_API_URL ?? 'http://localhost:3533/api/v1';
+const databaseUrl = process.env.DATABASE_URL;
+const logideskApiUrl = (process.env.LOGIDESK_API_URL ?? 'http://localhost:3533/api/v1').replace(/\/$/, '');
+const logideskServiceToken = process.env.LOGIDESK_SERVICE_TOKEN;
+const pollIntervalMs = Number(process.env.LOGIFLOW_OUTBOX_POLL_INTERVAL_MS ?? 5000);
+const maxAttempts = Number(process.env.LOGIFLOW_OUTBOX_MAX_ATTEMPTS ?? 5);
 const connection = buildRedisConnection(redisUrl);
+const pool = databaseUrl ? new Pool({ connectionString: databaseUrl }) : null;
 
 const worker = new Worker(
   'logiflow.outbox',
   async (job) => {
     logger.info(
       {
-        operation: 'outbox.dispatch',
+        operation: 'outbox.dispatch.job',
         jobId: job.id,
         eventType: job.data?.eventType,
         correlationId: job.data?.correlationId,
         target: logideskApiUrl,
       },
-      'Dispatching LogiFlow integration event',
+      'Received LogiFlow outbox job',
     );
+    await dispatchPendingOutboxBatch();
   },
   { connection },
 );
 
-logger.info({ module: 'worker', operation: 'bootstrap', redisUrl, logideskApiUrl, status: 'ready' }, 'LogiFlow worker ready');
+const poller = setInterval(() => {
+  void dispatchPendingOutboxBatch();
+}, pollIntervalMs);
+
+logger.info(
+  {
+    module: 'worker',
+    operation: 'bootstrap',
+    redisUrl,
+    logideskApiUrl,
+    hasDatabaseUrl: Boolean(databaseUrl),
+    hasServiceToken: Boolean(logideskServiceToken),
+    status: 'ready',
+  },
+  'LogiFlow worker ready',
+);
+
+async function dispatchPendingOutboxBatch() {
+  if (!pool) {
+    logger.warn({ operation: 'outbox.dispatch', status: 'skipped', reason: 'DATABASE_URL missing' }, 'Outbox dispatch skipped');
+    return;
+  }
+
+  if (!logideskServiceToken) {
+    logger.error(
+      { operation: 'outbox.dispatch', status: 'failed_configuration', reason: 'LOGIDESK_SERVICE_TOKEN missing' },
+      'Outbox dispatch cannot call LogiDesk without service token',
+    );
+    return;
+  }
+
+  for (let processed = 0; processed < 10; processed += 1) {
+    const event = await claimNextOutboxEvent();
+    if (!event) return;
+    await dispatchOutboxEvent(event);
+  }
+}
+
+async function claimNextOutboxEvent(): Promise<OutboxEventRow | null> {
+  if (!pool) return null;
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await client.query<OutboxEventRow>(
+      `
+        SELECT id, "eventType", "eventVersion", payload, attempts, "correlationId", "causationId", "idempotencyKey"
+        FROM "OutboxEvent"
+        WHERE status IN ('PENDING', 'FAILED')
+          AND attempts < $1
+        ORDER BY "createdAt" ASC
+        LIMIT 1
+        FOR UPDATE SKIP LOCKED
+      `,
+      [maxAttempts],
+    );
+
+    const event = result.rows[0];
+    if (!event) {
+      await client.query('COMMIT');
+      return null;
+    }
+
+    await client.query(
+      `
+        UPDATE "OutboxEvent"
+        SET status = 'PROCESSING',
+            attempts = attempts + 1,
+            "lastError" = NULL,
+            "updatedAt" = NOW()
+        WHERE id = $1
+      `,
+      [event.id],
+    );
+    await client.query('COMMIT');
+    return { ...event, attempts: event.attempts + 1 };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+async function dispatchOutboxEvent(event: OutboxEventRow) {
+  try {
+    if (event.eventType !== 'logiflow.occurrence.escalated' && event.eventType !== 'logiflow.occurrence_escalated') {
+      throw new PermanentDispatchError(`Unsupported LogiFlow outbox event type: ${event.eventType}`);
+    }
+
+    const body = mapOccurrenceEscalatedToLogideskRequest(event);
+    const response = await fetch(`${logideskApiUrl}/tickets/from-logiflow`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-service-token': logideskServiceToken!,
+        'idempotency-key': event.idempotencyKey,
+        'x-correlation-id': event.correlationId,
+      },
+      body: JSON.stringify(body),
+    });
+
+    const responseBody = await response.text();
+    if (!response.ok) {
+      const message = `LogiDesk responded ${response.status}: ${responseBody.slice(0, 500)}`;
+      if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+        throw new PermanentDispatchError(message);
+      }
+      throw new Error(message);
+    }
+
+    await markCompleted(event.id);
+    logger.info(
+      {
+        operation: 'outbox.dispatch',
+        outboxEventId: event.id,
+        eventType: event.eventType,
+        correlationId: event.correlationId,
+        attempts: event.attempts,
+        status: 'completed',
+      },
+      'LogiFlow outbox event dispatched to LogiDesk',
+    );
+  } catch (error) {
+    await markFailed(event, error);
+  }
+}
+
+function mapOccurrenceEscalatedToLogideskRequest(event: OutboxEventRow) {
+  const payload = event.payload as Record<string, unknown>;
+  return {
+    deliveryId: asString(payload.deliveryId),
+    occurrenceId: asString(payload.occurrenceId),
+    subject: asString(payload.subject),
+    description: asString(payload.description),
+    priority: asString(payload.priority),
+    requesterEmail: asOptionalString(payload.requesterEmail),
+    correlationId: event.correlationId,
+  };
+}
+
+async function markCompleted(outboxEventId: string) {
+  if (!pool) return;
+  await pool.query(
+    `
+      UPDATE "OutboxEvent"
+      SET status = 'COMPLETED',
+          "processedAt" = NOW(),
+          "lastError" = NULL,
+          "updatedAt" = NOW()
+      WHERE id = $1
+    `,
+    [outboxEventId],
+  );
+}
+
+async function markFailed(event: OutboxEventRow, error: unknown) {
+  if (!pool) return;
+
+  const message = error instanceof Error ? error.message : 'Unknown dispatch error';
+  const isPermanent = error instanceof PermanentDispatchError;
+  const shouldDeadLetter = isPermanent || event.attempts >= maxAttempts;
+  const status = shouldDeadLetter ? 'DEAD_LETTER' : 'FAILED';
+
+  await pool.query('BEGIN');
+  try {
+    await pool.query(
+      `
+        UPDATE "OutboxEvent"
+        SET status = $2,
+            "lastError" = $3,
+            "updatedAt" = NOW()
+        WHERE id = $1
+      `,
+      [event.id, status, message],
+    );
+
+    if (shouldDeadLetter) {
+      await pool.query(
+        `
+          INSERT INTO "DeadLetterEvent" ("outboxEventId", "eventType", payload, error, "correlationId")
+          VALUES ($1, $2, $3, $4, $5)
+        `,
+        [event.id, event.eventType, event.payload, message, event.correlationId],
+      );
+    }
+
+    await pool.query('COMMIT');
+  } catch (transactionError) {
+    await pool.query('ROLLBACK');
+    throw transactionError;
+  }
+
+  logger.error(
+    {
+      operation: 'outbox.dispatch',
+      outboxEventId: event.id,
+      eventType: event.eventType,
+      correlationId: event.correlationId,
+      attempts: event.attempts,
+      status,
+      error: message,
+    },
+    'LogiFlow outbox event dispatch failed',
+  );
+}
 
 async function shutdown() {
+  clearInterval(poller);
   await worker.close();
+  await pool?.end();
   logger.info({ module: 'worker', operation: 'shutdown', status: 'ok' }, 'LogiFlow worker stopped');
 }
 
@@ -41,4 +255,28 @@ function buildRedisConnection(value: string) {
     password: url.password || undefined,
     maxRetriesPerRequest: null,
   };
+}
+
+function asString(value: unknown) {
+  if (typeof value !== 'string' || value.length === 0) {
+    throw new PermanentDispatchError('Outbox payload is missing a required string field');
+  }
+  return value;
+}
+
+function asOptionalString(value: unknown) {
+  return typeof value === 'string' && value.length > 0 ? value : undefined;
+}
+
+class PermanentDispatchError extends Error {}
+
+interface OutboxEventRow {
+  id: string;
+  eventType: string;
+  eventVersion: number;
+  payload: unknown;
+  attempts: number;
+  correlationId: string;
+  causationId: string | null;
+  idempotencyKey: string;
 }

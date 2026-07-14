@@ -41,6 +41,7 @@ Phases 1-14 are in scope:
 | LogiFlow Identity validation | Partially implemented | LogiFlow accepts Identity tokens through JWKS when `IDENTITY_JWKS_URL` is configured, while local auth remains as compatibility fallback. |
 | LogiDesk Identity validation | Partially implemented | LogiDesk exposes `GET /api/v1/auth/me` backed by Identity JWKS. Full frontend SSO remains pending. |
 | Platform event contracts | Implemented in shared package | `packages/event-contracts` now defines the strict versioned event envelope and namespaced events for LogiFlow, LogiDesk, LogiPeople and LogiPayroll. Runtime producers/consumers still need migration from legacy names. |
+| LogiFlow to LogiDesk dispatch | Partially implemented | `logiflow-worker` now dispatches LogiFlow outbox records to LogiDesk over HTTP with idempotency, correlation id, retry attempts and DLQ. LogiDesk-to-LogiFlow return events remain pending. |
 
 ## Identity validation evidence
 
@@ -53,6 +54,9 @@ Phases 1-14 are in scope:
 | Identity smoke test | PASS | Login, refresh, logout, JWKS, LogiFlow `/api/v1/auth/me` and LogiDesk `/api/v1/auth/me` passed. |
 | `npm run typecheck -w @logipeople/event-contracts` | PASS | Event contract package compiles. |
 | `npm run test -w @logipeople/event-contracts` | PASS | 5 contract tests passed. |
+| `npm run typecheck -w logiflow-worker` | PASS | LogiFlow worker dispatcher compiles. |
+| `npm test -- src/__tests__/logiflow-operations-v1.test.ts` | PASS | Escalation test passed with `logiflow.occurrence.escalated`. |
+| `docker compose build logiflow-worker` | PASS | Worker Docker image built. |
 
 ## Explicitly not complete
 

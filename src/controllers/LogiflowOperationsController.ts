@@ -377,7 +377,7 @@ export class LogiflowOperationsController {
             correlationId,
           },
           create: {
-            eventType: 'logiflow.occurrence_escalated',
+            eventType: 'logiflow.occurrence.escalated',
             eventVersion: 1,
             idempotencyKey,
             correlationId,
@@ -389,6 +389,9 @@ export class LogiflowOperationsController {
               description: occurrence.description,
               severity: occurrence.severity,
               priority: mapSeverityToPriority(occurrence.severity),
+              requesterUserId: req.auth?.id,
+              requesterRole: req.auth?.role,
+              requesterEmail: req.auth?.email,
               driver: occurrence.delivery.driver,
               vehicle: occurrence.delivery.vehicle,
               delivery: {
