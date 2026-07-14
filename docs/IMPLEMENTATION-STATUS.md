@@ -65,7 +65,7 @@ Phases 1-14 are in scope:
 | `npm run logidesk:prisma:generate` | PASS | LogiDesk Prisma Client generated after operational schema. |
 | `npx prisma validate --config apps/logidesk-api/prisma.config.ts` | PASS | LogiDesk schema is valid after the notification preference migration. |
 | `npm run typecheck -w logidesk-api` | PASS | LogiDesk API compiles. |
-| `npm run test -w logidesk-api` | PASS | 15 tests passed, including attachment metadata, internal notifications, preference opt-out, SLA lifecycle and aggregate reporting. |
+| `npm run test -w logidesk-api` | PASS | 16 tests passed, including attachment guardrails, internal notifications, preference opt-out, SLA lifecycle and aggregate reporting. |
 | `npm run typecheck -w logidesk-worker` | PASS | LogiDesk worker compiles with automatic SLA evaluation. |
 | `npm run build -w logidesk-worker` | PASS | LogiDesk worker build passed with SLA warning/breach handling. |
 | `npm run typecheck -w logidesk-web` | PASS | LogiDesk dashboard, reports, catalog settings and notifications compile. |
@@ -79,6 +79,7 @@ Phases 1-14 are in scope:
 | `docker compose --env-file .env.example build logidesk-web` | PASS | Web image built after notification read action; internal `npm ci` reported 0 vulnerabilities. |
 | `docker compose --env-file .env.example build logidesk-migrate logidesk-api logidesk-web` | PASS | LogiDesk images affected by the preference migration/API/web changes built successfully. |
 | `docker compose --env-file .env.example build logidesk-api` | PASS | LogiDesk API built after applying notification preference opt-out to notification creation. |
+| `docker compose --env-file .env.example build logidesk-api` | PASS | LogiDesk API built after attachment guardrails; internal `npm ci` reported 0 vulnerabilities. |
 | `docker compose --env-file .env.example build logidesk-web` | PASS | LogiDesk web built after adding `/reports` and catalog settings; internal `npm ci` reported 0 vulnerabilities. |
 
 ## Explicitly not complete

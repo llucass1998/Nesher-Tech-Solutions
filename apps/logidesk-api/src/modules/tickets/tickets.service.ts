@@ -25,6 +25,17 @@ const allowedTransitions: Record<TicketStatus, TicketStatus[]> = {
   REOPENED: ['IN_PROGRESS'],
 };
 
+const allowedAttachmentTypes = new Map<string, string[]>([
+  ['application/pdf', ['.pdf']],
+  ['image/jpeg', ['.jpg', '.jpeg']],
+  ['image/png', ['.png']],
+  ['image/webp', ['.webp']],
+  ['text/plain', ['.txt']],
+  ['text/csv', ['.csv']],
+]);
+
+const maxAttachmentSizeBytes = 25 * 1024 * 1024;
+
 type TicketWithRelations = Prisma.TicketGetPayload<{
   include: {
     messages: true;
@@ -802,6 +813,7 @@ export class TicketsService {
 
   async createAttachment(ticketId: string, input: CreateAttachmentDto) {
     await this.ensureTicket(ticketId);
+    this.assertSafeAttachment(input);
 
     return this.prisma.$transaction(async (tx) => {
       const attachment = await tx.ticketAttachment.create({
@@ -840,6 +852,32 @@ export class TicketsService {
 
       return attachment;
     });
+  }
+
+  private assertSafeAttachment(input: CreateAttachmentDto) {
+    const normalizedName = input.fileName.trim().toLowerCase();
+    const normalizedType = input.contentType.trim().toLowerCase();
+    const allowedExtensions = allowedAttachmentTypes.get(normalizedType);
+
+    if (input.sizeBytes < 1 || input.sizeBytes > maxAttachmentSizeBytes) {
+      throw new UnprocessableEntityException({ error: 'Attachment size exceeds the allowed limit.' });
+    }
+
+    if (!input.url.startsWith('https://')) {
+      throw new UnprocessableEntityException({ error: 'Attachment URL must use HTTPS.' });
+    }
+
+    if (!allowedExtensions) {
+      throw new UnprocessableEntityException({ error: 'Attachment content type is not allowed.' });
+    }
+
+    if (normalizedName.includes('/') || normalizedName.includes('\\') || normalizedName.includes('\0')) {
+      throw new UnprocessableEntityException({ error: 'Attachment file name is invalid.' });
+    }
+
+    if (!allowedExtensions.some((extension) => normalizedName.endsWith(extension))) {
+      throw new UnprocessableEntityException({ error: 'Attachment extension does not match content type.' });
+    }
   }
 
   listTeams() {

@@ -595,6 +595,40 @@ describe('TicketsService', () => {
     expect(context.auditCreate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ action: 'ticket.attachment_created' }) }));
   });
 
+  it('rejects unsafe attachment metadata before persistence', async () => {
+    const context = createTicketsService();
+    context.ticketFindUnique.mockResolvedValue(ticketRecord);
+
+    await expect(context.service.createAttachment('ticket-1', {
+      fileName: '../payload.exe',
+      contentType: 'application/x-msdownload',
+      sizeBytes: 1024,
+      url: 'http://storage.local/payload.exe',
+      uploadedById: 'agent-1',
+      correlationId: input.correlationId,
+    })).rejects.toBeInstanceOf(UnprocessableEntityException);
+
+    await expect(context.service.createAttachment('ticket-1', {
+      fileName: 'comprovante.pdf',
+      contentType: 'application/pdf',
+      sizeBytes: 25 * 1024 * 1024 + 1,
+      url: 'https://storage.local/comprovante.pdf',
+      uploadedById: 'agent-1',
+      correlationId: input.correlationId,
+    })).rejects.toBeInstanceOf(UnprocessableEntityException);
+
+    await expect(context.service.createAttachment('ticket-1', {
+      fileName: 'comprovante.jpg',
+      contentType: 'application/pdf',
+      sizeBytes: 1024,
+      url: 'https://storage.local/comprovante.jpg',
+      uploadedById: 'agent-1',
+      correlationId: input.correlationId,
+    })).rejects.toBeInstanceOf(UnprocessableEntityException);
+
+    expect(context.ticketAttachmentCreate).not.toHaveBeenCalled();
+  });
+
   it('creates and deactivates support teams, categories and tags with audit', async () => {
     const context = createTicketsService();
 

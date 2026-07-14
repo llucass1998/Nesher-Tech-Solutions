@@ -24,7 +24,7 @@ Banco:
 - Mensagens.
 - Notas internas.
 - Edicao de notas internas.
-- Anexos como metadados auditados, com URL/storage key e limite de tamanho.
+- Anexos como metadados auditados, com URL/storage key, limite de tamanho, HTTPS obrigatorio, allowlist de MIME e extensao compativel.
 - Equipes de suporte.
 - Categorias.
 - Tags.
@@ -110,7 +110,7 @@ Rotas:
 - `uploadedById` opcional
 - `correlationId`
 
-O endpoint cria historico, auditoria e outbox. Upload binario, object storage, varredura antivirus e politicas de retencao ainda nao estao implementados.
+O endpoint cria historico, auditoria e outbox. A API rejeita URL sem HTTPS, path traversal no nome, MIME fora da allowlist e extensao incompatível com o MIME. Upload binario, object storage, varredura antivirus e politicas de retencao ainda nao estao implementados.
 
 `GET /notifications` aceita filtros `userId`, `teamId` e `unread=true`. `PATCH /notifications/:id/read` marca uma notificacao como lida. Nesta etapa, notificacoes sao criadas automaticamente quando um chamado e atribuido a usuario ou equipe.
 
@@ -141,7 +141,7 @@ A pagina `/settings` tambem lista, cria e desativa equipes, categorias e tags us
 - `npm run logidesk:prisma:generate`: PASS.
 - `npx prisma validate --config apps/logidesk-api/prisma.config.ts`: PASS.
 - `npm run typecheck -w logidesk-api`: PASS.
-- `npm run test -w logidesk-api`: PASS, 15 testes.
+- `npm run test -w logidesk-api`: PASS, 16 testes.
 - `npm run typecheck -w logidesk-worker`: PASS.
 - `npm run build -w logidesk-worker`: PASS.
 - `npm run typecheck -w logidesk-web`: PASS.

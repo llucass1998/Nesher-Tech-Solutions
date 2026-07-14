@@ -38,6 +38,10 @@
 
 Full rate limiting, OpenTelemetry, storage scanning, encrypted backups and complete incident workflows are future phases and must be validated before production.
 
+## LogiDesk attachment guardrails
+
+`POST /api/v1/tickets/:id/attachments` stores audited metadata only. The API enforces HTTPS URLs, a 25 MB metadata size limit, a MIME allowlist, filename path-traversal rejection and extension/MIME matching before persistence. Binary upload, object storage, antivirus scanning and retention policies remain deferred.
+
 ## LogiFlow Docker/runtime hardening
 
 - Do not commit real secrets. `.env.example` must contain placeholders only.

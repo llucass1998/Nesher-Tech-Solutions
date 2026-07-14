@@ -157,7 +157,7 @@ Base local: `http://localhost:3533/api/v1`.
 - `x-service-token`
 - `idempotency-key`
 
-`POST /tickets/:id/attachments` registra metadados auditados do anexo. Campos aceitos: `fileName`, `contentType`, `sizeBytes`, `url`, `storageKey`, `uploadedById` e `correlationId`. O upload fisico do arquivo ainda deve ser feito por storage externo ate a fase de object storage seguro.
+`POST /tickets/:id/attachments` registra metadados auditados do anexo. Campos aceitos: `fileName`, `contentType`, `sizeBytes`, `url`, `storageKey`, `uploadedById` e `correlationId`. A API rejeita URL sem HTTPS, path traversal no nome, tamanho acima de 25 MB, MIME fora da allowlist e extensao incompatível com o MIME. O upload fisico do arquivo ainda deve ser feito por storage externo ate a fase de object storage seguro.
 
 `GET /notifications` lista notificacoes internas e aceita `userId`, `teamId` e `unread=true`. `PATCH /notifications/:id/read` marca a notificacao como lida.
 
