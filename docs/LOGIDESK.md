@@ -117,6 +117,15 @@ Rotas:
 
 As rotas administrativas de DLQ aceitam `x-service-token` ou JWT Identity com role `ADMIN`/`SUPPORT`.
 
+RBAC REST de transicao:
+
+- `LOGIDESK_REQUIRE_REST_AUTH=false` preserva compatibilidade com as paginas server-side e server actions atuais.
+- `LOGIDESK_REQUIRE_REST_AUTH=true` exige JWT Identity em mutacoes operacionais e administrativas.
+- Mutacoes de chamados aceitam `ADMIN`, `SUPPORT` e `OPERATOR`; mensagens/anexos tambem aceitam `CUSTOMER` e `DRIVER` como preparacao para portal autenticado.
+- Catalogos administrativos aceitam `ADMIN` e `SUPPORT`.
+- Preferencias de notificacao podem ser alteradas pelo proprio usuario autenticado ou por `ADMIN`/`SUPPORT`.
+- A integracao `POST /tickets/from-logiflow` continua protegida por `x-service-token`.
+
 ## Socket.IO
 
 Endpoint:
@@ -190,7 +199,8 @@ A pagina `/settings` tambem lista, cria e desativa equipes, categorias e tags us
 ## Limites atuais
 
 - SSO/JWKS basico existe via `GET /api/v1/auth/me`; o web ja possui login Identity inicial, refresh por cookie HttpOnly, logout, guard visual de sessao e helper REST com Authorization/retry apos `401`.
-- Socket.IO autenticado ja existe no backend, valida `ticket:join` por ownership/RBAC e o frontend consome `notification:created` e eventos de ticket quando ha token de sessao ou refresh valido; ainda falta aplicar guards REST completos na API e validacao E2E em browser.
+- Socket.IO autenticado ja existe no backend, valida `ticket:join` por ownership/RBAC e o frontend consome `notification:created` e eventos de ticket quando ha token de sessao ou refresh valido.
+- RBAC REST de transicao ja protege mutacoes quando `LOGIDESK_REQUIRE_REST_AUTH=true`; ainda falta migrar server-side rendering/server actions para sessao autenticada, ligar a flag por padrao, aplicar ownership fino em leitura/escrita e validar E2E em browser.
 - Preferencias de notificacao existem como persistencia/API/web preliminar e filtram criacao de notificacoes internas por usuario, mas ainda nao filtram entrega em tempo real por usuario autenticado.
 - Catalogos de equipes, categorias e tags ja possuem API e UI administrativa preliminar, mas ainda precisam de RBAC frontend real.
 - Worker LogiDesk despacha eventos com referencia LogiFlow de volta para o LogiFlow e publica espelho operacional em Redis Stream; DLQ do LogiDesk ja pode ser listada e reprocessada pela API, mas ainda falta validacao fim a fim com containers.
@@ -202,7 +212,7 @@ A pagina `/settings` tambem lista, cria e desativa equipes, categorias e tags us
 - `npm run logidesk:prisma:generate`: PASS.
 - `npx prisma validate --config apps/logidesk-api/prisma.config.ts`: PASS.
 - `npm run typecheck -w logidesk-api`: PASS.
-- `npm run test -w logidesk-api`: PASS, 25 testes.
+- `npm run test -w logidesk-api`: PASS, 29 testes.
 - `npm run typecheck -w logidesk-worker`: PASS.
 - `npm run build -w logidesk-worker`: PASS.
 - `npm run typecheck -w logidesk-web`: PASS.

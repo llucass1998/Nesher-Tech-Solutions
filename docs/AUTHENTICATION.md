@@ -116,7 +116,9 @@ O web tambem tenta `POST /api/v1/auth/refresh` com `credentials: include` quando
 
 O helper REST do LogiDesk web injeta `Authorization: Bearer <accessToken>` em chamadas executadas no browser. Se a API responder `401`, ele tenta refresh uma unica vez e repete a chamada original com o novo access token.
 
-Ainda pendente: aplicar ownership/RBAC real em todas as rotas REST do LogiDesk API e validar o fluxo em E2E de browser.
+O LogiDesk API possui um modo de transicao para RBAC REST por Identity. Quando `LOGIDESK_REQUIRE_REST_AUTH=true`, mutacoes operacionais e administrativas exigem JWT Identity com roles permitidas. O modo fica desligado por padrao para nao quebrar as paginas server-side e server actions atuais do LogiDesk web enquanto elas ainda nao conseguem ler a sessao do navegador no servidor.
+
+Ainda pendente: migrar as chamadas server-side do LogiDesk web para uma estrategia autenticada de BFF/cookies, ligar `LOGIDESK_REQUIRE_REST_AUTH=true` por padrao, aplicar ownership fino em todas as rotas REST e validar o fluxo em E2E de browser.
 
 ## Regras
 

@@ -169,6 +169,8 @@ Base local: `http://localhost:3533/api/v1`.
 
 As rotas administrativas de DLQ aceitam `x-service-token` ou JWT Identity com role `ADMIN`/`SUPPORT`.
 
+Mutacoes operacionais e administrativas do LogiDesk podem exigir JWT Identity quando `LOGIDESK_REQUIRE_REST_AUTH=true`. Este modo cobre criacao/edicao de chamados, status, prioridade, atribuicoes, notas internas, anexos, preferencias de notificacao e catalogos. Ele permanece desligado por padrao no ambiente local enquanto o web ainda possui chamadas server-side sem acesso ao token do navegador.
+
 `POST /tickets/:id/attachments` registra metadados auditados do anexo. Campos aceitos: `fileName`, `contentType`, `sizeBytes`, `url`, `storageKey`, `uploadedById` e `correlationId`. A API rejeita URL sem HTTPS, path traversal no nome, tamanho acima de 25 MB, MIME fora da allowlist e extensao incompativel com o MIME. O upload fisico do arquivo ainda deve ser feito por storage externo ate a fase de object storage seguro.
 
 `GET /notifications` lista notificacoes internas e aceita `userId`, `teamId` e `unread=true`. `PATCH /notifications/:id/read` marca a notificacao como lida.

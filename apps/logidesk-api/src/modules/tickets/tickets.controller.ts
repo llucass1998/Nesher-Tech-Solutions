@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, ForbiddenException, Get, Headers, Param, Patch, Post, Query, UnauthorizedException } from '@nestjs/common';
-import { IdentityJwksService } from '../auth/identity-jwks.service';
+import { IdentityJwksService, LogiIdentityClaims } from '../auth/identity-jwks.service';
 import { AssignTicketDto } from './dto/assign-ticket.dto';
 import { ChangeTicketPriorityDto } from './dto/change-ticket-priority.dto';
 import { ChangeTicketStatusDto } from './dto/change-ticket-status.dto';
@@ -36,7 +36,8 @@ export class TicketsController {
   }
 
   @Post('tickets')
-  createTicket(@Body() body: CreateTicketDto) {
+  async createTicket(@Body() body: CreateTicketDto, @Headers('authorization') authorization: string | undefined) {
+    await this.assertRestRole(authorization, ['ADMIN', 'SUPPORT', 'OPERATOR']);
     return this.ticketsService.createTicket(body);
   }
 
@@ -61,66 +62,119 @@ export class TicketsController {
   }
 
   @Patch('tickets/:id')
-  updateTicket(@Param('id') id: string, @Body() body: UpdateTicketDto) {
+  async updateTicket(
+    @Param('id') id: string,
+    @Body() body: UpdateTicketDto,
+    @Headers('authorization') authorization: string | undefined,
+  ) {
+    await this.assertRestRole(authorization, ['ADMIN', 'SUPPORT', 'OPERATOR']);
     return this.ticketsService.updateTicket(id, body);
   }
 
   @Delete('tickets/:id')
-  archiveTicket(@Param('id') id: string, @Body() body: TicketActionDto) {
+  async archiveTicket(
+    @Param('id') id: string,
+    @Body() body: TicketActionDto,
+    @Headers('authorization') authorization: string | undefined,
+  ) {
+    await this.assertRestRole(authorization, ['ADMIN', 'SUPPORT', 'OPERATOR']);
     return this.ticketsService.archiveTicket(id, { ...body, status: 'CANCELED' });
   }
 
   @Patch('tickets/:id/status')
-  changeStatus(@Param('id') id: string, @Body() body: ChangeTicketStatusDto) {
+  async changeStatus(
+    @Param('id') id: string,
+    @Body() body: ChangeTicketStatusDto,
+    @Headers('authorization') authorization: string | undefined,
+  ) {
+    await this.assertRestRole(authorization, ['ADMIN', 'SUPPORT', 'OPERATOR']);
     return this.ticketsService.changeStatus(id, body);
   }
 
   @Patch('tickets/:id/priority')
-  changePriority(@Param('id') id: string, @Body() body: ChangeTicketPriorityDto) {
+  async changePriority(
+    @Param('id') id: string,
+    @Body() body: ChangeTicketPriorityDto,
+    @Headers('authorization') authorization: string | undefined,
+  ) {
+    await this.assertRestRole(authorization, ['ADMIN', 'SUPPORT', 'OPERATOR']);
     return this.ticketsService.changePriority(id, body);
   }
 
   @Post('tickets/:id/messages')
-  createMessage(@Param('id') id: string, @Body() body: CreateMessageDto) {
+  async createMessage(
+    @Param('id') id: string,
+    @Body() body: CreateMessageDto,
+    @Headers('authorization') authorization: string | undefined,
+  ) {
+    await this.assertRestRole(authorization, ['ADMIN', 'SUPPORT', 'OPERATOR', 'CUSTOMER', 'DRIVER']);
     return this.ticketsService.createMessage(id, body);
   }
 
   @Post('tickets/:id/notes')
-  createLegacyNote(@Param('id') id: string, @Body() body: CreateMessageDto) {
+  async createLegacyNote(
+    @Param('id') id: string,
+    @Body() body: CreateMessageDto,
+    @Headers('authorization') authorization: string | undefined,
+  ) {
+    await this.assertRestRole(authorization, ['ADMIN', 'SUPPORT', 'OPERATOR']);
     return this.ticketsService.createNote(id, body);
   }
 
   @Get('tickets/:id/internal-notes')
-  listInternalNotes(@Param('id') id: string) {
+  async listInternalNotes(@Param('id') id: string, @Headers('authorization') authorization: string | undefined) {
+    await this.assertRestRole(authorization, ['ADMIN', 'SUPPORT', 'OPERATOR']);
     return this.ticketsService.listInternalNotes(id);
   }
 
   @Post('tickets/:id/internal-notes')
-  createInternalNote(@Param('id') id: string, @Body() body: CreateMessageDto) {
+  async createInternalNote(
+    @Param('id') id: string,
+    @Body() body: CreateMessageDto,
+    @Headers('authorization') authorization: string | undefined,
+  ) {
+    await this.assertRestRole(authorization, ['ADMIN', 'SUPPORT', 'OPERATOR']);
     return this.ticketsService.createNote(id, body);
   }
 
   @Patch('tickets/:id/internal-notes/:noteId')
-  updateInternalNote(
+  async updateInternalNote(
     @Param('id') id: string,
     @Param('noteId') noteId: string,
     @Body() body: UpdateInternalNoteDto,
+    @Headers('authorization') authorization: string | undefined,
   ) {
+    await this.assertRestRole(authorization, ['ADMIN', 'SUPPORT', 'OPERATOR']);
     return this.ticketsService.updateInternalNote(id, noteId, body);
   }
 
   @Post('tickets/:id/assign')
-  assignTicket(@Param('id') id: string, @Body() body: AssignTicketDto) {
+  async assignTicket(
+    @Param('id') id: string,
+    @Body() body: AssignTicketDto,
+    @Headers('authorization') authorization: string | undefined,
+  ) {
+    await this.assertRestRole(authorization, ['ADMIN', 'SUPPORT', 'OPERATOR']);
     return this.ticketsService.assignTicket(id, body);
   }
 
   @Delete('tickets/:id/assign')
-  unassignTicket(@Param('id') id: string, @Body() body: AssignTicketDto) {
+  async unassignTicket(
+    @Param('id') id: string,
+    @Body() body: AssignTicketDto,
+    @Headers('authorization') authorization: string | undefined,
+  ) {
+    await this.assertRestRole(authorization, ['ADMIN', 'SUPPORT', 'OPERATOR']);
     return this.ticketsService.unassignTicket(id, body);
   }
 
   @Post('tickets/:id/change-team')
-  changeTeam(@Param('id') id: string, @Body() body: AssignTicketDto) {
+  async changeTeam(
+    @Param('id') id: string,
+    @Body() body: AssignTicketDto,
+    @Headers('authorization') authorization: string | undefined,
+  ) {
+    await this.assertRestRole(authorization, ['ADMIN', 'SUPPORT', 'OPERATOR']);
     return this.ticketsService.changeTeam(id, body);
   }
 
@@ -135,7 +189,12 @@ export class TicketsController {
   }
 
   @Post('tickets/:id/attachments')
-  createAttachment(@Param('id') id: string, @Body() body: CreateAttachmentDto) {
+  async createAttachment(
+    @Param('id') id: string,
+    @Body() body: CreateAttachmentDto,
+    @Headers('authorization') authorization: string | undefined,
+  ) {
+    await this.assertRestRole(authorization, ['ADMIN', 'SUPPORT', 'OPERATOR', 'CUSTOMER', 'DRIVER']);
     return this.ticketsService.createAttachment(id, body);
   }
 
@@ -153,7 +212,8 @@ export class TicketsController {
   }
 
   @Patch('notifications/:id/read')
-  markNotificationRead(@Param('id') id: string) {
+  async markNotificationRead(@Param('id') id: string, @Headers('authorization') authorization: string | undefined) {
+    await this.assertRestRole(authorization, ['ADMIN', 'SUPPORT', 'OPERATOR', 'CUSTOMER', 'DRIVER']);
     return this.ticketsService.markNotificationRead(id);
   }
 
@@ -163,7 +223,12 @@ export class TicketsController {
   }
 
   @Patch('notification-preferences/:userId')
-  updateNotificationPreferences(@Param('userId') userId: string, @Body() body: UpdateNotificationPreferenceDto) {
+  async updateNotificationPreferences(
+    @Param('userId') userId: string,
+    @Body() body: UpdateNotificationPreferenceDto,
+    @Headers('authorization') authorization: string | undefined,
+  ) {
+    await this.assertRestUserOrRole(authorization, userId, ['ADMIN', 'SUPPORT']);
     return this.ticketsService.updateNotificationPreferences(userId, body);
   }
 
@@ -201,17 +266,28 @@ export class TicketsController {
   }
 
   @Post('teams')
-  createTeam(@Body() body: CreateSupportCatalogDto) {
+  async createTeam(@Body() body: CreateSupportCatalogDto, @Headers('authorization') authorization: string | undefined) {
+    await this.assertRestRole(authorization, ['ADMIN', 'SUPPORT']);
     return this.ticketsService.createTeam(body);
   }
 
   @Patch('teams/:id')
-  updateTeam(@Param('id') id: string, @Body() body: UpdateSupportCatalogDto) {
+  async updateTeam(
+    @Param('id') id: string,
+    @Body() body: UpdateSupportCatalogDto,
+    @Headers('authorization') authorization: string | undefined,
+  ) {
+    await this.assertRestRole(authorization, ['ADMIN', 'SUPPORT']);
     return this.ticketsService.updateTeam(id, body);
   }
 
   @Delete('teams/:id')
-  deleteTeam(@Param('id') id: string, @Body() body: UpdateSupportCatalogDto) {
+  async deleteTeam(
+    @Param('id') id: string,
+    @Body() body: UpdateSupportCatalogDto,
+    @Headers('authorization') authorization: string | undefined,
+  ) {
+    await this.assertRestRole(authorization, ['ADMIN', 'SUPPORT']);
     return this.ticketsService.deleteTeam(id, body);
   }
 
@@ -221,17 +297,28 @@ export class TicketsController {
   }
 
   @Post('categories')
-  createCategory(@Body() body: CreateSupportCatalogDto) {
+  async createCategory(@Body() body: CreateSupportCatalogDto, @Headers('authorization') authorization: string | undefined) {
+    await this.assertRestRole(authorization, ['ADMIN', 'SUPPORT']);
     return this.ticketsService.createCategory(body);
   }
 
   @Patch('categories/:id')
-  updateCategory(@Param('id') id: string, @Body() body: UpdateSupportCatalogDto) {
+  async updateCategory(
+    @Param('id') id: string,
+    @Body() body: UpdateSupportCatalogDto,
+    @Headers('authorization') authorization: string | undefined,
+  ) {
+    await this.assertRestRole(authorization, ['ADMIN', 'SUPPORT']);
     return this.ticketsService.updateCategory(id, body);
   }
 
   @Delete('categories/:id')
-  deleteCategory(@Param('id') id: string, @Body() body: UpdateSupportCatalogDto) {
+  async deleteCategory(
+    @Param('id') id: string,
+    @Body() body: UpdateSupportCatalogDto,
+    @Headers('authorization') authorization: string | undefined,
+  ) {
+    await this.assertRestRole(authorization, ['ADMIN', 'SUPPORT']);
     return this.ticketsService.deleteCategory(id, body);
   }
 
@@ -241,17 +328,28 @@ export class TicketsController {
   }
 
   @Post('tags')
-  createTag(@Body() body: CreateSupportCatalogDto) {
+  async createTag(@Body() body: CreateSupportCatalogDto, @Headers('authorization') authorization: string | undefined) {
+    await this.assertRestRole(authorization, ['ADMIN', 'SUPPORT']);
     return this.ticketsService.createTag(body);
   }
 
   @Patch('tags/:id')
-  updateTag(@Param('id') id: string, @Body() body: UpdateSupportCatalogDto) {
+  async updateTag(
+    @Param('id') id: string,
+    @Body() body: UpdateSupportCatalogDto,
+    @Headers('authorization') authorization: string | undefined,
+  ) {
+    await this.assertRestRole(authorization, ['ADMIN', 'SUPPORT']);
     return this.ticketsService.updateTag(id, body);
   }
 
   @Delete('tags/:id')
-  deleteTag(@Param('id') id: string, @Body() body: UpdateSupportCatalogDto) {
+  async deleteTag(
+    @Param('id') id: string,
+    @Body() body: UpdateSupportCatalogDto,
+    @Headers('authorization') authorization: string | undefined,
+  ) {
+    await this.assertRestRole(authorization, ['ADMIN', 'SUPPORT']);
     return this.ticketsService.deleteTag(id, body);
   }
 
@@ -280,5 +378,41 @@ export class TicketsController {
     if (!roles.some((role) => allowedRoles.includes(role))) {
       throw new ForbiddenException({ error: 'Role not allowed.' });
     }
+  }
+
+  private restAuthRequired() {
+    return process.env.LOGIDESK_REQUIRE_REST_AUTH === 'true';
+  }
+
+  private async assertRestRole(
+    authorization: string | undefined,
+    allowedRoles: string[],
+  ): Promise<LogiIdentityClaims | null> {
+    if (!this.restAuthRequired()) {
+      return null;
+    }
+
+    const claims = await this.identityJwks.verifyAuthorizationHeader(authorization);
+    const roles = claims.roles ?? [];
+
+    if (!roles.some((role) => allowedRoles.includes(role))) {
+      throw new ForbiddenException({ error: 'Role not allowed.' });
+    }
+
+    return claims;
+  }
+
+  private async assertRestUserOrRole(
+    authorization: string | undefined,
+    userId: string,
+    allowedRoles: string[],
+  ) {
+    const claims = await this.assertRestRole(authorization, [...allowedRoles, 'CUSTOMER', 'DRIVER', 'OPERATOR']);
+
+    if (!claims || claims.sub === userId || claims.roles?.some((role) => allowedRoles.includes(role))) {
+      return;
+    }
+
+    throw new ForbiddenException({ error: 'User does not own this resource.' });
   }
 }

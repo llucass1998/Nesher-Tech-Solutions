@@ -48,7 +48,8 @@ Data: 2026-07-14
 - `ticket:join` agora valida existencia do ticket e acesso por `ADMIN`/`SUPPORT`, solicitante, responsavel ou membro ativo da equipe antes de entrar em `ticket:{ticketId}`.
 - Fluxos de ticket emitem `ticket:created`, `ticket:updated`, `ticket:assigned` e mensagens nao internas em `ticket:message:created`.
 - LogiDesk web agora monta cliente Socket.IO global, exibe `notification:created` quando ha token de sessao em `sessionStorage` e a rota `/tickets/[id]` assina a room autorizada do ticket.
-- LogiDesk web agora possui `/login` contra o Identity, guarda access token somente em `sessionStorage`, tenta refresh via cookie HttpOnly, possui logout web, guard visual de sessao e helper REST com Authorization/retry apos `401`; guards REST completos na API e E2E em browser continuam pendentes.
+- LogiDesk web agora possui `/login` contra o Identity, guarda access token somente em `sessionStorage`, tenta refresh via cookie HttpOnly, possui logout web, guard visual de sessao e helper REST com Authorization/retry apos `401`.
+- LogiDesk API possui RBAC REST de transicao em mutacoes quando `LOGIDESK_REQUIRE_REST_AUTH=true`; o modo fica desligado por padrao ate migrar SSR/server actions do web para uma estrategia autenticada.
 - Identity API aceita lista de origens em `IDENTITY_WEB_ORIGIN` para permitir LogiDesk web e LogiFlow web no mesmo ambiente.
 
 ## Matriz de regressao
@@ -109,7 +110,7 @@ Data: 2026-07-14
 | `npm run logidesk:prisma:generate` | PASS | Prisma Client LogiDesk gerado apos schema operacional. |
 | `npx prisma validate --config apps/logidesk-api/prisma.config.ts` | PASS | Schema LogiDesk valido apos migration de preferencias de notificacao. |
 | `npm run typecheck -w logidesk-api` | PASS | API LogiDesk operacional compila. |
-| `npm run test -w logidesk-api` | PASS | 25 testes passaram, incluindo DLQ/reprocessamento, autorizacao DLQ, guardrails de anexos, notificacoes internas, Socket.IO autenticado, `ticket:join` autorizado, opt-out por preferencia, ciclo de SLA e relatorio agregado. |
+| `npm run test -w logidesk-api` | PASS | 29 testes passaram, incluindo DLQ/reprocessamento, autorizacao DLQ, RBAC REST de transicao, guardrails de anexos, notificacoes internas, Socket.IO autenticado, `ticket:join` autorizado, opt-out por preferencia, ciclo de SLA e relatorio agregado. |
 | `npm run lint` | PASS | Sem erros apos a fundacao Socket.IO do LogiDesk. |
 | `npm run typecheck` | PASS | Raiz e workspaces compilaram apos a fundacao Socket.IO do LogiDesk. |
 | `npm run test:workspaces` | PASS | Identity, LogiDesk, LogiPeople e contratos passaram; LogiDesk API passou com 25 testes. |
@@ -185,7 +186,7 @@ Todas as rotas legadas preservam o controller atual e passam a emitir:
 
 ## Bloqueios conhecidos
 
-- LogiDesk agora possui fundacao, mas ainda nao tem o produto empresarial completo: guards REST completos na API, upload binario de anexos com storage seguro, calendario comercial/feriados de SLA, relatorios avancados, preferencias ligadas ao usuario autenticado e E2E Playwright.
+- LogiDesk agora possui fundacao, mas ainda nao tem o produto empresarial completo: ownership REST fino com a flag de auth ligada por padrao, upload binario de anexos com storage seguro, calendario comercial/feriados de SLA, relatorios avancados, preferencias ligadas ao usuario autenticado e E2E Playwright.
 - Outbox, Redis/BullMQ e DLQ existem como estrutura inicial; dispatchers HTTP possuem retry com backoff progressivo por polling, publicam espelho em Redis Streams e LogiFlow/LogiDesk possuem APIs administrativas iniciais de DLQ/reprocessamento. Consumidores stream-first e reprocessamento fim a fim ainda nao foram fechados.
 - O Compose validado cobre LogiFlow, LogiDesk, Redis, bancos, workers, APIs e webs.
 - Os workflows GitHub Actions existem para LogiFlow, LogiPeople, LogiDesk e integracao/plataforma.
