@@ -577,6 +577,15 @@ export class TicketsService {
         correlationId: input.correlationId,
       });
       await this.createOutbox(tx, 'ticket.assigned', ticketId, input.correlationId, this.assignmentAfter(input, current.teamId));
+      await this.createNotification(tx, {
+        ticketId,
+        userId: input.assigneeId,
+        teamId: input.teamId ?? current.teamId ?? undefined,
+        type: 'ticket.assigned',
+        title: `Chamado ${current.number} atribuido`,
+        body: input.assigneeId ? 'Voce recebeu um chamado.' : 'Um chamado foi atribuido para a equipe.',
+        correlationId: input.correlationId,
+      });
       await this.createAudit(tx, 'ticket.assigned', 'Ticket', ticketId, input.correlationId, {
         actorId: input.assignedById,
         actorRole: 'SUPPORT',
@@ -585,6 +594,40 @@ export class TicketsService {
       });
 
       return ticket;
+    });
+  }
+
+  async listNotifications(filters: { userId?: string; teamId?: string; unread?: boolean }) {
+    const where: Prisma.NotificationWhereInput = {
+      ...(filters.unread ? { readAt: null } : {}),
+      ...(filters.userId || filters.teamId
+        ? {
+            OR: [
+              ...(filters.userId ? [{ userId: filters.userId }] : []),
+              ...(filters.teamId ? [{ teamId: filters.teamId }] : []),
+            ],
+          }
+        : {}),
+    };
+
+    return this.prisma.notification.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+      include: { ticket: { select: { id: true, number: true, subject: true, status: true, priority: true } } },
+    });
+  }
+
+  async markNotificationRead(id: string) {
+    const current = await this.prisma.notification.findUnique({ where: { id } });
+
+    if (!current) {
+      throw new NotFoundException({ error: 'Notification not found.' });
+    }
+
+    return this.prisma.notification.update({
+      where: { id },
+      data: { readAt: current.readAt ?? new Date() },
     });
   }
 
@@ -919,6 +962,35 @@ export class TicketsService {
         ...(input.assignedById ? { assignedById: input.assignedById } : {}),
         ...(input.teamId ? { teamId: input.teamId } : {}),
         ...(input.reason ? { reason: input.reason } : {}),
+      },
+    });
+  }
+
+  private createNotification(
+    tx: Prisma.TransactionClient,
+    input: {
+      ticketId?: string | undefined;
+      userId?: string | undefined;
+      teamId?: string | undefined;
+      type: string;
+      title: string;
+      body: string;
+      correlationId: string;
+    },
+  ) {
+    if (!input.userId && !input.teamId) {
+      return Promise.resolve(null);
+    }
+
+    return tx.notification.create({
+      data: {
+        type: input.type,
+        title: input.title,
+        body: input.body,
+        correlationId: input.correlationId,
+        ...(input.ticketId ? { ticketId: input.ticketId } : {}),
+        ...(input.userId ? { userId: input.userId } : {}),
+        ...(input.teamId ? { teamId: input.teamId } : {}),
       },
     });
   }

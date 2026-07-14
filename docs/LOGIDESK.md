@@ -32,6 +32,7 @@ Banco:
 - Transicoes de status com validacao de maquina de estados.
 - Mudanca de prioridade.
 - Arquivamento/cancelamento.
+- Notificacoes internas para atribuicao de chamados.
 - Historico.
 - SLA preliminar por prioridade.
 - Outbox LogiDesk.
@@ -68,6 +69,8 @@ Rotas:
 - `PATCH /tickets/:id/internal-notes/:noteId`
 - `GET /tickets/:id/attachments`
 - `POST /tickets/:id/attachments`
+- `GET /notifications`
+- `PATCH /notifications/:id/read`
 - `POST /tickets/:id/assign`
 - `DELETE /tickets/:id/assign`
 - `POST /tickets/:id/change-team`
@@ -102,6 +105,8 @@ Rotas:
 - `correlationId`
 
 O endpoint cria historico, auditoria e outbox. Upload binario, object storage, varredura antivirus e politicas de retencao ainda nao estao implementados.
+
+`GET /notifications` aceita filtros `userId`, `teamId` e `unread=true`. `PATCH /notifications/:id/read` marca uma notificacao como lida. Nesta etapa, notificacoes sao criadas automaticamente quando um chamado e atribuido a usuario ou equipe.
 
 ## Limites atuais
 

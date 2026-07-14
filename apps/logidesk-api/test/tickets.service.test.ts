@@ -54,6 +54,10 @@ function createTicketsService() {
   const idempotencyUpsert = vi.fn().mockResolvedValue({});
   const outboxCreate = vi.fn().mockResolvedValue({});
   const auditCreate = vi.fn().mockResolvedValue({});
+  const notificationCreate = vi.fn().mockResolvedValue({ id: 'notification-1' });
+  const notificationFindMany = vi.fn().mockResolvedValue([]);
+  const notificationFindUnique = vi.fn().mockResolvedValue({ id: 'notification-1', readAt: null });
+  const notificationUpdate = vi.fn().mockResolvedValue({ id: 'notification-1', readAt: new Date('2026-07-14T00:00:00.000Z') });
   const ticketMessageCreate = vi.fn().mockResolvedValue({
     id: 'message-1',
     ticketId: 'ticket-1',
@@ -102,6 +106,7 @@ function createTicketsService() {
     idempotencyRecord: { upsert: idempotencyUpsert },
     outboxEvent: { create: outboxCreate },
     auditLog: { create: auditCreate },
+    notification: { create: notificationCreate },
     ticketMessage: { create: ticketMessageCreate },
     ticketNote: { create: ticketNoteCreate, update: ticketNoteUpdate },
     ticketAttachment: { create: ticketAttachmentCreate },
@@ -122,6 +127,12 @@ function createTicketsService() {
     idempotencyRecord: { findUnique: idempotencyFindUnique },
     outboxEvent: { create: outboxCreate },
     auditLog: { create: auditCreate },
+    notification: {
+      create: notificationCreate,
+      findMany: notificationFindMany,
+      findUnique: notificationFindUnique,
+      update: notificationUpdate,
+    },
     ticketMessage: { create: ticketMessageCreate },
     ticketNote: {
       create: ticketNoteCreate,
@@ -170,6 +181,10 @@ function createTicketsService() {
     idempotencyUpsert,
     outboxCreate,
     auditCreate,
+    notificationCreate,
+    notificationFindMany,
+    notificationFindUnique,
+    notificationUpdate,
     ticketMessageCreate,
     ticketNoteCreate,
     ticketNoteFindMany,
@@ -346,6 +361,34 @@ describe('TicketsService', () => {
     expect(context.ticketHistoryCreate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ action: 'ticket.team_changed' }) }));
     expect(context.ticketHistoryCreate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ action: 'ticket.unassigned' }) }));
     expect(context.outboxCreate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ eventType: 'ticket.priority_changed' }) }));
+    expect(context.notificationCreate).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        ticketId: 'ticket-1',
+        userId: 'agent-2',
+        teamId: 'team-1',
+        type: 'ticket.assigned',
+      }),
+    }));
+  });
+
+  it('lists unread notifications and marks a notification as read', async () => {
+    const context = createTicketsService();
+    context.notificationFindMany.mockResolvedValue([{ id: 'notification-1', readAt: null }]);
+
+    await expect(context.service.listNotifications({ userId: 'agent-1', unread: true })).resolves.toHaveLength(1);
+    expect(context.notificationFindMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({
+        readAt: null,
+        OR: [{ userId: 'agent-1' }],
+      }),
+      take: 100,
+    }));
+
+    await expect(context.service.markNotificationRead('notification-1')).resolves.toMatchObject({ id: 'notification-1' });
+    expect(context.notificationUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: 'notification-1' },
+      data: expect.objectContaining({ readAt: expect.any(Date) }),
+    }));
   });
 
   it('creates and edits internal notes without adding them to public ticket messages', async () => {

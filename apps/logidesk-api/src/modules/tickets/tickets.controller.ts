@@ -133,6 +133,24 @@ export class TicketsController {
     return this.ticketsService.createAttachment(id, body);
   }
 
+  @Get('notifications')
+  listNotifications(
+    @Query('userId') userId?: string,
+    @Query('teamId') teamId?: string,
+    @Query('unread') unread?: string,
+  ) {
+    return this.ticketsService.listNotifications({
+      ...(userId ? { userId } : {}),
+      ...(teamId ? { teamId } : {}),
+      unread: unread === 'true',
+    });
+  }
+
+  @Patch('notifications/:id/read')
+  markNotificationRead(@Param('id') id: string) {
+    return this.ticketsService.markNotificationRead(id);
+  }
+
   @Get('teams')
   listTeams() {
     return this.ticketsService.listTeams();

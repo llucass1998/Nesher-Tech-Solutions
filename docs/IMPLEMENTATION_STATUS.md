@@ -28,7 +28,7 @@ Data: 2026-07-13
 | Plataforma Fase 6 - Migrar auth LogiDesk | Parcial com SSO basico | `GET /api/v1/auth/me` valida token Identity; frontend SSO completo ainda pendente. |
 | Plataforma Fase 7 - Contratos e eventos | Implementada no pacote compartilhado | `packages/event-contracts` consolidado com envelope, eventos namespaced, payloads estritos e testes de contrato. Produtores/consumidores ainda precisam migrar dos nomes legados. |
 | Plataforma Fase 8 - Integração LogiFlow -> LogiDesk | Parcial implementada | `logiflow-worker` despacha Outbox HTTP para LogiDesk; `logidesk-worker` retorna eventos com `occurrenceId` para LogiFlow. Redis Streams, E2E e backoff progressivo ainda pendentes. |
-| Plataforma Fase 9 - LogiDesk operacional ampliado | Implementada no escopo atual | Tickets manuais, status/priority, equipes, categorias, tags, atribuições, notas internas editáveis, metadados de anexos, arquivamento e migrations LogiDesk validados. |
+| Plataforma Fase 9 - LogiDesk operacional ampliado | Implementada no escopo atual | Tickets manuais, status/priority, equipes, categorias, tags, atribuições, notas internas editáveis, metadados de anexos, notificacoes internas, arquivamento e migrations LogiDesk validados. |
 
 ## Matriz de regressao
 
@@ -87,7 +87,7 @@ Data: 2026-07-13
 | `docker compose build logidesk-worker` | PASS | Imagem do worker com retorno para LogiFlow construiu. |
 | `npm run logidesk:prisma:generate` | PASS | Prisma Client LogiDesk gerado apos schema operacional. |
 | `npm run typecheck -w logidesk-api` | PASS | API LogiDesk operacional compila. |
-| `npm run test -w logidesk-api` | PASS | 10 testes passaram, incluindo metadados de anexos com historico, outbox e auditoria. |
+| `npm run test -w logidesk-api` | PASS | 11 testes passaram, incluindo metadados de anexos e notificacoes internas. |
 | `npm run lint` | PASS | Sem erros apos anexos de chamados. |
 | `npm run typecheck` | PASS | Raiz e workspaces compilaram apos anexos de chamados. |
 | `npm run test:workspaces` | PASS | Identity, LogiDesk, LogiPeople e contratos passaram; pacotes sem testes usaram `passWithNoTests`. |
@@ -139,7 +139,7 @@ Todas as rotas legadas preservam o controller atual e passam a emitir:
 
 ## Bloqueios conhecidos
 
-- LogiDesk agora possui fundacao, mas ainda nao tem o produto empresarial completo: SSO real, Socket.IO autenticado, upload binario de anexos com storage seguro, SLA avancado, relatorios, equipes completas e E2E Playwright.
+- LogiDesk agora possui fundacao, mas ainda nao tem o produto empresarial completo: SSO real, Socket.IO autenticado, upload binario de anexos com storage seguro, SLA avancado, relatorios, notificacoes em tempo real e E2E Playwright.
 - Outbox, Redis/BullMQ e DLQ existem como estrutura inicial; o dispatcher com retry/backoff persistente, DLQ operacional e reprocessamento fim a fim ainda nao foi fechado.
 - O Compose validado cobre LogiFlow, LogiDesk, Redis, bancos, workers, APIs e webs.
 - Os workflows GitHub Actions existem para LogiFlow, LogiPeople, LogiDesk e integracao/plataforma.
@@ -161,7 +161,7 @@ Ainda pendente:
 - SSO/JWKS real.
 - Socket.IO autenticado.
 - SLA empresarial completo.
-- Upload binario de anexos, relatorios e notificacoes completas.
+- Upload binario de anexos, relatorios e notificacoes em tempo real.
 - E2E Playwright LogiFlow -> LogiDesk.
 
 ### Validacoes da Fase 6

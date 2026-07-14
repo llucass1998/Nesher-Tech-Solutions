@@ -138,6 +138,8 @@ Base local: `http://localhost:3533/api/v1`.
 - `PATCH /tickets/:id/internal-notes/:noteId`
 - `GET /tickets/:id/attachments`
 - `POST /tickets/:id/attachments`
+- `GET /notifications`
+- `PATCH /notifications/:id/read`
 - `POST /tickets/:id/assign`
 - `DELETE /tickets/:id/assign`
 - `POST /tickets/:id/change-team`
@@ -155,6 +157,8 @@ Base local: `http://localhost:3533/api/v1`.
 - `idempotency-key`
 
 `POST /tickets/:id/attachments` registra metadados auditados do anexo. Campos aceitos: `fileName`, `contentType`, `sizeBytes`, `url`, `storageKey`, `uploadedById` e `correlationId`. O upload fisico do arquivo ainda deve ser feito por storage externo ate a fase de object storage seguro.
+
+`GET /notifications` lista notificacoes internas e aceita `userId`, `teamId` e `unread=true`. `PATCH /notifications/:id/read` marca a notificacao como lida.
 
 Payload:
 
