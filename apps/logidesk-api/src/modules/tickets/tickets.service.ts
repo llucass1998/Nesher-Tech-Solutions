@@ -1,6 +1,6 @@
 import { ConflictException, Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import { createHash, randomUUID } from 'crypto';
-import { Prisma, TicketPriority, TicketStatus } from '../../generated/prisma';
+import { NotificationPreference, Prisma, TicketPriority, TicketStatus } from '../../generated/prisma';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AssignTicketDto } from './dto/assign-ticket.dto';
 import { ChangeTicketPriorityDto } from './dto/change-ticket-priority.dto';
@@ -1059,7 +1059,7 @@ export class TicketsService {
     });
   }
 
-  private createNotification(
+  private async createNotification(
     tx: Prisma.TransactionClient,
     input: {
       ticketId?: string | undefined;
@@ -1073,6 +1073,13 @@ export class TicketsService {
   ) {
     if (!input.userId && !input.teamId) {
       return Promise.resolve(null);
+    }
+
+    if (input.userId) {
+      const preferences = await tx.notificationPreference.findUnique({ where: { userId: input.userId } });
+      if (preferences && !this.notificationTypeEnabled(input.type, preferences)) {
+        return null;
+      }
     }
 
     return tx.notification.create({
@@ -1096,6 +1103,26 @@ export class TicketsService {
       ...(typeof input.slaEnabled === 'boolean' ? { slaEnabled: input.slaEnabled } : {}),
       ...(typeof input.messageEnabled === 'boolean' ? { messageEnabled: input.messageEnabled } : {}),
     };
+  }
+
+  private notificationTypeEnabled(type: string, preferences: NotificationPreference) {
+    if (!preferences.inAppEnabled) {
+      return false;
+    }
+
+    if (type.includes('assigned')) {
+      return preferences.assignmentEnabled;
+    }
+
+    if (type.includes('sla')) {
+      return preferences.slaEnabled;
+    }
+
+    if (type.includes('message')) {
+      return preferences.messageEnabled;
+    }
+
+    return true;
   }
 
   private recordFirstResponse(

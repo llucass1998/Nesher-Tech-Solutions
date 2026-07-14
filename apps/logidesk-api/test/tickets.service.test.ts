@@ -117,7 +117,7 @@ function createTicketsService() {
     outboxEvent: { create: outboxCreate },
     auditLog: { create: auditCreate },
     notification: { create: notificationCreate },
-    notificationPreference: { upsert: notificationPreferenceUpsert },
+    notificationPreference: { findUnique: notificationPreferenceFindUnique, upsert: notificationPreferenceUpsert },
     ticketMessage: { create: ticketMessageCreate },
     ticketNote: { create: ticketNoteCreate, update: ticketNoteUpdate },
     ticketAttachment: { create: ticketAttachmentCreate },
@@ -450,6 +450,33 @@ describe('TicketsService', () => {
         type: 'ticket.assigned',
       }),
     }));
+  });
+
+  it('does not create user notifications when preferences disable that notification type', async () => {
+    const context = createTicketsService();
+    context.ticketFindUnique.mockResolvedValue({ ...ticketRecord, assigneeId: null, teamId: 'team-1' });
+    context.notificationPreferenceFindUnique.mockResolvedValueOnce({
+      id: 'preference-1',
+      userId: 'agent-2',
+      inAppEnabled: true,
+      emailEnabled: false,
+      assignmentEnabled: false,
+      slaEnabled: true,
+      messageEnabled: true,
+      updatedById: null,
+      correlationId: null,
+      createdAt: new Date('2026-07-14T00:00:00.000Z'),
+      updatedAt: new Date('2026-07-14T00:00:00.000Z'),
+    });
+
+    await context.service.assignTicket('ticket-1', {
+      assigneeId: 'agent-2',
+      assignedById: 'lead-1',
+      teamId: 'team-1',
+      correlationId: input.correlationId,
+    });
+
+    expect(context.notificationCreate).not.toHaveBeenCalled();
   });
 
   it('lists unread notifications and marks a notification as read', async () => {

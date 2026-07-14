@@ -28,7 +28,7 @@ Data: 2026-07-13
 | Plataforma Fase 6 - Migrar auth LogiDesk | Parcial com SSO basico | `GET /api/v1/auth/me` valida token Identity; frontend SSO completo ainda pendente. |
 | Plataforma Fase 7 - Contratos e eventos | Implementada no pacote compartilhado | `packages/event-contracts` consolidado com envelope, eventos namespaced, payloads estritos e testes de contrato. Produtores/consumidores ainda precisam migrar dos nomes legados. |
 | Plataforma Fase 8 - Integração LogiFlow -> LogiDesk | Parcial implementada | `logiflow-worker` despacha Outbox HTTP para LogiDesk; `logidesk-worker` retorna eventos com `occurrenceId` para LogiFlow. Redis Streams, E2E e backoff progressivo ainda pendentes. |
-| Plataforma Fase 9 - LogiDesk operacional ampliado | Implementada no escopo atual | Tickets manuais, status/priority, equipes, categorias, tags, atribuições, notas internas editáveis, metadados de anexos, notificacoes internas, preferencias preliminares de notificacao, ciclo de SLA, worker de alerta/violacao de SLA, relatorio agregado, dashboard com dados agregados, tela de notificacoes com leitura pela web, arquivamento e migrations LogiDesk validados. |
+| Plataforma Fase 9 - LogiDesk operacional ampliado | Implementada no escopo atual | Tickets manuais, status/priority, equipes, categorias, tags, atribuições, notas internas editáveis, metadados de anexos, notificacoes internas com opt-out por preferencia, preferencias preliminares de notificacao, ciclo de SLA, worker de alerta/violacao de SLA, relatorio agregado, dashboard com dados agregados, tela de notificacoes com leitura pela web, arquivamento e migrations LogiDesk validados. |
 
 ## Matriz de regressao
 
@@ -88,7 +88,7 @@ Data: 2026-07-13
 | `npm run logidesk:prisma:generate` | PASS | Prisma Client LogiDesk gerado apos schema operacional. |
 | `npx prisma validate --config apps/logidesk-api/prisma.config.ts` | PASS | Schema LogiDesk valido apos migration de preferencias de notificacao. |
 | `npm run typecheck -w logidesk-api` | PASS | API LogiDesk operacional compila. |
-| `npm run test -w logidesk-api` | PASS | 14 testes passaram, incluindo metadados de anexos, notificacoes internas, preferencias de notificacao, ciclo de SLA e relatorio agregado. |
+| `npm run test -w logidesk-api` | PASS | 15 testes passaram, incluindo metadados de anexos, notificacoes internas, opt-out por preferencia, ciclo de SLA e relatorio agregado. |
 | `npm run typecheck -w logidesk-worker` | PASS | Worker LogiDesk compila com avaliacao automatica de SLA. |
 | `npm run build -w logidesk-worker` | PASS | Build do worker LogiDesk passou com alerta/violacao de SLA. |
 | `npm run typecheck -w logidesk-web` | PASS | Dashboard, configuracoes e notificacoes LogiDesk compilam, incluindo acao de leitura pela web. |
@@ -101,6 +101,7 @@ Data: 2026-07-13
 | `docker compose --env-file .env.example build logidesk-migrate logidesk-api` | PASS | Primeira tentativa sem env falhou por `IDENTITY_DB_PASSWORD` ausente; repeticao com `.env.example` construiu as imagens. |
 | `docker compose --env-file .env.example build logidesk-web` | PASS | Imagem web construiu apos acao de leitura de notificacoes; `npm ci` interno reportou 0 vulnerabilidades. |
 | `docker compose --env-file .env.example build logidesk-migrate logidesk-api logidesk-web` | PASS | Imagens LogiDesk afetadas por migration/API/web de preferencias construiram. |
+| `docker compose --env-file .env.example build logidesk-api` | PASS | API LogiDesk construiu apos aplicar opt-out de preferencias na criacao de notificacoes. |
 
 ### Validacoes da Fase 5
 
