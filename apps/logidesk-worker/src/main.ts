@@ -12,6 +12,8 @@ const pollIntervalMs = Number(process.env.LOGIDESK_OUTBOX_POLL_INTERVAL_MS ?? 50
 const slaPollIntervalMs = Number(process.env.LOGIDESK_SLA_POLL_INTERVAL_MS ?? 60000);
 const slaWarningWindowMinutes = Number(process.env.LOGIDESK_SLA_WARNING_WINDOW_MINUTES ?? 30);
 const maxAttempts = Number(process.env.LOGIDESK_OUTBOX_MAX_ATTEMPTS ?? 5);
+const retryBaseDelaySeconds = Number(process.env.LOGIDESK_OUTBOX_RETRY_BASE_DELAY_SECONDS ?? 30);
+const retryMaxDelaySeconds = Number(process.env.LOGIDESK_OUTBOX_RETRY_MAX_DELAY_SECONDS ?? 900);
 const connection = buildRedisConnection(redisUrl);
 const pool = databaseUrl ? new Pool({ connectionString: databaseUrl }) : null;
 
@@ -64,6 +66,8 @@ logger.info(
     logiflowApiUrl,
     hasDatabaseUrl: Boolean(databaseUrl),
     hasServiceToken: Boolean(serviceToken),
+    retryBaseDelaySeconds,
+    retryMaxDelaySeconds,
     status: 'ready',
   },
   'LogiDesk worker ready',
@@ -100,13 +104,21 @@ async function claimNextOutboxEvent(): Promise<OutboxEventRow | null> {
       `
         SELECT id, "eventType", "eventVersion", payload, attempts, "correlationId", "causationId"
         FROM "OutboxEvent"
-        WHERE status IN ('PENDING', 'FAILED')
+        WHERE (
+            status = 'PENDING'
+            OR (
+              status = 'FAILED'
+              AND "updatedAt" <= NOW() - (
+                LEAST($2::int, $3::int * POWER(2, GREATEST(attempts - 1, 0))) * INTERVAL '1 second'
+              )
+            )
+          )
           AND attempts < $1
         ORDER BY "createdAt" ASC
         LIMIT 1
         FOR UPDATE SKIP LOCKED
       `,
-      [maxAttempts],
+      [maxAttempts, retryMaxDelaySeconds, retryBaseDelaySeconds],
     );
 
     const event = result.rows[0];
@@ -386,6 +398,7 @@ async function markFailed(event: OutboxEventRow, error: unknown) {
   const isPermanent = error instanceof PermanentDispatchError;
   const shouldDeadLetter = isPermanent || event.attempts >= maxAttempts;
   const status = shouldDeadLetter ? 'DEAD_LETTER' : 'FAILED';
+  const retryDelaySeconds = shouldDeadLetter ? null : calculateRetryDelaySeconds(event.attempts);
 
   await pool.query('BEGIN');
   try {
@@ -424,6 +437,7 @@ async function markFailed(event: OutboxEventRow, error: unknown) {
       correlationId: event.correlationId,
       attempts: event.attempts,
       status,
+      retryDelaySeconds,
       error: message,
     },
     'LogiDesk outbox event dispatch failed',
@@ -463,6 +477,10 @@ function redactUrl(value: string) {
 
 function asOptionalString(value: unknown) {
   return typeof value === 'string' && value.length > 0 ? value : undefined;
+}
+
+function calculateRetryDelaySeconds(attempts: number) {
+  return Math.min(retryMaxDelaySeconds, retryBaseDelaySeconds * 2 ** Math.max(attempts - 1, 0));
 }
 
 class PermanentDispatchError extends Error {}

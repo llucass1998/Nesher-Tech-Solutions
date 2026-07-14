@@ -41,7 +41,7 @@ Phases 1-14 are in scope:
 | LogiFlow Identity validation | Partially implemented | LogiFlow accepts Identity tokens through JWKS when `IDENTITY_JWKS_URL` is configured, while local auth remains as compatibility fallback. |
 | LogiDesk Identity validation | Partially implemented | LogiDesk exposes `GET /api/v1/auth/me` backed by Identity JWKS. Full frontend SSO remains pending. |
 | Platform event contracts | Implemented in shared package | `packages/event-contracts` now defines the strict versioned event envelope and namespaced events for LogiFlow, LogiDesk, LogiPeople and LogiPayroll. Runtime producers/consumers still need migration from legacy names. |
-| LogiFlow and LogiDesk dispatch | Partially implemented | `logiflow-worker` dispatches LogiFlow outbox records to LogiDesk. `logidesk-worker` dispatches ticket events with LogiFlow references back to LogiFlow. Redis Streams, progressive backoff and E2E remain pending. |
+| LogiFlow and LogiDesk dispatch | Partially implemented | `logiflow-worker` dispatches LogiFlow outbox records to LogiDesk. `logidesk-worker` dispatches ticket events with LogiFlow references back to LogiFlow. Polling-based progressive backoff exists; Redis Streams, administrative reprocessing and E2E remain pending. |
 | LogiDesk operational expansion | Implemented in current scope | Manual tickets, status and priority changes, teams, categories and tags with preliminary UI, assignments, editable internal notes, attachment metadata, internal notifications with preference opt-out, preliminary notification preferences, SLA lifecycle, automatic SLA warning/breach worker, aggregate reporting, dashboard and reports page backed by aggregate data, notifications page with web read action, archive/cancel actions and database migration are implemented and validated. |
 
 ## Identity validation evidence
@@ -80,6 +80,7 @@ Phases 1-14 are in scope:
 | `docker compose --env-file .env.example build logidesk-migrate logidesk-api logidesk-web` | PASS | LogiDesk images affected by the preference migration/API/web changes built successfully. |
 | `docker compose --env-file .env.example build logidesk-api` | PASS | LogiDesk API built after applying notification preference opt-out to notification creation. |
 | `docker compose --env-file .env.example build logidesk-api` | PASS | LogiDesk API built after attachment guardrails; internal `npm ci` reported 0 vulnerabilities. |
+| `docker compose --env-file .env.example build logiflow-worker logidesk-worker` | PASS | Workers built after progressive backoff; internal `npm ci` reported 0 vulnerabilities. |
 | `docker compose --env-file .env.example build logidesk-web` | PASS | LogiDesk web built after adding `/reports` and catalog settings; internal `npm ci` reported 0 vulnerabilities. |
 
 ## Explicitly not complete

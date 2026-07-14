@@ -2,10 +2,10 @@
 
 Data: 2026-07-14
 
-## Estado atual
+## Estado Atual
 
-A integração LogiFlow -> LogiDesk possui outbox persistida e dispatcher HTTP no `logiflow-worker`.
-O retorno LogiDesk -> LogiFlow também possui dispatcher HTTP no `logidesk-worker` para eventos vinculados a ocorrências.
+A integracao LogiFlow -> LogiDesk possui outbox persistida e dispatcher HTTP no `logiflow-worker`.
+O retorno LogiDesk -> LogiFlow tambem possui dispatcher HTTP no `logidesk-worker` para eventos vinculados a ocorrencias.
 
 Componentes:
 
@@ -19,7 +19,7 @@ Componentes:
 - Workers `apps/logiflow-worker` e `apps/logidesk-worker`.
 - Redis no Docker Compose para filas BullMQ existentes.
 
-## Fluxo implementado
+## Fluxo Implementado
 
 ```mermaid
 flowchart TD
@@ -38,48 +38,56 @@ flowchart TD
 
 O `logiflow-worker`:
 
-1. busca eventos `PENDING` ou `FAILED` na tabela `OutboxEvent`;
+1. busca eventos `PENDING` ou `FAILED` elegiveis na tabela `OutboxEvent`;
 2. bloqueia o registro com `FOR UPDATE SKIP LOCKED`;
 3. marca o evento como `PROCESSING`;
 4. envia `POST /api/v1/tickets/from-logiflow`;
 5. envia `x-service-token`, `idempotency-key` e `x-correlation-id`;
 6. marca sucesso como `COMPLETED`;
-7. marca falha temporária como `FAILED`;
+7. marca falha temporaria como `FAILED`;
 8. envia falha permanente ou excesso de tentativas para `DeadLetterEvent`.
 
-Variáveis:
+Eventos `FAILED` usam backoff exponencial calculado por `attempts` e `updatedAt`, sem criar coluna extra de agenda. Por padrao o atraso inicia em 30 segundos e cresce ate 900 segundos. O worker registra `retryDelaySeconds` nos logs de falha.
+
+Variaveis:
 
 - `DATABASE_URL`
 - `LOGIDESK_API_URL`
 - `LOGIDESK_SERVICE_TOKEN`
 - `LOGIFLOW_OUTBOX_POLL_INTERVAL_MS`
 - `LOGIFLOW_OUTBOX_MAX_ATTEMPTS`
+- `LOGIFLOW_OUTBOX_RETRY_BASE_DELAY_SECONDS`
+- `LOGIFLOW_OUTBOX_RETRY_MAX_DELAY_SECONDS`
 
 ## Dispatcher LogiDesk
 
 O `logidesk-worker`:
 
-1. busca eventos `PENDING` ou `FAILED` na tabela `OutboxEvent` do LogiDesk;
+1. busca eventos `PENDING` ou `FAILED` elegiveis na tabela `OutboxEvent` do LogiDesk;
 2. bloqueia o registro com `FOR UPDATE SKIP LOCKED`;
 3. marca o evento como `PROCESSING`;
-4. ignora com sucesso eventos sem `occurrenceId`/`ticketNumber`, pois não pertencem ao LogiFlow;
-5. envia `POST /api/v1/integrations/logidesk/ticket-updates` quando o ticket tem referência logística;
+4. ignora com sucesso eventos sem `occurrenceId`/`ticketNumber`, pois nao pertencem ao LogiFlow;
+5. envia `POST /api/v1/integrations/logidesk/ticket-updates` quando o ticket tem referencia logistica;
 6. envia `x-service-token` e `x-correlation-id`;
 7. marca sucesso como `COMPLETED`;
-8. marca falha temporária como `FAILED`;
+8. marca falha temporaria como `FAILED`;
 9. envia falha permanente ou excesso de tentativas para `DeadLetterEvent`.
 
-Variáveis:
+Eventos `FAILED` usam o mesmo backoff exponencial por `attempts` e `updatedAt`. O worker registra `retryDelaySeconds` nos logs de falha para facilitar investigacao.
+
+Variaveis:
 
 - `LOGIDESK_DATABASE_URL`
 - `LOGIFLOW_API_URL`
 - `LOGIDESK_SERVICE_TOKEN`
 - `LOGIDESK_OUTBOX_POLL_INTERVAL_MS`
 - `LOGIDESK_OUTBOX_MAX_ATTEMPTS`
+- `LOGIDESK_OUTBOX_RETRY_BASE_DELAY_SECONDS`
+- `LOGIDESK_OUTBOX_RETRY_MAX_DELAY_SECONDS`
 
 ## Contratos
 
-Eventos distribuídos devem usar `packages/event-contracts`.
+Eventos distribuidos devem usar `packages/event-contracts`.
 
 Nomes atuais:
 
@@ -89,32 +97,32 @@ Nomes atuais:
 - `logidesk.ticket.message_created`
 - `logidesk.ticket.resolved`
 
-Nomes legados ainda encontrados no código ou dados antigos:
+Nomes legados ainda encontrados no codigo ou dados antigos:
 
 - `logiflow.occurrence_escalated`
 - `ticket.created`
 - `ticket.updated`
 
-Esses nomes antigos devem ser aceitos apenas durante migração e removidos depois de não haver eventos pendentes.
+Esses nomes antigos devem ser aceitos apenas durante migracao e removidos depois de nao haver eventos pendentes.
 
-## Regra absoluta
+## Regra Absoluta
 
-Nunca considerar integração concluída apenas porque uma API retornou HTTP 200.
+Nunca considerar integracao concluida apenas porque uma API retornou HTTP 200.
 
-Para marcar integração como pronta, confirmar:
+Para marcar integracao como pronta, confirmar:
 
-- persistência nos dois bancos;
+- persistencia nos dois bancos;
 - evento salvo na Outbox;
 - evento processado pelo worker;
 - consumidor idempotente;
-- atualização de status no emissor;
+- atualizacao de status no emissor;
 - logs correlacionados;
-- teste de falha e recuperação;
+- teste de falha e recuperacao;
 - E2E completo.
 
-## Limites atuais
+## Limites Atuais
 
-- O dispatcher usa polling PostgreSQL; Redis Streams ainda não foi adotado para este fluxo.
-- Backoff é limitado por polling e contagem de tentativas; agendamento progressivo ainda precisa ser refinado.
-- Socket.IO distribuído ainda não foi conectado.
-- E2E completo ainda não foi automatizado.
+- O dispatcher usa polling PostgreSQL; Redis Streams ainda nao foi adotado para este fluxo.
+- Backoff progressivo existe no polling de `FAILED`, mas Redis Streams, reprocessamento administrativo e cenarios completos de falha ainda precisam ser fechados.
+- Socket.IO distribuido ainda nao foi conectado.
+- E2E completo ainda nao foi automatizado.
