@@ -53,6 +53,7 @@ Data: 2026-07-14
 - LogiDesk web removeu server actions de notificacoes/configuracoes; essas mutacoes agora rodam em Client Components e usam o helper REST com Authorization/refresh.
 - Server actions antigas de tickets foram removidas. O detalhe do chamado agora possui controles client-side autenticados para status, prioridade, resposta publica e nota interna; ainda falta migrar leituras SSR.
 - `GET /tickets/:id` deixou de incluir notas internas; notas ficam no endpoint dedicado `GET /tickets/:id/internal-notes`, coberto pelo RBAC REST de transicao quando a flag esta ativa.
+- `.env.example` agora define `LOGIDESK_REQUIRE_REST_AUTH=true`; mutacoes REST do LogiDesk exigem JWT Identity no ambiente exemplo.
 - Identity API aceita lista de origens em `IDENTITY_WEB_ORIGIN` para permitir LogiDesk web e LogiFlow web no mesmo ambiente.
 
 ## Matriz de regressao

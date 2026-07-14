@@ -121,8 +121,9 @@ As rotas administrativas de DLQ aceitam `x-service-token` ou JWT Identity com ro
 
 RBAC REST de transicao:
 
-- `LOGIDESK_REQUIRE_REST_AUTH=false` preserva compatibilidade com leituras server-side atuais.
-- `LOGIDESK_REQUIRE_REST_AUTH=true` exige JWT Identity em mutacoes operacionais e administrativas.
+- `LOGIDESK_REQUIRE_REST_AUTH=true` e o padrao do `.env.example`.
+- Leituras server-side atuais continuam compativeis porque a flag protege mutacoes e endpoints sensiveis dedicados, nao a listagem basica.
+- Com a flag ativa, mutacoes operacionais e administrativas exigem JWT Identity.
 - Mutacoes de chamados aceitam `ADMIN`, `SUPPORT` e `OPERATOR`; mensagens/anexos tambem aceitam `CUSTOMER` e `DRIVER` como preparacao para portal autenticado.
 - Catalogos administrativos aceitam `ADMIN` e `SUPPORT`.
 - Preferencias de notificacao podem ser alteradas pelo proprio usuario autenticado ou por `ADMIN`/`SUPPORT`.
@@ -202,7 +203,7 @@ A pagina `/settings` tambem lista, cria e desativa equipes, categorias e tags us
 
 - SSO/JWKS basico existe via `GET /api/v1/auth/me`; o web ja possui login Identity inicial, refresh por cookie HttpOnly, logout, guard visual de sessao e helper REST com Authorization/retry apos `401`.
 - Socket.IO autenticado ja existe no backend, valida `ticket:join` por ownership/RBAC e o frontend consome `notification:created` e eventos de ticket quando ha token de sessao ou refresh valido.
-- RBAC REST de transicao ja protege mutacoes quando `LOGIDESK_REQUIRE_REST_AUTH=true`; notificacoes, configuracoes e acoes do detalhe do ticket no web ja usam Client Components autenticados e as server actions antigas de tickets foram removidas. Ainda falta migrar leituras server-side para sessao autenticada, ligar a flag por padrao, aplicar ownership fino em leitura/escrita e validar E2E em browser.
+- RBAC REST de transicao ja protege mutacoes com `LOGIDESK_REQUIRE_REST_AUTH=true` no `.env.example`; notificacoes, configuracoes e acoes do detalhe do ticket no web ja usam Client Components autenticados e as server actions antigas de tickets foram removidas. Ainda falta migrar leituras server-side para sessao autenticada, aplicar ownership fino em leitura/escrita e validar E2E em browser.
 - Preferencias de notificacao existem como persistencia/API/web preliminar e filtram criacao de notificacoes internas por usuario, mas ainda nao filtram entrega em tempo real por usuario autenticado.
 - Catalogos de equipes, categorias e tags ja possuem API e UI administrativa preliminar, mas ainda precisam de RBAC frontend real.
 - Worker LogiDesk despacha eventos com referencia LogiFlow de volta para o LogiFlow e publica espelho operacional em Redis Stream; DLQ do LogiDesk ja pode ser listada e reprocessada pela API, mas ainda falta validacao fim a fim com containers.

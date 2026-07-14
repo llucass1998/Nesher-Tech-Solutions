@@ -250,6 +250,7 @@ services:
       LOGIDESK_WEB_ORIGIN: ${LOGIDESK_WEB_ORIGIN:-http://localhost:3500}
       LOGIDESK_DATABASE_URL: postgresql://${LOGIDESK_DB_USER:-logidesk}:${LOGIDESK_DB_PASSWORD:?set LOGIDESK_DB_PASSWORD}@logidesk-db:5432/${LOGIDESK_DB_NAME:-logidesk}?schema=public
       LOGIDESK_SERVICE_TOKEN: ${LOGIDESK_SERVICE_TOKEN:?set LOGIDESK_SERVICE_TOKEN}
+      LOGIDESK_REQUIRE_REST_AUTH: ${LOGIDESK_REQUIRE_REST_AUTH:-true}
       REDIS_URL: redis://redis:6379
       IDENTITY_JWKS_URL: ${IDENTITY_JWKS_URL:-http://identity-api:3633/.well-known/jwks.json}
       IDENTITY_ISSUER: ${IDENTITY_ISSUER:-logiidentity}
