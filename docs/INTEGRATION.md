@@ -97,7 +97,7 @@ LogiDesk:
 - `GET /api/v1/dead-letter-events`
 - `POST /api/v1/dead-letter-events/:id/reprocess`
 
-Essas rotas exigem `x-service-token` ate o RBAC completo do LogiDesk ser aplicado. O reprocessamento nao apaga o registro de `DeadLetterEvent`. Ele valida que existe `outboxEventId`, confirma que o `OutboxEvent` vinculado ainda esta em `DEAD_LETTER`, reseta o outbox para `PENDING`, zera tentativas, limpa o ultimo erro e registra auditoria. O worker volta a capturar o registro no proximo ciclo de polling.
+Essas rotas aceitam `x-service-token` ou JWT Identity com role `ADMIN`/`SUPPORT`. O reprocessamento nao apaga o registro de `DeadLetterEvent`. Ele valida que existe `outboxEventId`, confirma que o `OutboxEvent` vinculado ainda esta em `DEAD_LETTER`, reseta o outbox para `PENDING`, zera tentativas, limpa o ultimo erro e registra auditoria. O worker volta a capturar o registro no proximo ciclo de polling.
 
 Variaveis:
 

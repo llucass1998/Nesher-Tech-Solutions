@@ -32,8 +32,8 @@ Data: 2026-07-13
 
 ### Atualizacao atual - DLQ LogiFlow e LogiDesk
 
-- LogiDesk API agora possui `GET /api/v1/dead-letter-events` para listar eventos em DLQ.
-- LogiDesk API agora possui `POST /api/v1/dead-letter-events/:id/reprocess` para recolocar o `OutboxEvent` vinculado em `PENDING`, zerar tentativas e registrar auditoria.
+- LogiDesk API agora possui `GET /api/v1/dead-letter-events` para listar eventos em DLQ, protegido por service token ou JWT Identity `ADMIN`/`SUPPORT`.
+- LogiDesk API agora possui `POST /api/v1/dead-letter-events/:id/reprocess` para recolocar o `OutboxEvent` vinculado em `PENDING`, zerar tentativas e registrar auditoria, protegido por service token ou JWT Identity `ADMIN`/`SUPPORT`.
 - LogiFlow API agora possui `GET /api/v1/operations/dead-letter-events` para listar eventos em DLQ.
 - LogiFlow API agora possui `POST /api/v1/operations/dead-letter-events/:id/reprocess` para recolocar o `OutboxEvent` vinculado em `PENDING` e, quando aplicavel, a ocorrencia em `PENDING`.
 - O registro `DeadLetterEvent` permanece como evidencia historica.

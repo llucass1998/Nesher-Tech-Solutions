@@ -102,7 +102,7 @@ Rotas:
 - `idempotency-key`
 - `correlationId` no payload
 
-As rotas administrativas de DLQ tambem exigem `x-service-token` enquanto o RBAC completo do LogiDesk nao estiver aplicado ao modulo.
+As rotas administrativas de DLQ aceitam `x-service-token` ou JWT Identity com role `ADMIN`/`SUPPORT`.
 
 `POST /tickets/:id/attachments` registra somente metadados do arquivo:
 

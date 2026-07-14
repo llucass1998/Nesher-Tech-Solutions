@@ -167,7 +167,7 @@ Base local: `http://localhost:3533/api/v1`.
 - `x-service-token`
 - `idempotency-key`
 
-As rotas administrativas de DLQ tambem exigem `x-service-token` ate o RBAC completo do LogiDesk ser aplicado.
+As rotas administrativas de DLQ aceitam `x-service-token` ou JWT Identity com role `ADMIN`/`SUPPORT`.
 
 `POST /tickets/:id/attachments` registra metadados auditados do anexo. Campos aceitos: `fileName`, `contentType`, `sizeBytes`, `url`, `storageKey`, `uploadedById` e `correlationId`. A API rejeita URL sem HTTPS, path traversal no nome, tamanho acima de 25 MB, MIME fora da allowlist e extensao incompativel com o MIME. O upload fisico do arquivo ainda deve ser feito por storage externo ate a fase de object storage seguro.
 

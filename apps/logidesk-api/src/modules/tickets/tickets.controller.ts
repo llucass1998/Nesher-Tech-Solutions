@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, Headers, Param, Patch, Post, Query, UnauthorizedException } from '@nestjs/common';
+import { Body, Controller, Delete, ForbiddenException, Get, Headers, Param, Patch, Post, Query, UnauthorizedException } from '@nestjs/common';
+import { IdentityJwksService } from '../auth/identity-jwks.service';
 import { AssignTicketDto } from './dto/assign-ticket.dto';
 import { ChangeTicketPriorityDto } from './dto/change-ticket-priority.dto';
 import { ChangeTicketStatusDto } from './dto/change-ticket-status.dto';
@@ -16,7 +17,10 @@ import { TicketsService } from './tickets.service';
 
 @Controller()
 export class TicketsController {
-  constructor(private readonly ticketsService: TicketsService) {}
+  constructor(
+    private readonly ticketsService: TicketsService,
+    private readonly identityJwks: IdentityJwksService,
+  ) {}
 
   @Get('tickets')
   listTickets(
@@ -169,23 +173,25 @@ export class TicketsController {
   }
 
   @Get('dead-letter-events')
-  listDeadLetterEvents(
+  async listDeadLetterEvents(
     @Headers('x-service-token') serviceToken: string | undefined,
+    @Headers('authorization') authorization: string | undefined,
     @Query('correlationId') correlationId?: string,
   ) {
-    this.assertServiceToken(serviceToken);
+    await this.assertServiceTokenOrRole(serviceToken, authorization, ['ADMIN', 'SUPPORT']);
     return this.ticketsService.listDeadLetterEvents({
       ...(correlationId ? { correlationId } : {}),
     });
   }
 
   @Post('dead-letter-events/:id/reprocess')
-  reprocessDeadLetterEvent(
+  async reprocessDeadLetterEvent(
     @Param('id') id: string,
     @Body() body: ReprocessDeadLetterDto,
     @Headers('x-service-token') serviceToken: string | undefined,
+    @Headers('authorization') authorization: string | undefined,
   ) {
-    this.assertServiceToken(serviceToken);
+    await this.assertServiceTokenOrRole(serviceToken, authorization, ['ADMIN', 'SUPPORT']);
     return this.ticketsService.reprocessDeadLetterEvent(id, body);
   }
 
@@ -254,6 +260,25 @@ export class TicketsController {
 
     if (!expected || serviceToken !== expected) {
       throw new UnauthorizedException({ error: 'Invalid service token.' });
+    }
+  }
+
+  private async assertServiceTokenOrRole(
+    serviceToken: string | undefined,
+    authorization: string | undefined,
+    allowedRoles: string[],
+  ) {
+    const expected = process.env.LOGIDESK_SERVICE_TOKEN;
+
+    if (expected && serviceToken === expected) {
+      return;
+    }
+
+    const claims = await this.identityJwks.verifyAuthorizationHeader(authorization);
+    const roles = claims.roles ?? [];
+
+    if (!roles.some((role) => allowedRoles.includes(role))) {
+      throw new ForbiddenException({ error: 'Role not allowed.' });
     }
   }
 }
