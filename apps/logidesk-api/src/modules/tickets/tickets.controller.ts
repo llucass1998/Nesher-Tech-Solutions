@@ -7,6 +7,7 @@ import { CreateMessageDto } from './dto/create-message.dto';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { CreateTicketFromLogiflowDto } from './dto/create-ticket-from-logiflow.dto';
 import { UpdateNotificationPreferenceDto } from './dto/notification-preference.dto';
+import { ReprocessDeadLetterDto } from './dto/reprocess-dead-letter.dto';
 import { CreateSupportCatalogDto, UpdateSupportCatalogDto } from './dto/support-catalog.dto';
 import { TicketActionDto } from './dto/ticket-action.dto';
 import { UpdateInternalNoteDto } from './dto/update-internal-note.dto';
@@ -165,6 +166,27 @@ export class TicketsController {
   @Get('reports/summary')
   getReportsSummary() {
     return this.ticketsService.getReportsSummary();
+  }
+
+  @Get('dead-letter-events')
+  listDeadLetterEvents(
+    @Headers('x-service-token') serviceToken: string | undefined,
+    @Query('correlationId') correlationId?: string,
+  ) {
+    this.assertServiceToken(serviceToken);
+    return this.ticketsService.listDeadLetterEvents({
+      ...(correlationId ? { correlationId } : {}),
+    });
+  }
+
+  @Post('dead-letter-events/:id/reprocess')
+  reprocessDeadLetterEvent(
+    @Param('id') id: string,
+    @Body() body: ReprocessDeadLetterDto,
+    @Headers('x-service-token') serviceToken: string | undefined,
+  ) {
+    this.assertServiceToken(serviceToken);
+    return this.ticketsService.reprocessDeadLetterEvent(id, body);
   }
 
   @Get('teams')

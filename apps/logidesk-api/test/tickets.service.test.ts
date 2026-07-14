@@ -59,6 +59,35 @@ function createTicketsService() {
   const idempotencyFindUnique = vi.fn().mockResolvedValue(null);
   const idempotencyUpsert = vi.fn().mockResolvedValue({});
   const outboxCreate = vi.fn().mockResolvedValue({});
+  const outboxFindUnique = vi.fn().mockResolvedValue({
+    id: 'outbox-1',
+    status: 'DEAD_LETTER',
+    attempts: 5,
+    lastError: 'Redis unavailable',
+  });
+  const outboxUpdate = vi.fn().mockResolvedValue({
+    id: 'outbox-1',
+    status: 'PENDING',
+    attempts: 0,
+    lastError: null,
+    processedAt: null,
+  });
+  const deadLetterFindMany = vi.fn().mockResolvedValue([
+    {
+      id: 'dead-letter-1',
+      outboxEventId: 'outbox-1',
+      eventType: 'ticket.created',
+      correlationId: input.correlationId,
+      error: 'Redis unavailable',
+    },
+  ]);
+  const deadLetterFindUnique = vi.fn().mockResolvedValue({
+    id: 'dead-letter-1',
+    outboxEventId: 'outbox-1',
+    eventType: 'ticket.created',
+    correlationId: input.correlationId,
+    error: 'Redis unavailable',
+  });
   const auditCreate = vi.fn().mockResolvedValue({});
   const notificationCreate = vi.fn().mockResolvedValue({ id: 'notification-1' });
   const notificationCount = vi.fn().mockResolvedValue(4);
@@ -114,7 +143,7 @@ function createTicketsService() {
     ticketAssignment: { create: ticketAssignmentCreate },
     ticketTagAssignment: { createMany: ticketTagAssignmentCreateMany, deleteMany: ticketTagAssignmentDeleteMany },
     idempotencyRecord: { upsert: idempotencyUpsert },
-    outboxEvent: { create: outboxCreate },
+    outboxEvent: { create: outboxCreate, update: outboxUpdate },
     auditLog: { create: auditCreate },
     notification: { create: notificationCreate },
     notificationPreference: { findUnique: notificationPreferenceFindUnique, upsert: notificationPreferenceUpsert },
@@ -137,7 +166,8 @@ function createTicketsService() {
     ticketAssignment: { create: ticketAssignmentCreate, findMany: ticketAssignmentFindMany },
     ticketTagAssignment: { createMany: ticketTagAssignmentCreateMany, deleteMany: ticketTagAssignmentDeleteMany },
     idempotencyRecord: { findUnique: idempotencyFindUnique },
-    outboxEvent: { create: outboxCreate },
+    outboxEvent: { create: outboxCreate, findUnique: outboxFindUnique, update: outboxUpdate },
+    deadLetterEvent: { findMany: deadLetterFindMany, findUnique: deadLetterFindUnique },
     auditLog: { create: auditCreate },
     notification: {
       count: notificationCount,
@@ -201,6 +231,10 @@ function createTicketsService() {
     idempotencyFindUnique,
     idempotencyUpsert,
     outboxCreate,
+    outboxFindUnique,
+    outboxUpdate,
+    deadLetterFindMany,
+    deadLetterFindUnique,
     auditCreate,
     notificationCreate,
     notificationCount,
@@ -553,6 +587,62 @@ describe('TicketsService', () => {
 
     expect(context.ticketGroupBy).toHaveBeenCalledTimes(3);
     expect(context.ticketSlaGroupBy).toHaveBeenCalledWith(expect.objectContaining({ by: ['status'] }));
+  });
+
+  it('lists dead-letter events and reprocesses a linked outbox event with audit', async () => {
+    const context = createTicketsService();
+
+    await expect(context.service.listDeadLetterEvents({ correlationId: input.correlationId })).resolves.toHaveLength(1);
+    expect(context.deadLetterFindMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { correlationId: input.correlationId },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    }));
+
+    await expect(context.service.reprocessDeadLetterEvent('dead-letter-1', {
+      actorId: 'admin-1',
+      reason: 'Redis recovered',
+      correlationId: input.correlationId,
+    })).resolves.toMatchObject({
+      id: 'outbox-1',
+      status: 'PENDING',
+      attempts: 0,
+    });
+
+    expect(context.outboxUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: 'outbox-1' },
+      data: {
+        status: 'PENDING',
+        attempts: 0,
+        lastError: null,
+        processedAt: null,
+      },
+    }));
+    expect(context.auditCreate).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        action: 'dead_letter.reprocess_requested',
+        entityType: 'DeadLetterEvent',
+        entityId: 'dead-letter-1',
+        actorId: 'admin-1',
+        after: expect.objectContaining({ reason: 'Redis recovered' }),
+      }),
+    }));
+  });
+
+  it('rejects dead-letter reprocessing when the linked outbox is no longer dead-lettered', async () => {
+    const context = createTicketsService();
+    context.outboxFindUnique.mockResolvedValue({
+      id: 'outbox-1',
+      status: 'PENDING',
+      attempts: 0,
+      lastError: null,
+    });
+
+    await expect(context.service.reprocessDeadLetterEvent('dead-letter-1', {
+      correlationId: input.correlationId,
+    })).rejects.toThrow(ConflictException);
+
+    expect(context.outboxUpdate).not.toHaveBeenCalled();
   });
 
   it('creates and edits internal notes without adding them to public ticket messages', async () => {

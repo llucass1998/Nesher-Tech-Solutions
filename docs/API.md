@@ -141,6 +141,8 @@ Base local: `http://localhost:3533/api/v1`.
 - `GET /notifications`
 - `PATCH /notifications/:id/read`
 - `GET /reports/summary`
+- `GET /dead-letter-events`
+- `POST /dead-letter-events/:id/reprocess`
 - `POST /tickets/:id/assign`
 - `DELETE /tickets/:id/assign`
 - `POST /tickets/:id/change-team`
@@ -157,11 +159,17 @@ Base local: `http://localhost:3533/api/v1`.
 - `x-service-token`
 - `idempotency-key`
 
-`POST /tickets/:id/attachments` registra metadados auditados do anexo. Campos aceitos: `fileName`, `contentType`, `sizeBytes`, `url`, `storageKey`, `uploadedById` e `correlationId`. A API rejeita URL sem HTTPS, path traversal no nome, tamanho acima de 25 MB, MIME fora da allowlist e extensao incompatível com o MIME. O upload fisico do arquivo ainda deve ser feito por storage externo ate a fase de object storage seguro.
+As rotas administrativas de DLQ tambem exigem `x-service-token` ate o RBAC completo do LogiDesk ser aplicado.
+
+`POST /tickets/:id/attachments` registra metadados auditados do anexo. Campos aceitos: `fileName`, `contentType`, `sizeBytes`, `url`, `storageKey`, `uploadedById` e `correlationId`. A API rejeita URL sem HTTPS, path traversal no nome, tamanho acima de 25 MB, MIME fora da allowlist e extensao incompativel com o MIME. O upload fisico do arquivo ainda deve ser feito por storage externo ate a fase de object storage seguro.
 
 `GET /notifications` lista notificacoes internas e aceita `userId`, `teamId` e `unread=true`. `PATCH /notifications/:id/read` marca a notificacao como lida.
 
 `GET /reports/summary` retorna totais e distribuicoes agregadas de chamados, origem, prioridade e SLA para dashboards operacionais. A rota nao retorna mensagens, notas internas, anexos ou dados pessoais detalhados.
+
+`GET /dead-letter-events` lista ate 100 eventos em DLQ, ordenados por criacao decrescente. Aceita filtro `correlationId`.
+
+`POST /dead-letter-events/:id/reprocess` recoloca o `OutboxEvent` vinculado em `PENDING`, zera `attempts`, limpa `lastError`/`processedAt` e registra auditoria `dead_letter.reprocess_requested`. O registro de DLQ permanece como evidencia historica. A operacao rejeita evento sem outbox vinculado ou outbox que nao esteja mais em `DEAD_LETTER`.
 
 Payload:
 

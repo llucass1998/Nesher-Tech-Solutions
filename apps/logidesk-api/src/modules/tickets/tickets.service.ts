@@ -10,6 +10,7 @@ import { CreateMessageDto } from './dto/create-message.dto';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { CreateTicketFromLogiflowDto } from './dto/create-ticket-from-logiflow.dto';
 import { UpdateNotificationPreferenceDto } from './dto/notification-preference.dto';
+import { ReprocessDeadLetterDto } from './dto/reprocess-dead-letter.dto';
 import { CreateSupportCatalogDto, UpdateSupportCatalogDto } from './dto/support-catalog.dto';
 import { UpdateInternalNoteDto } from './dto/update-internal-note.dto';
 import { UpdateTicketDto } from './dto/update-ticket.dto';
@@ -726,6 +727,71 @@ export class TicketsService {
       ticketsBySource: this.mapCountGroup(ticketsBySource, 'source'),
       slaByStatus: this.mapCountGroup(slaByStatus, 'status'),
     };
+  }
+
+  listDeadLetterEvents(filters: { correlationId?: string }) {
+    return this.prisma.deadLetterEvent.findMany({
+      where: {
+        ...(filters.correlationId ? { correlationId: filters.correlationId } : {}),
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+  }
+
+  async reprocessDeadLetterEvent(id: string, input: ReprocessDeadLetterDto) {
+    const deadLetter = await this.prisma.deadLetterEvent.findUnique({ where: { id } });
+
+    if (!deadLetter) {
+      throw new NotFoundException({ error: 'Dead-letter event not found.' });
+    }
+
+    if (!deadLetter.outboxEventId) {
+      throw new UnprocessableEntityException({ error: 'Dead-letter event is not linked to an outbox event.' });
+    }
+
+    const outboxEvent = await this.prisma.outboxEvent.findUnique({ where: { id: deadLetter.outboxEventId } });
+
+    if (!outboxEvent) {
+      throw new NotFoundException({ error: 'Linked outbox event not found.' });
+    }
+
+    if (outboxEvent.status !== 'DEAD_LETTER') {
+      throw new ConflictException({ error: 'Linked outbox event is not in DEAD_LETTER status.' });
+    }
+
+    const correlationId = input.correlationId ?? deadLetter.correlationId;
+
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.outboxEvent.update({
+        where: { id: outboxEvent.id },
+        data: {
+          status: 'PENDING',
+          attempts: 0,
+          lastError: null,
+          processedAt: null,
+        },
+      });
+
+      await this.createAudit(tx, 'dead_letter.reprocess_requested', 'DeadLetterEvent', deadLetter.id, correlationId, {
+        actorId: input.actorId,
+        actorRole: 'SUPPORT',
+        before: {
+          outboxEventId: outboxEvent.id,
+          status: outboxEvent.status,
+          attempts: outboxEvent.attempts,
+          lastError: outboxEvent.lastError,
+        },
+        after: {
+          outboxEventId: updated.id,
+          status: updated.status,
+          attempts: updated.attempts,
+          reason: input.reason ?? null,
+        },
+      });
+
+      return updated;
+    });
   }
 
   async unassignTicket(ticketId: string, input: AssignTicketDto) {

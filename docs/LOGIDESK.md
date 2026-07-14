@@ -39,7 +39,7 @@ Banco:
 - Worker de SLA para alerta e violacao automaticos.
 - Relatorio agregado operacional para dashboard.
 - Outbox LogiDesk.
-- Dead-letter table.
+- Dead-letter table com API administrativa inicial de listagem e reprocessamento.
 - Auditoria.
 - Health checks `GET /api/v1/health/live` e `GET /api/v1/health/ready`.
 - Web com dashboard baseado em relatorio agregado, lista de chamados, Kanban, SLA, relatorios, notificacoes e configuracoes com equipes, categorias e tags.
@@ -77,6 +77,8 @@ Rotas:
 - `GET /notification-preferences/:userId`
 - `PATCH /notification-preferences/:userId`
 - `GET /reports/summary`
+- `GET /dead-letter-events`
+- `POST /dead-letter-events/:id/reprocess`
 - `POST /tickets/:id/assign`
 - `DELETE /tickets/:id/assign`
 - `POST /tickets/:id/change-team`
@@ -100,6 +102,8 @@ Rotas:
 - `idempotency-key`
 - `correlationId` no payload
 
+As rotas administrativas de DLQ tambem exigem `x-service-token` enquanto o RBAC completo do LogiDesk nao estiver aplicado ao modulo.
+
 `POST /tickets/:id/attachments` registra somente metadados do arquivo:
 
 - `fileName`
@@ -115,6 +119,8 @@ O endpoint cria historico, auditoria e outbox. A API rejeita URL sem HTTPS, path
 `GET /notifications` aceita filtros `userId`, `teamId` e `unread=true`. `PATCH /notifications/:id/read` marca uma notificacao como lida. Nesta etapa, notificacoes sao criadas automaticamente quando um chamado e atribuido a usuario ou equipe.
 
 `GET /reports/summary` retorna agregados operacionais sem dados sensiveis: totais, chamados ativos, chamados sem responsavel, notificacoes nao lidas, distribuicao por status, prioridade, origem e SLA.
+
+`GET /dead-letter-events` lista eventos em DLQ e aceita filtro `correlationId`. `POST /dead-letter-events/:id/reprocess` recoloca o outbox vinculado em `PENDING`, zera tentativas, limpa o erro e registra auditoria sem apagar o registro de DLQ.
 
 O dashboard web consome `/reports/summary` para os cards e distribuicoes, e `/tickets` apenas para a fila recente.
 
@@ -132,7 +138,7 @@ A pagina `/settings` tambem lista, cria e desativa equipes, categorias e tags us
 - Socket.IO ainda nao esta emitindo eventos para browsers.
 - Preferencias de notificacao existem como persistencia/API/web preliminar e filtram criacao de notificacoes internas por usuario, mas ainda nao filtram entrega em tempo real por usuario autenticado.
 - Catalogos de equipes, categorias e tags ja possuem API e UI administrativa preliminar, mas ainda precisam de RBAC frontend real.
-- Worker LogiDesk despacha eventos com referencia LogiFlow de volta para o LogiFlow.
+- Worker LogiDesk despacha eventos com referencia LogiFlow de volta para o LogiFlow; DLQ do LogiDesk ja pode ser listada e reprocessada pela API, mas ainda falta validacao fim a fim com containers.
 - E2E Playwright completo LogiFlow -> LogiDesk ainda nao foi criado.
 - SLA registra primeira resposta, pausa em `WAITING_CUSTOMER`, retomada em `IN_PROGRESS`, conclusao em `RESOLVED`/`CLOSED` e alerta/violacao automaticos pelo worker. Calendario comercial e feriados ainda precisam evoluir.
 
@@ -141,7 +147,7 @@ A pagina `/settings` tambem lista, cria e desativa equipes, categorias e tags us
 - `npm run logidesk:prisma:generate`: PASS.
 - `npx prisma validate --config apps/logidesk-api/prisma.config.ts`: PASS.
 - `npm run typecheck -w logidesk-api`: PASS.
-- `npm run test -w logidesk-api`: PASS, 16 testes.
+- `npm run test -w logidesk-api`: PASS, 18 testes.
 - `npm run typecheck -w logidesk-worker`: PASS.
 - `npm run build -w logidesk-worker`: PASS.
 - `npm run typecheck -w logidesk-web`: PASS.
