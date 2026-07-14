@@ -42,7 +42,7 @@ Banco:
 - Dead-letter table.
 - Auditoria.
 - Health checks `GET /api/v1/health/live` e `GET /api/v1/health/ready`.
-- Web com dashboard baseado em relatorio agregado, lista de chamados, Kanban, SLA, relatorios, notificacoes e configuracoes.
+- Web com dashboard baseado em relatorio agregado, lista de chamados, Kanban, SLA, relatorios, notificacoes e configuracoes com equipes, categorias e tags.
 
 ## API principal
 
@@ -124,11 +124,14 @@ A pagina `/notifications` consome `GET /notifications?unread=true`, exibe alerta
 
 A pagina `/settings` consome `GET /notification-preferences/logidesk-web` e grava preferencias preliminares com `PATCH /notification-preferences/:userId`. A API respeita essas preferencias ao criar notificacoes de usuario. Esta etapa usa um `userId` operacional fixo ate o frontend concluir o SSO real do LogiIdentity.
 
+A pagina `/settings` tambem lista, cria e desativa equipes, categorias e tags usando os endpoints de catalogo existentes. As regras de ownership/RBAC reais ainda dependem da conclusao do SSO frontend.
+
 ## Limites atuais
 
 - SSO/JWKS basico existe via `GET /api/v1/auth/me`; frontend SSO completo ainda precisa evoluir.
 - Socket.IO ainda nao esta emitindo eventos para browsers.
 - Preferencias de notificacao existem como persistencia/API/web preliminar e filtram criacao de notificacoes internas por usuario, mas ainda nao filtram entrega em tempo real por usuario autenticado.
+- Catalogos de equipes, categorias e tags ja possuem API e UI administrativa preliminar, mas ainda precisam de RBAC frontend real.
 - Worker LogiDesk despacha eventos com referencia LogiFlow de volta para o LogiFlow.
 - E2E Playwright completo LogiFlow -> LogiDesk ainda nao foi criado.
 - SLA registra primeira resposta, pausa em `WAITING_CUSTOMER`, retomada em `IN_PROGRESS`, conclusao em `RESOLVED`/`CLOSED` e alerta/violacao automaticos pelo worker. Calendario comercial e feriados ainda precisam evoluir.

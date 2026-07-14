@@ -42,7 +42,7 @@ Phases 1-14 are in scope:
 | LogiDesk Identity validation | Partially implemented | LogiDesk exposes `GET /api/v1/auth/me` backed by Identity JWKS. Full frontend SSO remains pending. |
 | Platform event contracts | Implemented in shared package | `packages/event-contracts` now defines the strict versioned event envelope and namespaced events for LogiFlow, LogiDesk, LogiPeople and LogiPayroll. Runtime producers/consumers still need migration from legacy names. |
 | LogiFlow and LogiDesk dispatch | Partially implemented | `logiflow-worker` dispatches LogiFlow outbox records to LogiDesk. `logidesk-worker` dispatches ticket events with LogiFlow references back to LogiFlow. Redis Streams, progressive backoff and E2E remain pending. |
-| LogiDesk operational expansion | Implemented in current scope | Manual tickets, status and priority changes, teams, categories, tags, assignments, editable internal notes, attachment metadata, internal notifications with preference opt-out, preliminary notification preferences, SLA lifecycle, automatic SLA warning/breach worker, aggregate reporting, dashboard and reports page backed by aggregate data, notifications page with web read action, archive/cancel actions and database migration are implemented and validated. |
+| LogiDesk operational expansion | Implemented in current scope | Manual tickets, status and priority changes, teams, categories and tags with preliminary UI, assignments, editable internal notes, attachment metadata, internal notifications with preference opt-out, preliminary notification preferences, SLA lifecycle, automatic SLA warning/breach worker, aggregate reporting, dashboard and reports page backed by aggregate data, notifications page with web read action, archive/cancel actions and database migration are implemented and validated. |
 
 ## Identity validation evidence
 
@@ -68,8 +68,8 @@ Phases 1-14 are in scope:
 | `npm run test -w logidesk-api` | PASS | 15 tests passed, including attachment metadata, internal notifications, preference opt-out, SLA lifecycle and aggregate reporting. |
 | `npm run typecheck -w logidesk-worker` | PASS | LogiDesk worker compiles with automatic SLA evaluation. |
 | `npm run build -w logidesk-worker` | PASS | LogiDesk worker build passed with SLA warning/breach handling. |
-| `npm run typecheck -w logidesk-web` | PASS | LogiDesk dashboard, reports, settings and notifications compile. |
-| `npm run build -w logidesk-web` | PASS | LogiDesk Next build passed with `/reports`; known root/multiple lockfile warning remains. |
+| `npm run typecheck -w logidesk-web` | PASS | LogiDesk dashboard, reports, catalog settings and notifications compile. |
+| `npm run build -w logidesk-web` | PASS | LogiDesk Next build passed with `/reports` and catalog settings; known root/multiple lockfile warning remains. |
 | `npm run lint` | PASS | No errors after web notifications. |
 | `npm run typecheck` | PASS | Root and workspace typechecks passed after web notifications. |
 | `npm run test:workspaces` | PASS | Identity, LogiDesk, LogiPeople and contracts passed; packages without tests used `passWithNoTests`. |
@@ -79,7 +79,7 @@ Phases 1-14 are in scope:
 | `docker compose --env-file .env.example build logidesk-web` | PASS | Web image built after notification read action; internal `npm ci` reported 0 vulnerabilities. |
 | `docker compose --env-file .env.example build logidesk-migrate logidesk-api logidesk-web` | PASS | LogiDesk images affected by the preference migration/API/web changes built successfully. |
 | `docker compose --env-file .env.example build logidesk-api` | PASS | LogiDesk API built after applying notification preference opt-out to notification creation. |
-| `docker compose --env-file .env.example build logidesk-web` | PASS | LogiDesk web built after adding `/reports`; internal `npm ci` reported 0 vulnerabilities. |
+| `docker compose --env-file .env.example build logidesk-web` | PASS | LogiDesk web built after adding `/reports` and catalog settings; internal `npm ci` reported 0 vulnerabilities. |
 
 ## Explicitly not complete
 
