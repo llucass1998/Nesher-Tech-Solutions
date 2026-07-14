@@ -51,7 +51,7 @@ Data: 2026-07-14
 - LogiDesk web agora possui `/login` contra o Identity, guarda access token somente em `sessionStorage`, tenta refresh via cookie HttpOnly, possui logout web, guard visual de sessao e helper REST com Authorization/retry apos `401`.
 - LogiDesk API possui RBAC REST de transicao em mutacoes quando `LOGIDESK_REQUIRE_REST_AUTH=true`; o modo fica desligado por padrao ate migrar SSR/server actions do web para uma estrategia autenticada.
 - LogiDesk web removeu server actions de notificacoes/configuracoes; essas mutacoes agora rodam em Client Components e usam o helper REST com Authorization/refresh.
-- Server actions antigas de tickets foram removidas porque nao eram usadas pela UI. Ainda falta criar controles de mutacao de tickets como Client Components autenticados e migrar leituras SSR.
+- Server actions antigas de tickets foram removidas. O detalhe do chamado agora possui controles client-side autenticados para status, prioridade, resposta publica e nota interna; ainda falta migrar leituras SSR.
 - Identity API aceita lista de origens em `IDENTITY_WEB_ORIGIN` para permitir LogiDesk web e LogiFlow web no mesmo ambiente.
 
 ## Matriz de regressao

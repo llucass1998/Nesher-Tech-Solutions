@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { fetchLogiDesk, TicketSummary } from '@/src/lib/api';
+import { TicketActionsClient } from './ticket-actions-client';
 import { TicketRealtimePanel } from './ticket-realtime-panel';
 
 export default async function TicketDetailPage(props: { params: Promise<{ id: string }> }) {
@@ -41,6 +42,7 @@ export default async function TicketDetailPage(props: { params: Promise<{ id: st
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: 20, alignItems: 'start' }}>
         <div style={{ display: 'grid', gap: 20 }}>
           <TicketRealtimePanel ticketId={ticket.id} />
+          <TicketActionsClient ticket={ticket} />
           <section style={panelStyle}>
             <h3 style={sectionTitleStyle}>Mensagens</h3>
             {ticket.messages?.length ? (
