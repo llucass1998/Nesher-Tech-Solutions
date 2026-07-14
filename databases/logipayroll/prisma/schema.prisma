@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../../../apps/logipayroll-api/src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum PayrollRunStatus {
+  DRAFT
+  CALCULATING
+  REVIEW
+  APPROVED
+  CLOSED
+  CANCELED
+}
+
+model PayrollEmployeeReference {
+  id             String   @id @default(uuid())
+  identityUserId String?
+  logiPeopleId  String?  @unique
+  fullName       String
+  documentHash   String?
+  status         String   @default("ACTIVE")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  contracts Contract[]
+}
+
+model Contract {
+  id          String   @id @default(uuid())
+  employeeId  String
+  type        String
+  startsAt    DateTime
+  endsAt      DateTime?
+  status      String   @default("ACTIVE")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  employee PayrollEmployeeReference @relation(fields: [employeeId], references: [id])
+}
+
+model PayrollRun {
+  id              String           @id @default(uuid())
+  referenceMonth  Int
+  referenceYear   Int
+  status          PayrollRunStatus @default(DRAFT)
+  idempotencyKey  String?          @unique
+  correlationId   String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  items PayrollItem[]
+
+  @@unique([referenceMonth, referenceYear])
+}
+
+model PayrollItem {
+  id          String   @id @default(uuid())
+  payrollRunId String
+  employeeId  String
+  code        String
+  description String
+  kind        String
+  amountCents Int
+  createdAt   DateTime @default(now())
+
+  payrollRun PayrollRun @relation(fields: [payrollRunId], references: [id])
+
+  @@index([employeeId])
+}
+
+model OutboxEvent {
+  id           String   @id @default(uuid())
+  eventType    String
+  eventVersion Int      @default(1)
+  payload      Json
+  status       String   @default("PENDING")
+  attempts     Int      @default(0)
+  correlationId String?
+  causationId  String?
+  createdAt    DateTime @default(now())
+  processedAt  DateTime?
+  lastError    String?
+}
+
+model InboxMessage {
+  id          String   @id @default(uuid())
+  eventId     String   @unique
+  eventType   String
+  producer    String
+  processedAt DateTime @default(now())
+}

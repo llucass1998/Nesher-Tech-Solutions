@@ -8,6 +8,7 @@ O checkout atual contem:
 - **LogiIdentity** em `apps/identity-*`: NestJS API, worker, JWT RS256/JWKS, sessoes e Prisma separado em `databases/identity`.
 - **LogiPeople** em `apps/logipeople-*`: NestJS API, Next.js web, worker, pacotes compartilhados e Prisma separado em `databases/logipeople`.
 - **LogiDesk** em `apps/logidesk-*`: NestJS API, Next.js web, worker BullMQ e Prisma separado em `databases/logidesk`.
+- **LogiPayroll** em `apps/logipayroll-*`: fundacao separada para DP/folha com Prisma separado em `databases/logipayroll`.
 
 ## Stack
 
@@ -36,6 +37,9 @@ apps/logipeople-worker       Worker LogiPeople
 apps/logidesk-api            LogiDesk API NestJS
 apps/logidesk-web            LogiDesk web Next.js
 apps/logidesk-worker         Worker LogiDesk BullMQ
+apps/logipayroll-api         LogiPayroll API NestJS
+apps/logipayroll-web         LogiPayroll web Next.js
+apps/logipayroll-worker      Worker LogiPayroll
 apps/logiflow-worker         Worker LogiFlow BullMQ
 apps/identity-api            LogiIdentity API NestJS
 apps/identity-worker         Worker LogiIdentity
@@ -46,6 +50,7 @@ packages/logger              Logger compartilhado
 packages/ui                  Componentes UI compartilhados LogiFlow
 databases/logipeople         Banco LogiPeople
 databases/logidesk           Banco LogiDesk
+databases/logipayroll        Banco LogiPayroll
 databases/identity           Banco Identity
 docs/                        Documentacao de arquitetura, operacao e decisoes
 ```
@@ -70,6 +75,7 @@ npm run build:workspaces
 npm run identity:prisma:generate
 npm run logipeople:prisma:generate
 npm run logidesk:prisma:generate
+npm run logipayroll:prisma:generate
 ```
 
 Prisma LogiFlow:
@@ -118,6 +124,14 @@ npm run logidesk:dev:api
 npm run logidesk:dev:worker
 ```
 
+LogiPayroll:
+
+```bash
+npm run logipayroll:dev:web
+npm run logipayroll:dev:api
+npm run logipayroll:dev:worker
+```
+
 LogiIdentity:
 
 ```bash
@@ -152,6 +166,8 @@ LogiFlow tem auth v1, ownership de motorista, rotas legadas depreciadas, dashboa
 LogiPeople possui fundacoes de organizacao, pessoas, recrutamento, onboarding, ponto, folha preliminar, beneficios, ausencias/ferias e analytics agregado.
 
 LogiDesk possui fundacao operacional com tickets, SLA preliminar, outbox, DLQ, worker, web, login/refresh/logout Identity inicial, helper REST autenticado no browser, mutacoes client-side autenticadas para notificacoes/configuracoes/detalhe do ticket, RBAC REST de transicao por `LOGIDESK_REQUIRE_REST_AUTH` e Socket.IO autenticado com consumo inicial de notificacoes no frontend. Processamento completo de workers, ownership REST fino, leitura server-side autenticada e E2E Playwright completo ainda seguem pendentes.
+
+LogiPayroll possui fundacao separada com API, web, worker e banco Prisma proprio. Ainda nao houve migracao de dados reais do DP/folha do LogiPeople; Docker, CI, auth, eventos e APIs reais ficam como proximas etapas.
 
 ## Documentacao
 

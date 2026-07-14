@@ -1,0 +1,13 @@
+{
+  "name": "logipayroll-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev -p 3600",
+    "lint": "eslint app --ext .ts,.tsx",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "build": "next build"
+  }
+}

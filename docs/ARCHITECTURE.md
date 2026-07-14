@@ -2,7 +2,7 @@
 
 ## Visao geral
 
-O repositorio funciona como uma plataforma em transicao. O LogiIdentity agora existe como servico separado para login, sessoes, roles, permissoes, JWT RS256 e JWKS. O LogiFlow ainda vive na raiz, com frontend Next.js e API Express. O LogiPeople segue uma estrutura de monorepo mais clara, em `apps/`, `packages/` e `databases/`. O LogiDesk possui uma fundacao propria em `apps/logidesk-*` e `databases/logidesk`, mas ainda nao representa o produto empresarial completo descrito no prompt mestre.
+O repositorio funciona como uma plataforma em transicao. O LogiIdentity agora existe como servico separado para login, sessoes, roles, permissoes, JWT RS256 e JWKS. O LogiFlow ainda vive na raiz, com frontend Next.js e API Express. O LogiPeople segue uma estrutura de monorepo mais clara, em `apps/`, `packages/` e `databases/`. O LogiDesk possui uma fundacao propria em `apps/logidesk-*` e `databases/logidesk`. O LogiPayroll agora possui fundacao separada em `apps/logipayroll-*` e `databases/logipayroll`, ainda sem migracao de dados reais.
 
 ## LogiIdentity
 
@@ -79,9 +79,25 @@ Padroes atuais:
 - Ticket cria historico, SLA preliminar, auditoria e outbox local.
 - Worker BullMQ sobe e conecta no Redis, mas o processamento distribuido completo ainda e pendente.
 
+## LogiPayroll
+
+```text
+apps/logipayroll-api       NestJS API fundacional de DP/folha
+apps/logipayroll-web       Next.js App Router inicial
+apps/logipayroll-worker    Worker bootstrap
+databases/logipayroll      Prisma separado
+```
+
+Padroes atuais:
+
+- Banco separado para dados restritos de DP/folha.
+- API inicial com health checks e endpoint de capacidades.
+- Sem relacoes Prisma com LogiPeople, LogiFlow ou LogiDesk.
+- Migracao de dados do LogiPeople ainda nao foi executada.
+
 ## Bancos
 
-Identity, LogiFlow, LogiPeople e LogiDesk possuem schemas Prisma separados. Nao ha relacoes Prisma entre bancos.
+Identity, LogiFlow, LogiPeople, LogiDesk e LogiPayroll possuem schemas Prisma separados. Nao ha relacoes Prisma entre bancos.
 
 ```mermaid
 erDiagram
@@ -127,6 +143,7 @@ Workflows:
 - Extrair regras de controllers LogiFlow para services/use cases.
 - Migrar consumidores antigos para Identity e remover autenticacao duplicada somente apos validacao.
 - Completar o LogiDesk empresarial: SLA completo, anexos binarios, relatorios avancados e consumo Socket.IO no frontend.
+- Evoluir LogiPayroll com Docker, CI, auth, eventos e APIs reais antes de migrar dados de DP do LogiPeople.
 - Completar processamento de Outbox, Redis/BullMQ, DLQ e reprocessamento distribuido.
 - Expandir Socket.IO autenticado para rooms dinamicas de ticket e clientes web.
 - Cobrir E2E completo com Playwright.

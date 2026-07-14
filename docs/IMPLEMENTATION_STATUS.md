@@ -30,6 +30,8 @@ Data: 2026-07-14
 | Plataforma Fase 8 - Integração LogiFlow -> LogiDesk | Parcial implementada | `logiflow-worker` despacha Outbox HTTP para LogiDesk; `logidesk-worker` retorna eventos com `occurrenceId` para LogiFlow. Backoff progressivo por polling foi adicionado; Redis Streams, E2E e reprocessamento administrativo ainda pendentes. |
 | Plataforma Fase 9 - LogiDesk operacional ampliado | Implementada no escopo atual | Tickets manuais, status/priority, equipes, categorias, tags com UI preliminar, atribuições, notas internas editáveis, metadados de anexos, notificacoes internas com opt-out por preferencia, preferencias preliminares de notificacao, ciclo de SLA, worker de alerta/violacao de SLA, relatorio agregado, dashboard e tela de relatorios com dados agregados, tela de notificacoes com leitura pela web, arquivamento e migrations LogiDesk validados. |
 
+| Plataforma Fase 10 - LogiPayroll separado | Fundacao criada | `apps/logipayroll-api`, `apps/logipayroll-web`, `apps/logipayroll-worker`, `databases/logipayroll`; schema Prisma separado, health/capabilities, worker/web iniciais. Docker, CI, auth e APIs reais ainda pendentes. |
+
 ### Atualizacao atual - DLQ LogiFlow e LogiDesk
 
 - LogiDesk API agora possui `GET /api/v1/dead-letter-events` para listar eventos em DLQ, protegido por service token ou JWT Identity `ADMIN`/`SUPPORT`.
@@ -55,6 +57,13 @@ Data: 2026-07-14
 - `GET /tickets/:id` deixou de incluir notas internas; notas ficam no endpoint dedicado `GET /tickets/:id/internal-notes`, coberto pelo RBAC REST de transicao quando a flag esta ativa.
 - `.env.example` agora define `LOGIDESK_REQUIRE_REST_AUTH=true`; mutacoes REST do LogiDesk exigem JWT Identity no ambiente exemplo.
 - Identity API aceita lista de origens em `IDENTITY_WEB_ORIGIN` para permitir LogiDesk web e LogiFlow web no mesmo ambiente.
+
+### Atualizacao atual - Fundacao LogiPayroll
+
+- Criados `apps/logipayroll-api`, `apps/logipayroll-web` e `apps/logipayroll-worker`.
+- Criado banco separado `databases/logipayroll` com migration inicial.
+- API inicial expoe `GET /api/v1/health/live`, `GET /api/v1/health/ready` e `GET /api/v1/payroll/capabilities`.
+- Nenhum dado real foi migrado do LogiPeople nesta etapa.
 
 ## Matriz de regressao
 

@@ -1,0 +1,19 @@
+:root {
+  --payroll-bg: #f7f8fb;
+  --payroll-surface: #ffffff;
+  --payroll-border: #d9dee8;
+  --payroll-text: #172033;
+  --payroll-muted: #5d687d;
+  --payroll-brand: #0f766e;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--payroll-bg);
+  color: var(--payroll-text);
+  font-family: Arial, Helvetica, sans-serif;
+}

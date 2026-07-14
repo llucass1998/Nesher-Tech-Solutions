@@ -1,0 +1,16 @@
+{
+  "name": "logipayroll-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start:dev": "tsx watch src/main.ts",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@logipeople/logger": "0.1.0"
+  }
+}

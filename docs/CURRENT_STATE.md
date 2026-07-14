@@ -10,6 +10,7 @@ O checkout atual agora possui a base da Logi Platform com Identity separado e pr
 - LogiFlow legado modernizado na raiz.
 - LogiPeople como produto modular dentro de `apps/`.
 - LogiDesk como fundacao operacional em `apps/logidesk-*`.
+- LogiPayroll como fundacao separada em `apps/logipayroll-*` e `databases/logipayroll`.
 
 As fases anteriores do fluxo LogiFlow/LogiDesk continuam preservadas. A execucao atual adicionou Identity API, Identity DB, JWKS, refresh token rotativo e validacao basica de token Identity por LogiFlow e LogiDesk.
 
@@ -114,9 +115,29 @@ Limitacoes:
 - O helper REST do web ja envia Authorization no browser. Notificacoes, configuracoes e acoes do detalhe do ticket ja usam mutacoes client-side autenticadas, e server actions antigas de tickets foram removidas. A API possui RBAC REST de transicao para mutacoes com `LOGIDESK_REQUIRE_REST_AUTH=true` no `.env.example`; ainda falta migrar leituras SSR para sessao autenticada, aplicar ownership fino e completar processamento dos workers.
 - E2E completo LogiFlow/LogiDesk ainda nao existe.
 
+## LogiPayroll
+
+Estrutura:
+
+- `apps/logipayroll-api`: NestJS API.
+- `apps/logipayroll-web`: Next.js App Router.
+- `apps/logipayroll-worker`: worker bootstrap.
+- `databases/logipayroll`: Prisma schema e migration inicial.
+
+Implementado:
+
+- Health checks.
+- Endpoint `GET /api/v1/payroll/capabilities`.
+- Schema separado com referencias de colaborador, contratos, payroll runs, itens, outbox e inbox.
+
+Limitacoes:
+
+- Nenhum dado real foi migrado do LogiPeople.
+- Docker, CI, Identity/JWKS, APIs reais, eventos e integracoes ainda estao pendentes.
+
 ## Infraestrutura
 
-- Docker Compose existe para Identity, LogiFlow, LogiDesk, Redis e workers.
+- Docker Compose existe para Identity, LogiFlow, LogiDesk, Redis e workers. LogiPayroll ainda precisa entrar no Compose.
 - GitHub Actions existem para Identity, LogiFlow, LogiDesk, LogiPeople e integracao/plataforma.
 - `.env.example` contem placeholders e nao segredos reais.
 
