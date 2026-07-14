@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, Headers, Param, Patch, Post, Query, Unau
 import { AssignTicketDto } from './dto/assign-ticket.dto';
 import { ChangeTicketPriorityDto } from './dto/change-ticket-priority.dto';
 import { ChangeTicketStatusDto } from './dto/change-ticket-status.dto';
+import { CreateAttachmentDto } from './dto/create-attachment.dto';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { CreateTicketFromLogiflowDto } from './dto/create-ticket-from-logiflow.dto';
@@ -120,6 +121,16 @@ export class TicketsController {
   @Get('tickets/:id/assignments')
   listAssignments(@Param('id') id: string) {
     return this.ticketsService.listAssignments(id);
+  }
+
+  @Get('tickets/:id/attachments')
+  listAttachments(@Param('id') id: string) {
+    return this.ticketsService.listAttachments(id);
+  }
+
+  @Post('tickets/:id/attachments')
+  createAttachment(@Param('id') id: string, @Body() body: CreateAttachmentDto) {
+    return this.ticketsService.createAttachment(id, body);
   }
 
   @Get('teams')

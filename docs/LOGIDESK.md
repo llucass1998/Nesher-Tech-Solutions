@@ -24,6 +24,7 @@ Banco:
 - Mensagens.
 - Notas internas.
 - Edicao de notas internas.
+- Anexos como metadados auditados, com URL/storage key e limite de tamanho.
 - Equipes de suporte.
 - Categorias.
 - Tags.
@@ -65,6 +66,8 @@ Rotas:
 - `GET /tickets/:id/internal-notes`
 - `POST /tickets/:id/internal-notes`
 - `PATCH /tickets/:id/internal-notes/:noteId`
+- `GET /tickets/:id/attachments`
+- `POST /tickets/:id/attachments`
 - `POST /tickets/:id/assign`
 - `DELETE /tickets/:id/assign`
 - `POST /tickets/:id/change-team`
@@ -87,6 +90,18 @@ Rotas:
 - `x-service-token`
 - `idempotency-key`
 - `correlationId` no payload
+
+`POST /tickets/:id/attachments` registra somente metadados do arquivo:
+
+- `fileName`
+- `contentType`
+- `sizeBytes` ate 25 MB
+- `url`
+- `storageKey` opcional
+- `uploadedById` opcional
+- `correlationId`
+
+O endpoint cria historico, auditoria e outbox. Upload binario, object storage, varredura antivirus e politicas de retencao ainda nao estao implementados.
 
 ## Limites atuais
 

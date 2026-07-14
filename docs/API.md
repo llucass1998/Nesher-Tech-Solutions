@@ -136,6 +136,8 @@ Base local: `http://localhost:3533/api/v1`.
 - `GET /tickets/:id/internal-notes`
 - `POST /tickets/:id/internal-notes`
 - `PATCH /tickets/:id/internal-notes/:noteId`
+- `GET /tickets/:id/attachments`
+- `POST /tickets/:id/attachments`
 - `POST /tickets/:id/assign`
 - `DELETE /tickets/:id/assign`
 - `POST /tickets/:id/change-team`
@@ -151,6 +153,8 @@ Base local: `http://localhost:3533/api/v1`.
 
 - `x-service-token`
 - `idempotency-key`
+
+`POST /tickets/:id/attachments` registra metadados auditados do anexo. Campos aceitos: `fileName`, `contentType`, `sizeBytes`, `url`, `storageKey`, `uploadedById` e `correlationId`. O upload fisico do arquivo ainda deve ser feito por storage externo ate a fase de object storage seguro.
 
 Payload:
 

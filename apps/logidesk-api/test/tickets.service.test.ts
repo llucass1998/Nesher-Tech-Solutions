@@ -29,6 +29,7 @@ const ticketRecord = {
   updatedAt: new Date('2026-07-13T00:00:00.000Z'),
   messages: [],
   notes: [],
+  attachments: [],
   history: [],
   assignments: [],
   tagAssignments: [],
@@ -69,6 +70,16 @@ function createTicketsService() {
   const ticketNoteFindMany = vi.fn().mockResolvedValue([]);
   const ticketNoteFindFirst = vi.fn().mockResolvedValue({ id: 'note-1', ticketId: 'ticket-1', body: 'Nota interna' });
   const ticketNoteUpdate = vi.fn().mockResolvedValue({ id: 'note-1', ticketId: 'ticket-1', body: 'Nota editada' });
+  const ticketAttachmentCreate = vi.fn().mockResolvedValue({
+    id: 'attachment-1',
+    ticketId: 'ticket-1',
+    fileName: 'comprovante.pdf',
+    contentType: 'application/pdf',
+    sizeBytes: 1024,
+    url: 'https://storage.local/comprovante.pdf',
+    correlationId: input.correlationId,
+  });
+  const ticketAttachmentFindMany = vi.fn().mockResolvedValue([]);
   const supportTeamCreate = vi.fn().mockResolvedValue({ id: 'team-1', name: 'Operacoes', isActive: true });
   const supportTeamFindMany = vi.fn().mockResolvedValue([]);
   const supportTeamFindUnique = vi.fn().mockResolvedValue({ id: 'team-1', name: 'Operacoes' });
@@ -93,6 +104,7 @@ function createTicketsService() {
     auditLog: { create: auditCreate },
     ticketMessage: { create: ticketMessageCreate },
     ticketNote: { create: ticketNoteCreate, update: ticketNoteUpdate },
+    ticketAttachment: { create: ticketAttachmentCreate },
   };
 
   const prisma = {
@@ -116,6 +128,10 @@ function createTicketsService() {
       findMany: ticketNoteFindMany,
       findFirst: ticketNoteFindFirst,
       update: ticketNoteUpdate,
+    },
+    ticketAttachment: {
+      create: ticketAttachmentCreate,
+      findMany: ticketAttachmentFindMany,
     },
     supportTeam: {
       create: supportTeamCreate,
@@ -158,6 +174,8 @@ function createTicketsService() {
     ticketNoteCreate,
     ticketNoteFindMany,
     ticketNoteUpdate,
+    ticketAttachmentCreate,
+    ticketAttachmentFindMany,
     supportTeamCreate,
     ticketCategoryCreate,
     ticketTagCreate,
@@ -341,6 +359,33 @@ describe('TicketsService', () => {
     expect(context.ticketNoteCreate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ body: 'Nota interna' }) }));
     expect(context.ticketNoteUpdate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ body: 'Nota editada' }) }));
     expect(context.ticketMessageCreate).not.toHaveBeenCalled();
+  });
+
+  it('lists and creates attachments with history, outbox and audit', async () => {
+    const context = createTicketsService();
+    context.ticketFindUnique.mockResolvedValue(ticketRecord);
+    context.ticketAttachmentFindMany.mockResolvedValue([{ id: 'attachment-1', ticketId: 'ticket-1' }]);
+
+    await expect(context.service.listAttachments('ticket-1')).resolves.toHaveLength(1);
+    await expect(context.service.createAttachment('ticket-1', {
+      fileName: 'comprovante.pdf',
+      contentType: 'application/pdf',
+      sizeBytes: 1024,
+      url: 'https://storage.local/comprovante.pdf',
+      uploadedById: 'agent-1',
+      correlationId: input.correlationId,
+    })).resolves.toMatchObject({ id: 'attachment-1' });
+
+    expect(context.ticketAttachmentCreate).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        ticketId: 'ticket-1',
+        fileName: 'comprovante.pdf',
+        uploadedById: 'agent-1',
+      }),
+    }));
+    expect(context.ticketHistoryCreate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ action: 'ticket.attachment_created' }) }));
+    expect(context.outboxCreate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ eventType: 'ticket.attachment_created' }) }));
+    expect(context.auditCreate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ action: 'ticket.attachment_created' }) }));
   });
 
   it('creates and deactivates support teams, categories and tags with audit', async () => {

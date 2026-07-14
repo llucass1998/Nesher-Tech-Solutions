@@ -42,7 +42,7 @@ Phases 1-14 are in scope:
 | LogiDesk Identity validation | Partially implemented | LogiDesk exposes `GET /api/v1/auth/me` backed by Identity JWKS. Full frontend SSO remains pending. |
 | Platform event contracts | Implemented in shared package | `packages/event-contracts` now defines the strict versioned event envelope and namespaced events for LogiFlow, LogiDesk, LogiPeople and LogiPayroll. Runtime producers/consumers still need migration from legacy names. |
 | LogiFlow and LogiDesk dispatch | Partially implemented | `logiflow-worker` dispatches LogiFlow outbox records to LogiDesk. `logidesk-worker` dispatches ticket events with LogiFlow references back to LogiFlow. Redis Streams, progressive backoff and E2E remain pending. |
-| LogiDesk operational expansion | Implemented in current scope | Manual tickets, status and priority changes, teams, categories, tags, assignments, editable internal notes, archive/cancel actions and database migration are implemented and validated. |
+| LogiDesk operational expansion | Implemented in current scope | Manual tickets, status and priority changes, teams, categories, tags, assignments, editable internal notes, attachment metadata, archive/cancel actions and database migration are implemented and validated. |
 
 ## Identity validation evidence
 
@@ -64,8 +64,13 @@ Phases 1-14 are in scope:
 | `docker compose build logidesk-worker` | PASS | LogiDesk worker Docker image built. |
 | `npm run logidesk:prisma:generate` | PASS | LogiDesk Prisma Client generated after operational schema. |
 | `npm run typecheck -w logidesk-api` | PASS | LogiDesk API compiles. |
-| `npm run test -w logidesk-api` | PASS | 9 tests passed. |
-| `docker compose build logidesk-migrate logidesk-api logidesk-web` | PASS | LogiDesk images built. |
+| `npm run test -w logidesk-api` | PASS | 10 tests passed, including attachment metadata history/outbox/audit. |
+| `npm run lint` | PASS | No errors after ticket attachment metadata. |
+| `npm run typecheck` | PASS | Root and workspace typechecks passed. |
+| `npm run test:workspaces` | PASS | Identity, LogiDesk, LogiPeople and contracts passed; packages without tests used `passWithNoTests`. |
+| `npm run build:workspaces` | PASS | Workspace builds passed; known Next root/multiple lockfile warning remains. |
+| `npm audit --audit-level=high` | PASS | 0 vulnerabilities. |
+| `docker compose --env-file .env.example build logidesk-migrate logidesk-api` | PASS | First attempt without env failed on missing `IDENTITY_DB_PASSWORD`; rerun with `.env.example` built the images. |
 
 ## Explicitly not complete
 
@@ -81,6 +86,7 @@ Phases 1-14 are in scope:
 - Legal/tax compliance is not validated.
 - Time and attendance is implemented only as a preliminary foundation and is not legally validated.
 - Real LogiFlow/LogiDesk integration events are not enabled.
+- LogiDesk attachments currently store metadata only; binary upload, object storage, antivirus scanning and retention policies are not implemented.
 
 ## Known risks
 

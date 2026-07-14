@@ -75,6 +75,7 @@ model Ticket {
   archivedAt      DateTime?
   messages        TicketMessage[]
   notes           TicketNote[]
+  attachments     TicketAttachment[]
   history         TicketHistory[]
   assignments     TicketAssignment[]
   tagAssignments  TicketTagAssignment[]
@@ -189,6 +190,22 @@ model TicketNote {
   editedAt      DateTime?
   editedById    String?
   createdAt     DateTime  @default(now())
+
+  @@index([ticketId, createdAt])
+}
+
+model TicketAttachment {
+  id            String   @id @default(uuid())
+  ticketId      String
+  ticket        Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  fileName      String
+  contentType   String
+  sizeBytes     Int
+  url           String
+  storageKey    String?
+  uploadedById  String?
+  correlationId String
+  createdAt     DateTime @default(now())
 
   @@index([ticketId, createdAt])
 }

@@ -5,6 +5,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AssignTicketDto } from './dto/assign-ticket.dto';
 import { ChangeTicketPriorityDto } from './dto/change-ticket-priority.dto';
 import { ChangeTicketStatusDto } from './dto/change-ticket-status.dto';
+import { CreateAttachmentDto } from './dto/create-attachment.dto';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { CreateTicketFromLogiflowDto } from './dto/create-ticket-from-logiflow.dto';
@@ -27,6 +28,7 @@ type TicketWithRelations = Prisma.TicketGetPayload<{
   include: {
     messages: true;
     notes: true;
+    attachments: true;
     history: true;
     assignments: true;
     tagAssignments: { include: { tag: true } };
@@ -101,6 +103,7 @@ export class TicketsService {
       include: {
         messages: { where: { internal: false }, orderBy: { createdAt: 'asc' } },
         notes: { orderBy: { createdAt: 'asc' } },
+        attachments: { orderBy: { createdAt: 'asc' } },
         history: { orderBy: { createdAt: 'asc' } },
         assignments: { orderBy: { createdAt: 'asc' } },
         tagAssignments: { include: { tag: true }, orderBy: { createdAt: 'asc' } },
@@ -122,6 +125,7 @@ export class TicketsService {
       where: { id },
       include: {
         messages: { where: { internal: false }, orderBy: { createdAt: 'asc' } },
+        attachments: { orderBy: { createdAt: 'asc' } },
         history: { orderBy: { createdAt: 'asc' } },
         tagAssignments: { include: { tag: true }, orderBy: { createdAt: 'asc' } },
         team: true,
@@ -662,6 +666,53 @@ export class TicketsService {
     return this.prisma.ticketAssignment.findMany({ where: { ticketId }, orderBy: { createdAt: 'asc' } });
   }
 
+  async listAttachments(ticketId: string) {
+    await this.ensureTicket(ticketId);
+    return this.prisma.ticketAttachment.findMany({ where: { ticketId }, orderBy: { createdAt: 'asc' } });
+  }
+
+  async createAttachment(ticketId: string, input: CreateAttachmentDto) {
+    await this.ensureTicket(ticketId);
+
+    return this.prisma.$transaction(async (tx) => {
+      const attachment = await tx.ticketAttachment.create({
+        data: {
+          ticketId,
+          fileName: input.fileName,
+          contentType: input.contentType,
+          sizeBytes: input.sizeBytes,
+          url: input.url,
+          correlationId: input.correlationId,
+          ...(input.storageKey ? { storageKey: input.storageKey } : {}),
+          ...(input.uploadedById ? { uploadedById: input.uploadedById } : {}),
+        },
+      });
+
+      await this.createHistory(tx, {
+        ticketId,
+        action: 'ticket.attachment_created',
+        after: { attachmentId: attachment.id, fileName: attachment.fileName, contentType: attachment.contentType },
+        actorId: input.uploadedById,
+        actorRole: 'SUPPORT',
+        changedById: input.uploadedById,
+        correlationId: input.correlationId,
+      });
+      await this.createOutbox(tx, 'ticket.attachment_created', ticketId, input.correlationId, {
+        ticketId,
+        attachmentId: attachment.id,
+        fileName: attachment.fileName,
+        contentType: attachment.contentType,
+      }, attachment.id);
+      await this.createAudit(tx, 'ticket.attachment_created', 'TicketAttachment', attachment.id, input.correlationId, {
+        actorId: input.uploadedById,
+        actorRole: 'SUPPORT',
+        after: { ticketId, attachmentId: attachment.id, fileName: attachment.fileName },
+      });
+
+      return attachment;
+    });
+  }
+
   listTeams() {
     return this.prisma.supportTeam.findMany({ orderBy: [{ isActive: 'desc' }, { name: 'asc' }] });
   }
@@ -746,6 +797,7 @@ export class TicketsService {
       include: {
         messages: true,
         notes: true,
+        attachments: true,
         history: true,
         assignments: true,
         tagAssignments: { include: { tag: true } },
