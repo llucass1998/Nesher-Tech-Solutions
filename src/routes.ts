@@ -3,7 +3,7 @@ import { AuthController } from './controllers/Authcontrollers';
 import { DriverController } from './controllers/DriverController';
 import { VehicleController } from './controllers/VehicleController';
 import { DeliveryController } from './controllers/DeliveryController';
-import { deprecatedRoute, requireRoles, verificarAccessTokenV1, verificarApiKeyPagamento, verificarToken } from './middlewares/middllewares';
+import { deprecatedRoute, disabledRoute, requireRoles, verificarAccessTokenV1, verificarApiKeyPagamento, verificarToken } from './middlewares/middllewares';
 import { UserController } from './controllers/UserController';
 import { AuthV1Controller } from './controllers/AuthV1Controller';
 import { DriverV1Controller } from './controllers/DriverV1Controller';
@@ -31,10 +31,10 @@ routes.get('/api/v1/metrics', metrics);
 // ==========================================
 // API V1 - AUTENTICACAO E MOTORISTA
 // ==========================================
-routes.post('/api/v1/auth/register', (req, res) => authV1Controller.register(req, res));
-routes.post('/api/v1/auth/login', (req, res) => authV1Controller.login(req, res));
-routes.post('/api/v1/auth/refresh', (req, res) => authV1Controller.refresh(req, res));
-routes.post('/api/v1/auth/logout', (req, res) => authV1Controller.logout(req, res));
+routes.post('/api/v1/auth/register', disabledRoute('A criacao de usuarios foi migrada para o LogiIdentity (SSO).'));
+routes.post('/api/v1/auth/login', disabledRoute('O login foi migrado para o LogiIdentity (SSO).'));
+routes.post('/api/v1/auth/refresh', disabledRoute('O refresh foi migrado para o LogiIdentity (SSO).'));
+routes.post('/api/v1/auth/logout', disabledRoute('O logout foi migrado para o LogiIdentity (SSO).'));
 routes.get('/api/v1/auth/me', verificarAccessTokenV1, (req, res) => authV1Controller.me(req, res));
 
 routes.get('/api/v1/driver/me', verificarAccessTokenV1, (req, res) => driverV1Controller.me(req, res));
@@ -58,14 +58,14 @@ routes.post('/api/v1/integrations/logidesk/ticket-updates', (req, res) => operat
 // ==========================================
 // ROTA DE LOGIN
 // ==========================================
-routes.post('/login', deprecatedRoute({ successor: '/api/v1/auth/login' }), (req, res) => authController.login(req, res));
+routes.post('/login', disabledRoute('O login foi migrado para o LogiIdentity (SSO).'));
 
 routes.get('/dashboard/metrics', deprecatedRoute({ successor: '/api/v1/dashboard/metrics' }), (req, res) => dashboardController.metrics(req, res));
 
 // ==========================================
 // ROTAS DE MOTORISTAS
 // ==========================================
-routes.post('/drivers', deprecatedRoute({ successor: '/api/v1/auth/register' }), (req, res) => driverController.create(req, res));
+routes.post('/drivers', disabledRoute('A criacao de usuarios foi migrada para o LogiIdentity (SSO).'));
 routes.get('/drivers', deprecatedRoute(), (req, res) => driverController.index(req, res));
 // NOVAS ROTAS (Editar e Excluir)
 routes.put('/drivers/:id', deprecatedRoute(), (req, res) => driverController.update(req, res));
@@ -75,7 +75,7 @@ routes.patch('/drivers/:id/status', deprecatedRoute(), (req, res) => driverContr
 // ==========================================
 // ROTAS DE USUÁRIOS
 // ==========================================
-routes.post('/users', deprecatedRoute({ successor: '/api/v1/auth/register' }), (req, res) => userController.create(req, res));
+routes.post('/users', disabledRoute('A criacao de usuarios foi migrada para o LogiIdentity (SSO).'));
 
 // ==========================================
 // ROTAS DE VEÍCULOS

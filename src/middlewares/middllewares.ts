@@ -78,6 +78,15 @@ export const deprecatedRoute = ({ successor, sunset = defaultLegacySunset }: Dep
   };
 };
 
+export const disabledRoute = (reason: string) => {
+  return (req: Request, res: Response) => {
+    res.status(410).json({
+      error: 'GONE',
+      message: reason,
+    });
+  };
+};
+
 export const requireRoles = (roles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.auth) {

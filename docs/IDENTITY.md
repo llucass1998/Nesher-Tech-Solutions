@@ -56,13 +56,14 @@ Fallback:
 
 ## Pendencias
 
-- Importacao automatica de usuarios legados para `IdentityExternalReference`.
+- Importacao automatica de usuarios legados para `IdentityExternalReference` já conta com script base criado (`apps/identity-api/src/scripts/migrate-users.ts`).
+- Frontends de LogiFlow e LogiDesk integrados no código client para Login unificado.
 - Guards administrativos nos endpoints de usuarios, roles e aplicacoes.
 - Rate limiting e bloqueio progressivo por brute force.
 - Rotacao persistida de chaves em banco.
 - Revogacao de access token por `jti`.
 - Autenticacao service-to-service completa para `ServiceAccount`.
-- Migracao completa dos frontends para SSO com refresh transparente.
+- Migracao completa do LogiFlow Frontend para refresh transparente de cookie (atualmente interceptando e-mail/senha pro LogiIdentity, mas guardando AccessToken no LocalStorage em modelo transicional). LogiDesk Web 100% SSO.
 
 ## Validacao
 

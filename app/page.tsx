@@ -14,7 +14,7 @@ const loginSchema = z.object({
   password: z.string().min(6, { message: "A senha deve ter pelo menos 6 caracteres." }),
 });
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333";
+const IDENTITY_API_URL = process.env.NEXT_PUBLIC_IDENTITY_API_URL || "http://localhost:3537/api/v1";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -50,17 +50,17 @@ export default function LoginPage() {
     setErrorMsg("");
 
     try {
-      const response = await axios.post(`${API_URL}/login`, {
+      const response = await axios.post(`${IDENTITY_API_URL}/auth/login`, {
         email: result.data.email,
         password: result.data.password,
       });
 
-      if (response.data.token) {
-        localStorage.setItem("logiflow_token", response.data.token);
+      if (response.data.accessToken) {
+        localStorage.setItem("logiflow_token", response.data.accessToken);
         localStorage.setItem("logiflow_email", result.data.email);
-        
-        if (response.data.driver) {
-           localStorage.setItem("logiflow_user", JSON.stringify(response.data.driver));
+
+        if (response.data.user) {
+           localStorage.setItem("logiflow_user", JSON.stringify(response.data.user));
         }
       }
 
@@ -155,14 +155,7 @@ export default function LoginPage() {
           <hr className="flex-1 border-[var(--color-border-secondary)]" />
         </div>
 
-        {/* Botão de Criar Conta de volta */}
-        <Link
-          href="/register"
-          className="w-full h-[40px] border border-[var(--color-border-secondary)] rounded-md flex items-center justify-center gap-2 text-[14px] text-[var(--color-text-primary)] hover:bg-gray-50 transition-colors"
-        >
-          <i className="ti ti-user-plus"></i>
-          Criar nova conta
-        </Link>
+        {/* Botão de Criar Conta removido (Migrado para LogiIdentity) */}
       </div>
     </div>
   );
