@@ -1,0 +1,21 @@
+FROM node:24-alpine AS builder
+WORKDIR /app
+COPY . .
+RUN npm ci
+RUN npm run identity:prisma:generate
+RUN npm run build -w identity-api
+RUN cp -R apps/identity-api/src/generated apps/identity-api/dist/src/generated
+
+FROM node:24-alpine AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/apps/identity-api ./apps/identity-api
+COPY --from=builder /app/packages ./packages
+COPY --from=builder /app/databases/identity ./databases/identity
+RUN addgroup -S identity && adduser -S identity -G identity \
+  && chown -R identity:identity /app
+USER identity
+EXPOSE 3633
+CMD ["node", "apps/identity-api/dist/src/main.js"]

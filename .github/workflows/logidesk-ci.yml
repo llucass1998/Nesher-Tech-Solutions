@@ -45,6 +45,9 @@ jobs:
       LOGIDESK_DATABASE_URL: postgresql://logidesk:logidesk@localhost:5434/logidesk?schema=public
       LOGIDESK_SERVICE_TOKEN: ci-service-token
       LOGIDESK_WEB_ORIGIN: http://localhost:3500
+      IDENTITY_JWKS_URL: http://localhost:3633/.well-known/jwks.json
+      IDENTITY_ISSUER: logiidentity
+      IDENTITY_AUDIENCE: logidesk
       NEXT_PUBLIC_LOGIDESK_API_URL: http://localhost:3533/api/v1
       REDIS_URL: redis://localhost:6379
     steps:

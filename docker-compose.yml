@@ -10,6 +10,82 @@ services:
       retries: 5
     restart: unless-stopped
 
+  identity-db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${IDENTITY_DB_NAME:-identity}
+      POSTGRES_USER: ${IDENTITY_DB_USER:-identity}
+      POSTGRES_PASSWORD: ${IDENTITY_DB_PASSWORD:?set IDENTITY_DB_PASSWORD}
+    ports:
+      - "${IDENTITY_DB_PORT:-5437}:5432"
+    volumes:
+      - identity-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  identity-migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.identity-api
+    command: ["npx", "prisma", "migrate", "deploy", "--config", "apps/identity-api/prisma.config.ts"]
+    environment:
+      NODE_ENV: production
+      IDENTITY_DATABASE_URL: postgresql://${IDENTITY_DB_USER:-identity}:${IDENTITY_DB_PASSWORD:?set IDENTITY_DB_PASSWORD}@identity-db:5432/${IDENTITY_DB_NAME:-identity}?schema=public
+    depends_on:
+      identity-db:
+        condition: service_healthy
+    restart: "no"
+
+  identity-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.identity-api
+    environment:
+      NODE_ENV: production
+      IDENTITY_PORT: 3633
+      IDENTITY_DATABASE_URL: postgresql://${IDENTITY_DB_USER:-identity}:${IDENTITY_DB_PASSWORD:?set IDENTITY_DB_PASSWORD}@identity-db:5432/${IDENTITY_DB_NAME:-identity}?schema=public
+      IDENTITY_ISSUER: ${IDENTITY_ISSUER:-logiidentity}
+      IDENTITY_JWT_KID: ${IDENTITY_JWT_KID:-identity-local-dev}
+      IDENTITY_JWT_PRIVATE_KEY: ${IDENTITY_JWT_PRIVATE_KEY:-}
+      IDENTITY_JWT_PUBLIC_KEY: ${IDENTITY_JWT_PUBLIC_KEY:-}
+      IDENTITY_WEB_ORIGIN: ${IDENTITY_WEB_ORIGIN:-http://localhost:3600}
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      identity-db:
+        condition: service_healthy
+      identity-migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    ports:
+      - "${IDENTITY_API_PORT:-3633}:3633"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3633/api/v1/health/live >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  identity-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.workspace-worker
+      args:
+        WORKSPACE: identity-worker
+    environment:
+      NODE_ENV: production
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+      identity-api:
+        condition: service_healthy
+    restart: unless-stopped
+
   logiflow-db:
     image: postgres:17-alpine
     environment:
@@ -44,6 +120,9 @@ services:
       PAYMENTS_API_KEY: ${PAYMENTS_API_KEY:?set PAYMENTS_API_KEY}
       LOGIDESK_API_URL: ${LOGIDESK_API_URL:-http://logidesk-api:3533/api/v1}
       LOGIDESK_SERVICE_TOKEN: ${LOGIDESK_SERVICE_TOKEN:?set LOGIDESK_SERVICE_TOKEN}
+      IDENTITY_JWKS_URL: ${IDENTITY_JWKS_URL:-http://identity-api:3633/.well-known/jwks.json}
+      IDENTITY_ISSUER: ${IDENTITY_ISSUER:-logiidentity}
+      IDENTITY_AUDIENCE: ${IDENTITY_LOGIFLOW_AUDIENCE:-logiflow}
       ACCESS_TOKEN_TTL_SECONDS: ${ACCESS_TOKEN_TTL_SECONDS:-900}
       REFRESH_TOKEN_TTL_DAYS: ${REFRESH_TOKEN_TTL_DAYS:-7}
       LOG_LEVEL: ${LOG_LEVEL:-info}
@@ -53,6 +132,8 @@ services:
       logiflow-migrate:
         condition: service_completed_successfully
       redis:
+        condition: service_healthy
+      identity-api:
         condition: service_healthy
     ports:
       - "${LOGIFLOW_API_PORT:-3333}:3333"
@@ -108,12 +189,17 @@ services:
       REDIS_URL: redis://redis:6379
       LOGIDESK_API_URL: ${LOGIDESK_API_URL:-http://logidesk-api:3533/api/v1}
       LOGIDESK_SERVICE_TOKEN: ${LOGIDESK_SERVICE_TOKEN:?set LOGIDESK_SERVICE_TOKEN}
+      IDENTITY_JWKS_URL: ${IDENTITY_JWKS_URL:-http://identity-api:3633/.well-known/jwks.json}
+      IDENTITY_ISSUER: ${IDENTITY_ISSUER:-logiidentity}
+      IDENTITY_AUDIENCE: ${IDENTITY_LOGIFLOW_AUDIENCE:-logiflow}
     depends_on:
       redis:
         condition: service_healthy
       logiflow-api:
         condition: service_healthy
       logidesk-api:
+        condition: service_healthy
+      identity-api:
         condition: service_healthy
     restart: unless-stopped
 
@@ -158,12 +244,17 @@ services:
       LOGIDESK_DATABASE_URL: postgresql://${LOGIDESK_DB_USER:-logidesk}:${LOGIDESK_DB_PASSWORD:?set LOGIDESK_DB_PASSWORD}@logidesk-db:5432/${LOGIDESK_DB_NAME:-logidesk}?schema=public
       LOGIDESK_SERVICE_TOKEN: ${LOGIDESK_SERVICE_TOKEN:?set LOGIDESK_SERVICE_TOKEN}
       REDIS_URL: redis://redis:6379
+      IDENTITY_JWKS_URL: ${IDENTITY_JWKS_URL:-http://identity-api:3633/.well-known/jwks.json}
+      IDENTITY_ISSUER: ${IDENTITY_ISSUER:-logiidentity}
+      IDENTITY_AUDIENCE: ${IDENTITY_LOGIDESK_AUDIENCE:-logidesk}
     depends_on:
       logidesk-db:
         condition: service_healthy
       logidesk-migrate:
         condition: service_completed_successfully
       redis:
+        condition: service_healthy
+      identity-api:
         condition: service_healthy
     ports:
       - "${LOGIDESK_API_PORT:-3533}:3533"
@@ -213,5 +304,6 @@ services:
     restart: unless-stopped
 
 volumes:
+  identity-db-data:
   logiflow-db-data:
   logidesk-db-data:

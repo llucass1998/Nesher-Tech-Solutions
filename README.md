@@ -5,6 +5,7 @@ Plataforma em monorepo para operacao logistica, base de suporte futura e modulos
 O checkout atual contem:
 
 - **LogiFlow legado modernizado** na raiz: Next.js App Router em `app/`, API Express em `src/`, banco Prisma em `prisma/`.
+- **LogiIdentity** em `apps/identity-*`: NestJS API, worker, JWT RS256/JWKS, sessoes e Prisma separado em `databases/identity`.
 - **LogiPeople** em `apps/logipeople-*`: NestJS API, Next.js web, worker, pacotes compartilhados e Prisma separado em `databases/logipeople`.
 - **LogiDesk** em `apps/logidesk-*`: NestJS API, Next.js web, worker BullMQ e Prisma separado em `databases/logidesk`.
 
@@ -36,6 +37,8 @@ apps/logidesk-api            LogiDesk API NestJS
 apps/logidesk-web            LogiDesk web Next.js
 apps/logidesk-worker         Worker LogiDesk BullMQ
 apps/logiflow-worker         Worker LogiFlow BullMQ
+apps/identity-api            LogiIdentity API NestJS
+apps/identity-worker         Worker LogiIdentity
 packages/auth                Tipos e fronteiras de identidade
 packages/contracts           Contratos Zod HTTP
 packages/event-contracts     Contratos Zod de eventos
@@ -43,6 +46,7 @@ packages/logger              Logger compartilhado
 packages/ui                  Componentes UI compartilhados LogiFlow
 databases/logipeople         Banco LogiPeople
 databases/logidesk           Banco LogiDesk
+databases/identity           Banco Identity
 docs/                        Documentacao de arquitetura, operacao e decisoes
 ```
 
@@ -63,6 +67,7 @@ Workspaces:
 npm run lint:workspaces
 npm run test:workspaces
 npm run build:workspaces
+npm run identity:prisma:generate
 npm run logipeople:prisma:generate
 npm run logidesk:prisma:generate
 ```
@@ -73,6 +78,13 @@ Prisma LogiFlow:
 npm run prisma:generate
 npm run prisma:migrate
 npm run prisma:deploy
+```
+
+Prisma Identity:
+
+```bash
+npm run identity:prisma:generate
+npm run identity:prisma:migrate
 ```
 
 ## Desenvolvimento local
@@ -104,6 +116,13 @@ LogiDesk:
 npm run logidesk:dev:web
 npm run logidesk:dev:api
 npm run logidesk:dev:worker
+```
+
+LogiIdentity:
+
+```bash
+npm run identity:dev:api
+npm run identity:dev:worker
 ```
 
 ## Docker

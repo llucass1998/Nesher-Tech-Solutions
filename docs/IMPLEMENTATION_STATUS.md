@@ -20,6 +20,12 @@ Data: 2026-07-13
 | Fase 12 - CI/CD | Concluida no escopo atual | Workflows GitHub Actions criados para LogiFlow, LogiPeople, LogiDesk e integracao/plataforma com lint, typecheck, testes, build, audit completo, Prisma e Docker. |
 | Fase 13 - Documentacao | Concluida | README e guias docs atualizados para refletir LogiFlow, LogiPeople, Docker, CI/CD, seguranca, integracao e pendencias reais. |
 | Fase 14 - Holerites demonstrativos LogiPeople | Concluida no escopo do checkout atual | Fundacao preliminar restrita de holerites demonstrativos validada com Prisma, testes, build, audit e documentacao; sem publicacao ao colaborador, PDF oficial, assinatura, pagamento bancario ou eSocial. |
+| Plataforma Fase 1 - LogiIdentity | Implementada no escopo inicial | `apps/identity-api`, `apps/identity-worker`, `databases/identity`, JWT RS256/JWKS, refresh rotativo e smoke Identity/LogiFlow/LogiDesk passaram. |
+| Plataforma Fase 2 - Banco Identity | Implementada | Migration `databases/identity/prisma/migrations/20260714010000_init`; `identity-migrate` aplicou com sucesso no Docker. |
+| Plataforma Fase 3 - Auth e sessoes Identity | Implementada no escopo inicial | Login, refresh, logout, `me`, sessoes e cookie HttpOnly validados por smoke test. |
+| Plataforma Fase 4 - JWT RS256 e JWKS | Implementada no escopo inicial | `/.well-known/jwks.json` retornou 1 chave e tokens foram aceitos por LogiFlow/LogiDesk. |
+| Plataforma Fase 5 - Migrar auth LogiFlow | Parcial com fallback | `verificarAccessTokenV1` aceita Identity JWKS quando `IDENTITY_JWKS_URL` esta configurada; login local legado preservado. |
+| Plataforma Fase 6 - Migrar auth LogiDesk | Parcial com SSO basico | `GET /api/v1/auth/me` valida token Identity; frontend SSO completo ainda pendente. |
 
 ## Matriz de regressao
 
@@ -45,6 +51,9 @@ Data: 2026-07-13
 | Testes criticos adicionais | Cobertura parcial de bordas auth/operacionais | Parcial | Sim | PASS |
 | LogiDesk/ticket | Fundacao de tickets existe | Nao | Sim | PASS no smoke test idempotente e testes unitarios LogiDesk |
 | Outbox/Redis/retry | Fundacao de outbox, Redis e workers existe | Nao | Parcial | PASS para build/health/worker ready; dispatcher/retry/DLQ completo pendente |
+| LogiIdentity login/JWKS | Servico nao existia | Nao | Sim | PASS no smoke Docker |
+| LogiFlow valida token Identity | LogiFlow usava token local | Nao | Sim | PASS no smoke Docker via `/api/v1/auth/me` |
+| LogiDesk valida token Identity | LogiDesk nao tinha auth Identity | Nao | Sim | PASS no smoke Docker via `/api/v1/auth/me` |
 
 ## Validacoes
 
@@ -57,6 +66,12 @@ Data: 2026-07-13
 | `npm run lint:workspaces` | PASS | Sem erros; avisos do Next sobre `pages` em pacotes nao-Next. |
 | `npm run build` | PASS | Next raiz compilou e gerou 12 paginas estaticas. |
 | `npm run build:workspaces` | PASS | LogiPeople API/web/worker e pacotes passaram; aviso de lockfiles multiplos no Next. |
+| `npm run typecheck -w identity-api` | PASS | Identity API compila com TypeScript strict. |
+| `npm run typecheck -w identity-worker` | PASS | Identity worker compila. |
+| `npm run test -w identity-api` | PASS | 1 teste unitario passou. |
+| `docker compose build identity-migrate identity-api identity-worker logiflow-api logidesk-api` | PASS | Primeira tentativa teve `ECONNRESET` em `npm ci`; repeticao passou. |
+| `docker compose up -d` | PASS | Identity, LogiFlow, LogiDesk, Redis, bancos, workers e webs saudaveis. |
+| Smoke Identity/SSO basico | PASS | Login, refresh, logout, JWKS, LogiFlow `/api/v1/auth/me` e LogiDesk `/api/v1/auth/me`. |
 
 ### Validacoes da Fase 5
 

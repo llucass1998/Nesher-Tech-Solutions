@@ -48,6 +48,15 @@ jobs:
       LOGIFLOW_DB_PORT: 55432
       LOGIFLOW_API_PORT: 3335
       LOGIFLOW_WEB_PORT: 3005
+      IDENTITY_DB_NAME: identity
+      IDENTITY_DB_USER: identity
+      IDENTITY_DB_PASSWORD: ci-identity-password
+      IDENTITY_DB_PORT: 55435
+      IDENTITY_API_PORT: 3635
+      IDENTITY_DATABASE_URL: postgresql://identity:ci-identity-password@localhost:55435/identity?schema=public
+      IDENTITY_ISSUER: logiidentity
+      IDENTITY_AUDIENCE: logiflow,logidesk
+      IDENTITY_JWKS_URL: http://localhost:3635/.well-known/jwks.json
       DATABASE_URL: postgresql://logiflow:ci-logiflow-password@localhost:55432/logiflow?schema=public
       WEB_ORIGIN: http://localhost:3005
       NEXT_PUBLIC_API_URL: http://localhost:3335
@@ -78,6 +87,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run prisma:generate
+      - run: npm run identity:prisma:generate
       - run: npm run logipeople:prisma:generate
       - run: npm run logidesk:prisma:generate
       - run: npm run lint
@@ -89,4 +99,4 @@ jobs:
       - run: npm run build:workspaces
       - run: npm audit
       - run: docker compose config
-      - run: docker compose build logiflow-migrate logiflow-api logiflow-web logiflow-worker logidesk-migrate logidesk-api logidesk-web logidesk-worker
+      - run: docker compose build identity-migrate identity-api identity-worker logiflow-migrate logiflow-api logiflow-web logiflow-worker logidesk-migrate logidesk-api logidesk-web logidesk-worker

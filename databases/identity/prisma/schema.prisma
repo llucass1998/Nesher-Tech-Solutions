@@ -1,0 +1,264 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../apps/identity-api/src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum IdentityStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+  PENDING
+}
+
+enum CredentialType {
+  PASSWORD
+  SERVICE_SECRET
+}
+
+enum OutboxStatus {
+  PENDING
+  PROCESSING
+  PROCESSED
+  FAILED
+  DEAD_LETTER
+}
+
+model User {
+  id                 String                      @id @default(uuid())
+  name               String
+  email              String                      @unique
+  status             IdentityStatus              @default(ACTIVE)
+  credentials        Credential[]
+  roles              UserRole[]
+  applicationAccess  ApplicationAccess[]
+  refreshSessions    RefreshSession[]
+  loginAttempts      LoginAttempt[]
+  securityEvents     SecurityEvent[]
+  auditLogs          AuditLog[]
+  externalReferences IdentityExternalReference[]
+  createdAt          DateTime                    @default(now())
+  updatedAt          DateTime                    @updatedAt
+}
+
+model Credential {
+  id           String         @id @default(uuid())
+  userId       String
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type         CredentialType @default(PASSWORD)
+  secretHash   String
+  active       Boolean        @default(true)
+  rotatedAt    DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([userId, active])
+}
+
+model Role {
+  id          String           @id @default(uuid())
+  key         String           @unique
+  name        String
+  description String?
+  users       UserRole[]
+  permissions RolePermission[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model Permission {
+  id          String           @id @default(uuid())
+  key         String           @unique
+  description String?
+  roles       RolePermission[]
+  createdAt   DateTime         @default(now())
+}
+
+model UserRole {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleId    String
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, roleId])
+  @@index([roleId])
+}
+
+model RolePermission {
+  id           String     @id @default(uuid())
+  roleId       String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@unique([roleId, permissionId])
+  @@index([permissionId])
+}
+
+model Application {
+  id          String              @id @default(uuid())
+  key         String              @unique
+  name        String
+  audience    String              @unique
+  active      Boolean             @default(true)
+  access      ApplicationAccess[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+}
+
+model ApplicationAccess {
+  id            String      @id @default(uuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+
+  @@unique([applicationId, userId])
+  @@index([userId])
+}
+
+model RefreshSession {
+  id           String    @id @default(uuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash    String    @unique
+  userAgent    String?
+  ipHash       String?
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  replacedById String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([userId, revokedAt])
+}
+
+model RevokedToken {
+  id        String   @id @default(uuid())
+  jti       String   @unique
+  userId    String?
+  reason    String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model ServiceAccount {
+  id          String              @id @default(uuid())
+  key         String              @unique
+  name        String
+  active      Boolean             @default(true)
+  credentials ServiceCredential[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+}
+
+model ServiceCredential {
+  id               String         @id @default(uuid())
+  serviceAccountId String
+  serviceAccount   ServiceAccount @relation(fields: [serviceAccountId], references: [id], onDelete: Cascade)
+  secretHash        String
+  active            Boolean        @default(true)
+  lastUsedAt        DateTime?
+  createdAt         DateTime       @default(now())
+  rotatedAt         DateTime?
+}
+
+model LoginAttempt {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  email     String
+  success   Boolean
+  ipHash    String?
+  userAgent String?
+  reason    String?
+  createdAt DateTime @default(now())
+
+  @@index([email, createdAt])
+}
+
+model SecurityEvent {
+  id            String   @id @default(uuid())
+  userId        String?
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  type          String
+  severity      String   @default("INFO")
+  metadata      Json?
+  correlationId String?
+  createdAt     DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([correlationId])
+}
+
+model AuditLog {
+  id            String   @id @default(uuid())
+  actorId       String?
+  actor         User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  actorRole     String?
+  action        String
+  entityType    String
+  entityId      String
+  before        Json?
+  after         Json?
+  requestId     String?
+  correlationId String?
+  ipHash        String?
+  userAgent     String?
+  createdAt     DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([correlationId])
+}
+
+model OutboxEvent {
+  id             String       @id @default(uuid())
+  eventType      String
+  eventVersion   Int
+  payload        Json
+  status         OutboxStatus @default(PENDING)
+  attempts       Int          @default(0)
+  lastError      String?
+  correlationId  String
+  causationId    String?
+  idempotencyKey String?      @unique
+  processedAt    DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([status, createdAt])
+  @@index([correlationId])
+}
+
+model InboxMessage {
+  id            String   @id @default(uuid())
+  eventId       String   @unique
+  eventType     String
+  eventVersion  Int
+  payload       Json
+  producer      String
+  correlationId String
+  processedAt   DateTime?
+  createdAt     DateTime @default(now())
+
+  @@index([correlationId])
+}
+
+model IdentityExternalReference {
+  id             String   @id @default(uuid())
+  system         String
+  legacyUserId   String
+  identityUserId String
+  identityUser   User     @relation(fields: [identityUserId], references: [id], onDelete: Cascade)
+  migratedAt     DateTime @default(now())
+
+  @@unique([system, legacyUserId])
+  @@index([identityUserId])
+}

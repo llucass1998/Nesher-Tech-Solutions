@@ -2,7 +2,23 @@
 
 ## Visao geral
 
-O repositorio funciona como uma plataforma em transicao. O LogiFlow ainda vive na raiz, com frontend Next.js e API Express. O LogiPeople segue uma estrutura de monorepo mais clara, em `apps/`, `packages/` e `databases/`. O LogiDesk agora possui uma fundacao propria em `apps/logidesk-*` e `databases/logidesk`, mas ainda nao representa o produto empresarial completo descrito no prompt mestre.
+O repositorio funciona como uma plataforma em transicao. O LogiIdentity agora existe como servico separado para login, sessoes, roles, permissoes, JWT RS256 e JWKS. O LogiFlow ainda vive na raiz, com frontend Next.js e API Express. O LogiPeople segue uma estrutura de monorepo mais clara, em `apps/`, `packages/` e `databases/`. O LogiDesk possui uma fundacao propria em `apps/logidesk-*` e `databases/logidesk`, mas ainda nao representa o produto empresarial completo descrito no prompt mestre.
+
+## LogiIdentity
+
+```text
+apps/identity-api       NestJS API de identidade
+apps/identity-worker    Worker bootstrap conectado ao Redis
+databases/identity      Prisma separado
+```
+
+Padroes atuais:
+
+- Identity e a fonte de tokens novos da plataforma.
+- Access token JWT RS256 com `kid`, `iss`, `aud`, `roles`, `permissions` e `sessionId`.
+- JWKS em `/.well-known/jwks.json`.
+- Refresh token opaco em cookie HttpOnly, persistido apenas como hash.
+- LogiFlow e LogiDesk validam tokens Identity por JWKS.
 
 ## LogiFlow
 
@@ -20,7 +36,7 @@ Padroes atuais:
 
 - Controllers ainda concentram parte de validacao, regra de negocio e acesso Prisma.
 - Rotas v1 novas convivem com rotas legadas depreciadas.
-- Identidade versionada usa `User`, `DriverProfile` e `RefreshSession`.
+- Identidade versionada local ainda existe para compatibilidade, mas tokens Identity sao aceitos via JWKS quando `IDENTITY_JWKS_URL` esta configurada.
 - Driver ownership e resolvido por `JWT sub -> User -> DriverProfile -> driverId`.
 - Endpoints operacionais exigem `ADMIN` ou `OPERATOR`.
 
@@ -65,7 +81,7 @@ Padroes atuais:
 
 ## Bancos
 
-LogiFlow, LogiPeople e LogiDesk possuem schemas Prisma separados. Nao ha relacoes Prisma entre bancos.
+Identity, LogiFlow, LogiPeople e LogiDesk possuem schemas Prisma separados. Nao ha relacoes Prisma entre bancos.
 
 ```mermaid
 erDiagram
@@ -82,13 +98,17 @@ erDiagram
 
 ```mermaid
 flowchart LR
+  Identity[LogiIdentity API] --> IdentityDB[(PostgreSQL Identity)]
+  Identity --> JWKS[JWKS]
   Web[LogiFlow Web] --> API[Express API]
+  API --> JWKS
   API --> DB[(PostgreSQL LogiFlow)]
   Migrate[logiflow-migrate] --> DB
   DB --> API
   API --> Outbox[(LogiFlow Outbox)]
   Worker[logiflow-worker] --> Redis[(Redis)]
   Worker --> DeskAPI[LogiDesk API]
+  DeskAPI --> JWKS
   DeskAPI --> DeskDB[(PostgreSQL LogiDesk)]
 ```
 
@@ -96,6 +116,7 @@ flowchart LR
 
 Workflows:
 
+- `identity-ci.yml`: Identity API, worker, Prisma, testes e build.
 - `logiflow-ci.yml`: LogiFlow, Docker e smoke test.
 - `logipeople-ci.yml`: LogiPeople e pacotes compartilhados.
 - `logidesk-ci.yml`: LogiDesk API/web/worker, Prisma e Docker.
@@ -104,6 +125,7 @@ Workflows:
 ## Pendencias arquiteturais
 
 - Extrair regras de controllers LogiFlow para services/use cases.
+- Migrar consumidores antigos para Identity e remover autenticacao duplicada somente apos validacao.
 - Completar o LogiDesk empresarial: equipes, SLA completo, mensagens, notas internas, anexos, relatorios e Socket.IO.
 - Completar processamento de Outbox, Redis/BullMQ, DLQ e reprocessamento distribuido.
 - Adicionar Socket.IO autenticado.

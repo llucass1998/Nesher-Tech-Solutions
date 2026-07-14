@@ -4,13 +4,36 @@ Data: 2026-07-13
 
 ## Resumo
 
-O checkout atual nao corresponde integralmente ao prompt mestre original. O prompt descreve `apps/logiflow-*` e `apps/logidesk-*`, mas este repositorio contem:
+O checkout atual agora possui a base da Logi Platform com Identity separado e produtos ainda em estagios diferentes de maturidade. O LogiFlow continua parcialmente na raiz, enquanto LogiDesk, LogiPeople e Identity seguem a estrutura `apps/` e `databases/`.
 
+- LogiIdentity como servico separado em `apps/identity-*` e `databases/identity`.
 - LogiFlow legado modernizado na raiz.
 - LogiPeople como produto modular dentro de `apps/`.
 - LogiDesk como fundacao operacional em `apps/logidesk-*`.
 
-As fases 1-13 do fluxo principal foram implementadas no escopo real do checkout. A execucao atual adicionou a fundacao LogiDesk, workers, Redis/Outbox estrutural e Docker integrado.
+As fases anteriores do fluxo LogiFlow/LogiDesk continuam preservadas. A execucao atual adicionou Identity API, Identity DB, JWKS, refresh token rotativo e validacao basica de token Identity por LogiFlow e LogiDesk.
+
+## LogiIdentity
+
+Estrutura:
+
+- `apps/identity-api`: API NestJS de autenticacao, sessoes, usuarios, roles, permissoes, aplicacoes e JWKS.
+- `apps/identity-worker`: worker bootstrap conectado ao Redis.
+- `databases/identity`: Prisma schema e migration inicial.
+
+Implementado:
+
+- Login, refresh, logout, `me`, lista/revogacao de sessoes.
+- JWT RS256 com JWKS.
+- Refresh token HttpOnly e rotativo, armazenado como hash.
+- Modelos de usuario, credencial, role, permission, application, sessoes, service account, audit, outbox, inbox e referencia externa.
+- Docker Compose com `identity-db`, `identity-migrate`, `identity-api` e `identity-worker`.
+
+Limitacoes:
+
+- Importacao automatica de usuarios legados ainda nao foi implementada.
+- Endpoints administrativos ainda precisam de guards reais.
+- Rate limiting, lockout progressivo e rotacao persistida de chaves ainda estao pendentes.
 
 ## LogiFlow
 
@@ -86,14 +109,14 @@ Implementado:
 
 Limitacoes:
 
-- SSO/JWKS real ainda nao esta conectado.
+- SSO/JWKS basico conectado ao LogiIdentity por `GET /api/v1/auth/me`.
 - Socket.IO autenticado e processamento completo dos workers ainda precisam evoluir.
 - E2E completo LogiFlow/LogiDesk ainda nao existe.
 
 ## Infraestrutura
 
-- Docker Compose existe para LogiFlow, LogiDesk, Redis e workers.
-- GitHub Actions existem para LogiFlow, LogiDesk, LogiPeople e integracao/plataforma.
+- Docker Compose existe para Identity, LogiFlow, LogiDesk, Redis e workers.
+- GitHub Actions existem para Identity, LogiFlow, LogiDesk, LogiPeople e integracao/plataforma.
 - `.env.example` contem placeholders e nao segredos reais.
 
 ## Validacoes recentes
@@ -103,5 +126,6 @@ Limitacoes:
 - `npm run typecheck`: PASS.
 - `npm test`: PASS.
 - `npm run build`: PASS.
-- Docker Compose integrado LogiFlow/LogiDesk/Redis subiu com health checks.
+- Docker Compose integrado Identity/LogiFlow/LogiDesk/Redis subiu com health checks.
+- Smoke Identity: login, refresh, logout, JWKS, validacao LogiFlow e validacao LogiDesk: PASS.
 - Smoke test idempotente de ticket LogiDesk retornou `LD-000001` sem duplicar.

@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import { prisma } from '../lib/prisma';
 import { sendError } from '../lib/api-error';
-import { verifyAccessToken } from '../lib/auth-tokens';
+import { verifyPlatformAccessToken } from '../lib/identity-jwks';
 
 interface AuthenticatedRequest extends Request {
   user?: string | JwtPayload;
@@ -102,7 +102,24 @@ export const verificarAccessTokenV1 = async (req: Request, res: Response, next: 
   const token = authHeader.slice('Bearer '.length);
 
   try {
-    const decoded = verifyAccessToken(token);
+    const decoded = await verifyPlatformAccessToken(token);
+
+    if (process.env.IDENTITY_JWKS_URL) {
+      if (decoded.status && decoded.status !== 'ACTIVE') {
+        return sendError(res, 401, 'TOKEN_EXPIRED', 'Usuario inativo ou inexistente.');
+      }
+
+      req.auth = {
+        id: decoded.sub,
+        name: decoded.name,
+        email: decoded.email,
+        role: decoded.roles?.[0] ?? 'USER',
+        status: decoded.status ?? 'ACTIVE',
+      };
+
+      return next();
+    }
+
     const user = await prisma.user.findUnique({ where: { id: decoded.sub } });
 
     if (!user || user.status !== 'ACTIVE') {

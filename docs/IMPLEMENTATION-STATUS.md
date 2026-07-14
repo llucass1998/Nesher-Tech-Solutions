@@ -37,6 +37,19 @@ Phases 1-14 are in scope:
 | Preliminary payslip foundation | Implemented | Phase 14 adds restricted demonstrative payslips derived from payroll runs, line copies from payroll items, API endpoints, tests and a web page. Employee publication, official PDF/signature, legal calculation, bank payment and eSocial remain out of scope. |
 | Benefits foundation | Implemented | Phase 9 adds preliminary benefit plans, enrollments, API endpoints, tests and a web page. Provider integrations, eligibility/legal validation and payroll deductions remain out of scope. |
 | Absence and Vacation foundation | Implemented | Phase 10 adds preliminary absence requests, vacation periods, API endpoints, tests and a web page. Legal balance calculations, automatic approvals, payroll effects and eSocial remain out of scope. |
+| LogiIdentity foundation | Implemented | Added `apps/identity-api`, `apps/identity-worker`, `databases/identity`, RS256/JWKS, rotating refresh token sessions, Docker services and CI. |
+| LogiFlow Identity validation | Partially implemented | LogiFlow accepts Identity tokens through JWKS when `IDENTITY_JWKS_URL` is configured, while local auth remains as compatibility fallback. |
+| LogiDesk Identity validation | Partially implemented | LogiDesk exposes `GET /api/v1/auth/me` backed by Identity JWKS. Full frontend SSO remains pending. |
+
+## Identity validation evidence
+
+| Command | Result | Notes |
+| --- | --- | --- |
+| `npm run typecheck -w identity-api` | PASS | Identity API compiles. |
+| `npm run typecheck -w identity-worker` | PASS | Identity worker compiles. |
+| `npm run test -w identity-api` | PASS | 1 unit test passed. |
+| `docker compose up -d` | PASS | Identity, LogiFlow, LogiDesk, Redis, databases, workers and webs became healthy. |
+| Identity smoke test | PASS | Login, refresh, logout, JWKS, LogiFlow `/api/v1/auth/me` and LogiDesk `/api/v1/auth/me` passed. |
 
 ## Explicitly not complete
 
