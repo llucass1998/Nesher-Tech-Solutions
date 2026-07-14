@@ -41,7 +41,7 @@ Banco:
 - Dead-letter table.
 - Auditoria.
 - Health checks `GET /api/v1/health/live` e `GET /api/v1/health/ready`.
-- Web com dashboard, lista de chamados, Kanban, SLA e configuracoes.
+- Web com dashboard baseado em relatorio agregado, lista de chamados, Kanban, SLA e configuracoes.
 
 ## API principal
 
@@ -113,6 +113,8 @@ O endpoint cria historico, auditoria e outbox. Upload binario, object storage, v
 
 `GET /reports/summary` retorna agregados operacionais sem dados sensiveis: totais, chamados ativos, chamados sem responsavel, notificacoes nao lidas, distribuicao por status, prioridade, origem e SLA.
 
+O dashboard web consome `/reports/summary` para os cards e distribuicoes, e `/tickets` apenas para a fila recente.
+
 ## Limites atuais
 
 - SSO/JWKS basico existe via `GET /api/v1/auth/me`; frontend SSO completo ainda precisa evoluir.
@@ -128,6 +130,8 @@ O endpoint cria historico, auditoria e outbox. Upload binario, object storage, v
 - `npm run test -w logidesk-api`: PASS, 13 testes.
 - `npm run typecheck -w logidesk-worker`: PASS.
 - `npm run build -w logidesk-worker`: PASS.
+- `npm run typecheck -w logidesk-web`: PASS.
+- `npm run build -w logidesk-web`: PASS.
 - `npm run lint`: PASS.
 - `npm run typecheck`: PASS.
 - `npm run test:workspaces`: PASS.

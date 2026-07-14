@@ -48,6 +48,24 @@ export interface TicketSummary {
   };
 }
 
+export interface CountGroup {
+  value: string;
+  count: number;
+}
+
+export interface SupportReportSummary {
+  totals: {
+    tickets: number;
+    activeTickets: number;
+    unassignedTickets: number;
+    unreadNotifications: number;
+  };
+  ticketsByStatus: CountGroup[];
+  ticketsByPriority: CountGroup[];
+  ticketsBySource: CountGroup[];
+  slaByStatus: CountGroup[];
+}
+
 export type LogiDeskResult<T> = Promise<{ data?: T; error?: string }>;
 
 export async function fetchLogiDesk<T>(path: string): LogiDeskResult<T> {
