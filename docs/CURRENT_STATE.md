@@ -87,11 +87,13 @@ Implementado:
 - Beneficios preliminares.
 - Ausencias e ferias preliminares.
 - Analytics agregados.
+- Outbox inicial `logipeople.employee.hired` ao criar colaborador, validada por contrato compartilhado e limitada a `employeeId`, `personId` e `startDate`.
 
 Limitacoes:
 
 - Dados sensiveis e DP continuam preliminares.
 - eSocial real, calculos legais, pagamentos, provisoes e automacoes externas nao estao implementados.
+- Worker de entrega da Outbox LogiPeople para Redis Streams e consumo automatico pelo LogiPayroll ainda nao estao implementados.
 
 ## LogiDesk
 

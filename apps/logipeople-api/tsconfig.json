@@ -7,6 +7,7 @@
       "@logipeople/auth": ["../../packages/auth/src/index.ts"],
       "@logipeople/config": ["../../packages/config/src/index.ts"],
       "@logipeople/contracts": ["../../packages/contracts/src/index.ts"],
+      "@logipeople/event-contracts": ["../../packages/event-contracts/src/index.ts"],
       "@logipeople/logger": ["../../packages/logger/src/index.ts"]
     }
   },

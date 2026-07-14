@@ -1,5 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { AuthenticatedPrincipal } from '@logipeople/auth';
+import { logipeopleEmployeeHiredEventSchema } from '@logipeople/event-contracts';
+import { Prisma } from '../../generated/prisma';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
@@ -128,6 +130,21 @@ export class PeopleService {
           },
         });
       }
+
+      const hiredPayload = logipeopleEmployeeHiredEventSchema.shape.data.parse({
+        employeeId: created.id,
+        personId: input.personId,
+        startDate: input.hireDate,
+      });
+
+      await tx.outboxEvent.create({
+        data: {
+          eventType: 'logipeople.employee.hired',
+          eventVersion: 1,
+          payload: hiredPayload as Prisma.InputJsonValue,
+          causationId: principal?.userId ?? null,
+        },
+      });
 
       return created;
     });

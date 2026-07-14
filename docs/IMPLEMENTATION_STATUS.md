@@ -70,6 +70,7 @@ Data: 2026-07-14
 - Criacao de contrato grava `OutboxEvent` `logipayroll.contract.created` sem dados sensiveis de folha.
 - `logipayroll.contract.created` foi alinhado em `packages/event-contracts` com schema Zod estrito e a API valida o payload antes de persistir Outbox.
 - `logipayroll-worker` agora publica Outbox valida em Redis Streams, aplica retry/backoff e registra `DeadLetterEvent`.
+- LogiPeople agora grava Outbox `logipeople.employee.hired` ao criar colaborador, validada por `packages/event-contracts` e sem dados restritos.
 - Nenhum dado real foi migrado do LogiPeople nesta etapa.
 
 Validacoes executadas em 2026-07-14:
@@ -95,6 +96,15 @@ Validacoes executadas em 2026-07-14:
 | `docker compose --env-file .env.example build --progress plain logipayroll-worker` | PASS | Imagem worker construiu. |
 | `docker compose --env-file .env.example build --progress plain logipayroll-migrate` | PASS | Imagem migrate construiu. |
 | `npm audit --audit-level=high` | PASS | 0 vulnerabilidades. |
+| `npx prisma validate --config apps/logipeople-api/prisma.config.ts` | PASS | Schema LogiPeople valido com `OutboxEvent`. |
+| `npm run lint -w logipeople-api` | PASS | Sem erros; aviso conhecido do plugin Next sobre ausencia de `pages`. |
+| `npm run typecheck -w logipeople-api` | PASS | TypeScript sem erros. |
+| `npm run test -w logipeople-api` | PASS | 10 arquivos, 50 testes; inclui emissao de `logipeople.employee.hired` sem salario/documento. |
+| `npm run build -w logipeople-api` | PASS | Build TypeScript passou. |
+| `npm run lint` | PASS | ESLint do monorepo sem erros. |
+| `npm run typecheck` | PASS | Typecheck do monorepo e workspaces sem erros. |
+| `npm run test:workspaces` | PASS | Testes de workspaces passaram. |
+| `npm run build:workspaces` | PASS | Builds de workspaces passaram; avisos conhecidos de root do Next permanecem. |
 
 ## Matriz de regressao
 
