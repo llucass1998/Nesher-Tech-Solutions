@@ -38,6 +38,14 @@
 - `PATCH /api/v1/operations/occurrences/:id`
 - `POST /api/v1/operations/occurrences/:id/reprocess`
 - `POST /api/v1/operations/occurrences/:id/escalate`
+- `GET /api/v1/operations/dead-letter-events`
+- `POST /api/v1/operations/dead-letter-events/:id/reprocess`
+
+As rotas operacionais exigem JWT v1 e roles `ADMIN` ou `OPERATOR`.
+
+`GET /api/v1/operations/dead-letter-events` lista ate 100 eventos em DLQ do LogiFlow, com filtro opcional `correlationId`.
+
+`POST /api/v1/operations/dead-letter-events/:id/reprocess` recoloca o `OutboxEvent` vinculado em `PENDING`, zera tentativas, limpa erro/processamento e, quando o payload possui `occurrenceId`, recoloca a ocorrencia em `PENDING`.
 
 ## Rotas legadas LogiFlow
 

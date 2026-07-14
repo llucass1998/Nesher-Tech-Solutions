@@ -28,6 +28,15 @@ function asOptionalString(value: unknown) {
   return typeof normalized === 'string' && normalized.trim() ? normalized.trim() : undefined;
 }
 
+function getPayloadString(payload: Prisma.JsonValue, key: string) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    return undefined;
+  }
+
+  const value = (payload as Record<string, unknown>)[key];
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
 function buildDeliveryWhere(query: Request['query']): Prisma.DeliveryWhereInput {
   const status = asOptionalString(query.status);
   const driverId = asOptionalString(query.driverId);
@@ -365,6 +374,93 @@ export class LogiflowOperationsController {
     } catch (error) {
       console.error(error);
       return sendError(res, 500, 'INTERNAL_ERROR', 'Erro ao reprocessar ocorrencia.');
+    }
+  }
+
+  async listDeadLetterEvents(req: Request, res: Response) {
+    const correlationId = asOptionalString(req.query.correlationId);
+
+    try {
+      const events = await prisma.deadLetterEvent.findMany({
+        where: {
+          ...(correlationId ? { correlationId } : {}),
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+      });
+
+      return res.json({ data: events });
+    } catch (error) {
+      console.error(error);
+      return sendError(res, 500, 'INTERNAL_ERROR', 'Erro ao listar eventos em DLQ.');
+    }
+  }
+
+  async reprocessDeadLetterEvent(req: Request, res: Response) {
+    const deadLetterId = getParamValue(req.params.id);
+
+    if (!deadLetterId) {
+      return sendError(res, 400, 'VALIDATION_ERROR', 'ID do evento em DLQ e obrigatorio.');
+    }
+
+    try {
+      const deadLetter = await prisma.deadLetterEvent.findUnique({ where: { id: deadLetterId } });
+
+      if (!deadLetter) {
+        return sendError(res, 404, 'RESOURCE_NOT_FOUND', 'Evento em DLQ nao encontrado.');
+      }
+
+      if (!deadLetter.outboxEventId) {
+        return sendError(res, 422, 'INTEGRATION_INVALID_RESPONSE', 'Evento em DLQ nao possui outbox vinculado.');
+      }
+
+      const outboxEvent = await prisma.outboxEvent.findUnique({ where: { id: deadLetter.outboxEventId } });
+
+      if (!outboxEvent) {
+        return sendError(res, 404, 'RESOURCE_NOT_FOUND', 'Outbox vinculado nao encontrado.');
+      }
+
+      if (outboxEvent.status !== 'DEAD_LETTER') {
+        return sendError(res, 409, 'INTEGRATION_UNAVAILABLE', 'Outbox vinculado nao esta em DEAD_LETTER.');
+      }
+
+      const occurrenceId = getPayloadString(outboxEvent.payload, 'occurrenceId');
+
+      const result = await prisma.$transaction(async (tx) => {
+        const updatedOutbox = await tx.outboxEvent.update({
+          where: { id: outboxEvent.id },
+          data: {
+            status: 'PENDING',
+            attempts: 0,
+            lastError: null,
+            processedAt: null,
+          },
+        });
+
+        const updatedOccurrence = occurrenceId
+          ? await tx.occurrence.update({
+              where: { id: occurrenceId },
+              data: {
+                integrationStatus: 'PENDING',
+                lastError: null,
+              },
+            })
+          : null;
+
+        return {
+          outboxEvent: updatedOutbox,
+          occurrence: updatedOccurrence,
+        };
+      });
+
+      return res.json(result);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        return sendError(res, 404, 'RESOURCE_NOT_FOUND', 'Recurso vinculado ao evento em DLQ nao encontrado.');
+      }
+
+      console.error(error);
+      return sendError(res, 500, 'INTERNAL_ERROR', 'Erro ao reprocessar evento em DLQ.');
     }
   }
 

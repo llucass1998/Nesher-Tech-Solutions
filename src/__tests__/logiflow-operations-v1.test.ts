@@ -32,7 +32,13 @@ vi.mock('../lib/prisma', () => ({
       create: vi.fn(),
     },
     outboxEvent: {
+      findUnique: vi.fn(),
+      update: vi.fn(),
       upsert: vi.fn(),
+    },
+    deadLetterEvent: {
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
     },
     $transaction: vi.fn(async (callback: (tx: typeof prisma) => unknown) => callback(prisma)),
   },
@@ -374,6 +380,155 @@ describe('LogiFlow operacional v1', () => {
     expect(response.status).toBe(409);
     expect(response.body.error.code).toBe('INTEGRATION_UNAVAILABLE');
     expect(prisma.occurrence.update).not.toHaveBeenCalled();
+  });
+
+  it('lista e reprocessa DLQ operacional recolocando outbox e ocorrencia na fila', async () => {
+    await mockLogin();
+    const login = await request(app).post('/api/v1/auth/login').send({
+      email: 'operator@example.com',
+      password: 'secret123',
+    });
+
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(operatorUser);
+    vi.mocked(prisma.deadLetterEvent.findMany).mockResolvedValue([
+      {
+        id: 'dead-letter-1',
+        outboxEventId: 'outbox-1',
+        eventType: 'logiflow.occurrence.escalated',
+        payload: { occurrenceId: 'occurrence-1' },
+        error: 'LogiDesk unavailable',
+        correlationId: 'corr-1',
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      },
+    ]);
+    vi.mocked(prisma.deadLetterEvent.findUnique).mockResolvedValue({
+      id: 'dead-letter-1',
+      outboxEventId: 'outbox-1',
+      eventType: 'logiflow.occurrence.escalated',
+      payload: { occurrenceId: 'occurrence-1' },
+      error: 'LogiDesk unavailable',
+      correlationId: 'corr-1',
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+    });
+    vi.mocked(prisma.outboxEvent.findUnique).mockResolvedValue({
+      id: 'outbox-1',
+      eventType: 'logiflow.occurrence.escalated',
+      eventVersion: 1,
+      payload: { occurrenceId: 'occurrence-1' },
+      status: 'DEAD_LETTER',
+      attempts: 5,
+      lastError: 'LogiDesk unavailable',
+      correlationId: 'corr-1',
+      causationId: 'occurrence-1',
+      idempotencyKey: 'logiflow:occurrence:occurrence-1:ticket',
+      processedAt: null,
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    });
+    vi.mocked(prisma.outboxEvent.update).mockResolvedValue({
+      id: 'outbox-1',
+      eventType: 'logiflow.occurrence.escalated',
+      eventVersion: 1,
+      payload: { occurrenceId: 'occurrence-1' },
+      status: 'PENDING',
+      attempts: 0,
+      lastError: null,
+      correlationId: 'corr-1',
+      causationId: 'occurrence-1',
+      idempotencyKey: 'logiflow:occurrence:occurrence-1:ticket',
+      processedAt: null,
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    });
+    vi.mocked(prisma.occurrence.update).mockResolvedValue({
+      id: 'occurrence-1',
+      deliveryId: 'delivery-1',
+      title: 'Falha integracao',
+      description: 'Timeout',
+      severity: 'HIGH',
+      status: 'OPEN',
+      integrationStatus: 'PENDING',
+      retryCount: 3,
+      lastError: null,
+      ticketNumber: null,
+      createdByUserId: 'operator-1',
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    });
+
+    const list = await request(app)
+      .get('/api/v1/operations/dead-letter-events?correlationId=corr-1')
+      .set('Authorization', `Bearer ${login.body.accessToken}`);
+    const reprocess = await request(app)
+      .post('/api/v1/operations/dead-letter-events/dead-letter-1/reprocess')
+      .set('Authorization', `Bearer ${login.body.accessToken}`);
+
+    expect(list.status).toBe(200);
+    expect(list.body.data).toHaveLength(1);
+    expect(prisma.deadLetterEvent.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { correlationId: 'corr-1' },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    }));
+    expect(reprocess.status).toBe(200);
+    expect(prisma.outboxEvent.update).toHaveBeenCalledWith({
+      where: { id: 'outbox-1' },
+      data: {
+        status: 'PENDING',
+        attempts: 0,
+        lastError: null,
+        processedAt: null,
+      },
+    });
+    expect(prisma.occurrence.update).toHaveBeenCalledWith({
+      where: { id: 'occurrence-1' },
+      data: {
+        integrationStatus: 'PENDING',
+        lastError: null,
+      },
+    });
+  });
+
+  it('bloqueia reprocessamento de DLQ quando o outbox vinculado nao esta em dead-letter', async () => {
+    await mockLogin();
+    const login = await request(app).post('/api/v1/auth/login').send({
+      email: 'operator@example.com',
+      password: 'secret123',
+    });
+
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(operatorUser);
+    vi.mocked(prisma.deadLetterEvent.findUnique).mockResolvedValue({
+      id: 'dead-letter-1',
+      outboxEventId: 'outbox-1',
+      eventType: 'logiflow.occurrence.escalated',
+      payload: { occurrenceId: 'occurrence-1' },
+      error: 'LogiDesk unavailable',
+      correlationId: 'corr-1',
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+    });
+    vi.mocked(prisma.outboxEvent.findUnique).mockResolvedValue({
+      id: 'outbox-1',
+      eventType: 'logiflow.occurrence.escalated',
+      eventVersion: 1,
+      payload: { occurrenceId: 'occurrence-1' },
+      status: 'PENDING',
+      attempts: 0,
+      lastError: null,
+      correlationId: 'corr-1',
+      causationId: 'occurrence-1',
+      idempotencyKey: 'logiflow:occurrence:occurrence-1:ticket',
+      processedAt: null,
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    });
+
+    const response = await request(app)
+      .post('/api/v1/operations/dead-letter-events/dead-letter-1/reprocess')
+      .set('Authorization', `Bearer ${login.body.accessToken}`);
+
+    expect(response.status).toBe(409);
+    expect(response.body.error.code).toBe('INTEGRATION_UNAVAILABLE');
+    expect(prisma.outboxEvent.update).not.toHaveBeenCalled();
   });
 
   it('escala ocorrencia para o LogiDesk criando outbox idempotente', async () => {

@@ -30,12 +30,14 @@ Data: 2026-07-13
 | Plataforma Fase 8 - Integração LogiFlow -> LogiDesk | Parcial implementada | `logiflow-worker` despacha Outbox HTTP para LogiDesk; `logidesk-worker` retorna eventos com `occurrenceId` para LogiFlow. Backoff progressivo por polling foi adicionado; Redis Streams, E2E e reprocessamento administrativo ainda pendentes. |
 | Plataforma Fase 9 - LogiDesk operacional ampliado | Implementada no escopo atual | Tickets manuais, status/priority, equipes, categorias, tags com UI preliminar, atribuições, notas internas editáveis, metadados de anexos, notificacoes internas com opt-out por preferencia, preferencias preliminares de notificacao, ciclo de SLA, worker de alerta/violacao de SLA, relatorio agregado, dashboard e tela de relatorios com dados agregados, tela de notificacoes com leitura pela web, arquivamento e migrations LogiDesk validados. |
 
-### Atualizacao atual - DLQ LogiDesk
+### Atualizacao atual - DLQ LogiFlow e LogiDesk
 
 - LogiDesk API agora possui `GET /api/v1/dead-letter-events` para listar eventos em DLQ.
 - LogiDesk API agora possui `POST /api/v1/dead-letter-events/:id/reprocess` para recolocar o `OutboxEvent` vinculado em `PENDING`, zerar tentativas e registrar auditoria.
+- LogiFlow API agora possui `GET /api/v1/operations/dead-letter-events` para listar eventos em DLQ.
+- LogiFlow API agora possui `POST /api/v1/operations/dead-letter-events/:id/reprocess` para recolocar o `OutboxEvent` vinculado em `PENDING` e, quando aplicavel, a ocorrencia em `PENDING`.
 - O registro `DeadLetterEvent` permanece como evidencia historica.
-- Ainda faltam endpoint equivalente para DLQ do LogiFlow, validacao fim a fim em containers e Redis Streams.
+- Ainda faltam validacao fim a fim em containers e Redis Streams.
 
 ## Matriz de regressao
 
@@ -60,7 +62,7 @@ Data: 2026-07-13
 | Observabilidade HTTP | Nao havia request context, health ou metricas | Nao | Sim | PASS |
 | Testes criticos adicionais | Cobertura parcial de bordas auth/operacionais | Parcial | Sim | PASS |
 | LogiDesk/ticket | Fundacao de tickets existe | Nao | Sim | PASS no smoke test idempotente e testes unitarios LogiDesk |
-| Outbox/Redis/retry | Fundacao de outbox, Redis e workers existe | Nao | Parcial | PASS para build/health/worker ready, backoff progressivo e API inicial de DLQ no LogiDesk; Redis Streams, DLQ equivalente no LogiFlow e reprocessamento fim a fim pendentes |
+| Outbox/Redis/retry | Fundacao de outbox, Redis e workers existe | Nao | Parcial | PASS para build/health/worker ready, backoff progressivo e API inicial de DLQ nos dois lados; Redis Streams e reprocessamento fim a fim pendentes |
 | LogiIdentity login/JWKS | Servico nao existia | Nao | Sim | PASS no smoke Docker |
 | LogiFlow valida token Identity | LogiFlow usava token local | Nao | Sim | PASS no smoke Docker via `/api/v1/auth/me` |
 | LogiDesk valida token Identity | LogiDesk nao tinha auth Identity | Nao | Sim | PASS no smoke Docker via `/api/v1/auth/me` |
@@ -90,7 +92,7 @@ Data: 2026-07-13
 | `docker compose build logiflow-worker` | PASS | Imagem do worker com dispatcher e dependencia `pg` construiu. |
 | `npm run typecheck -w logidesk-worker` | PASS | Dispatcher LogiDesk compila. |
 | `npm run build -w logidesk-worker` | PASS | Build do worker LogiDesk passou. |
-| `npm test -- src/__tests__/logiflow-operations-v1.test.ts` | PASS | 11 testes; inclui callback LogiDesk -> LogiFlow protegido por token de servico. |
+| `npm test -- src/__tests__/logiflow-operations-v1.test.ts` | PASS | 13 testes; inclui callback LogiDesk -> LogiFlow protegido por token de servico e DLQ operacional do LogiFlow. |
 | `docker compose build logidesk-worker` | PASS | Imagem do worker com retorno para LogiFlow construiu. |
 | `npm run logidesk:prisma:generate` | PASS | Prisma Client LogiDesk gerado apos schema operacional. |
 | `npx prisma validate --config apps/logidesk-api/prisma.config.ts` | PASS | Schema LogiDesk valido apos migration de preferencias de notificacao. |
@@ -158,7 +160,7 @@ Todas as rotas legadas preservam o controller atual e passam a emitir:
 ## Bloqueios conhecidos
 
 - LogiDesk agora possui fundacao, mas ainda nao tem o produto empresarial completo: SSO real, Socket.IO autenticado, upload binario de anexos com storage seguro, calendario comercial/feriados de SLA, relatorios avancados, preferencias ligadas ao usuario autenticado e entrega de notificacoes em tempo real e E2E Playwright.
-- Outbox, Redis/BullMQ e DLQ existem como estrutura inicial; dispatchers HTTP possuem retry com backoff progressivo por polling, e o LogiDesk ja possui API administrativa inicial de DLQ/reprocessamento. Redis Streams, endpoint equivalente no LogiFlow e reprocessamento fim a fim ainda nao foram fechados.
+- Outbox, Redis/BullMQ e DLQ existem como estrutura inicial; dispatchers HTTP possuem retry com backoff progressivo por polling, e LogiFlow/LogiDesk possuem APIs administrativas iniciais de DLQ/reprocessamento. Redis Streams e reprocessamento fim a fim ainda nao foram fechados.
 - O Compose validado cobre LogiFlow, LogiDesk, Redis, bancos, workers, APIs e webs.
 - Os workflows GitHub Actions existem para LogiFlow, LogiPeople, LogiDesk e integracao/plataforma.
 

@@ -77,7 +77,16 @@ Eventos `FAILED` usam o mesmo backoff exponencial por `attempts` e `updatedAt`. 
 
 ## DLQ e Reprocessamento
 
-O LogiDesk API expoe operacao administrativa inicial para DLQ:
+LogiFlow e LogiDesk expoem operacao administrativa inicial para DLQ.
+
+LogiFlow:
+
+- `GET /api/v1/operations/dead-letter-events`
+- `POST /api/v1/operations/dead-letter-events/:id/reprocess`
+
+Essas rotas exigem JWT v1 com roles `ADMIN` ou `OPERATOR`. O reprocessamento valida que existe `outboxEventId`, confirma que o `OutboxEvent` vinculado ainda esta em `DEAD_LETTER`, reseta o outbox para `PENDING`, zera tentativas, limpa erro/processamento e, quando o payload possui `occurrenceId`, recoloca a ocorrencia em `PENDING`.
+
+LogiDesk:
 
 - `GET /api/v1/dead-letter-events`
 - `POST /api/v1/dead-letter-events/:id/reprocess`
@@ -133,6 +142,6 @@ Para marcar integracao como pronta, confirmar:
 
 - O dispatcher usa polling PostgreSQL; Redis Streams ainda nao foi adotado para este fluxo.
 - Backoff progressivo existe no polling de `FAILED`.
-- O LogiDesk possui API administrativa inicial para listar DLQ e reprocessar outbox em `DEAD_LETTER`; LogiFlow ainda precisa de endpoint equivalente para `DeadLetterEvent` e falta validar reprocessamento fim a fim com containers.
+- LogiFlow e LogiDesk possuem API administrativa inicial para listar DLQ e reprocessar outbox em `DEAD_LETTER`; falta validar reprocessamento fim a fim com containers.
 - Socket.IO distribuido ainda nao foi conectado.
 - E2E completo ainda nao foi automatizado.

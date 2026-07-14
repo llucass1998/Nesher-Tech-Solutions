@@ -46,6 +46,19 @@ Principais modelos:
 - `DeliveryStatusHistory`
 - `Occurrence`
 - `DeliveryProof`
+- `OutboxEvent`
+- `DeadLetterEvent`
+
+## Integracao e DLQ
+
+LogiFlow publica escalonamentos para o LogiDesk por `OutboxEvent`, processado pelo `apps/logiflow-worker`.
+
+Rotas operacionais de recuperacao:
+
+- `GET /api/v1/operations/dead-letter-events`
+- `POST /api/v1/operations/dead-letter-events/:id/reprocess`
+
+As duas exigem JWT v1 e roles `ADMIN` ou `OPERATOR`. O reprocessamento recoloca o outbox vinculado em `PENDING` e, quando o payload possui `occurrenceId`, tambem recoloca a ocorrencia em `PENDING`.
 
 ## Fluxo de entrega
 
@@ -60,8 +73,7 @@ flowchart TD
 
 ## Limitacoes atuais
 
-- Nao ha worker LogiFlow.
-- Nao ha Outbox real.
-- Nao ha Redis/BullMQ.
+- O worker LogiFlow existe e despacha outbox por HTTP, mas Redis Streams ainda nao foi adotado nesse fluxo.
+- DLQ operacional existe como endpoint inicial; falta validar reprocessamento fim a fim com containers.
 - Nao ha mapa com ownership completo.
-- Nao ha integracao real com LogiDesk.
+- E2E completo LogiFlow -> LogiDesk ainda nao foi automatizado.

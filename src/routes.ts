@@ -51,6 +51,8 @@ routes.post('/api/v1/operations/deliveries/:id/proofs', verificarAccessTokenV1, 
 routes.patch('/api/v1/operations/occurrences/:id', verificarAccessTokenV1, requireRoles(['ADMIN', 'OPERATOR']), (req, res) => operationsController.updateOccurrence(req, res));
 routes.post('/api/v1/operations/occurrences/:id/reprocess', verificarAccessTokenV1, requireRoles(['ADMIN', 'OPERATOR']), (req, res) => operationsController.reprocessOccurrence(req, res));
 routes.post('/api/v1/operations/occurrences/:id/escalate', verificarAccessTokenV1, requireRoles(['ADMIN', 'OPERATOR']), (req, res) => operationsController.escalateOccurrence(req, res));
+routes.get('/api/v1/operations/dead-letter-events', verificarAccessTokenV1, requireRoles(['ADMIN', 'OPERATOR']), (req, res) => operationsController.listDeadLetterEvents(req, res));
+routes.post('/api/v1/operations/dead-letter-events/:id/reprocess', verificarAccessTokenV1, requireRoles(['ADMIN', 'OPERATOR']), (req, res) => operationsController.reprocessDeadLetterEvent(req, res));
 routes.post('/api/v1/integrations/logidesk/ticket-updates', (req, res) => operationsController.receiveLogideskTicketUpdate(req, res));
 
 // ==========================================
