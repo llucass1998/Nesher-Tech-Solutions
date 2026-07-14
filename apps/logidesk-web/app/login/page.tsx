@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { storeIdentitySession } from '@/src/lib/session';
 
 type LoginResponse = {
   user: {
@@ -41,9 +42,7 @@ export default function LoginPage() {
       }
 
       const data = (await response.json()) as LoginResponse;
-      window.sessionStorage.setItem('logiidentity.accessToken', data.accessToken);
-      window.sessionStorage.setItem('logidesk.accessToken', data.accessToken);
-      window.sessionStorage.setItem('logidesk.user', JSON.stringify(data.user));
+      storeIdentitySession(data);
       router.push('/');
       router.refresh();
     } catch (loginError) {

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { io } from 'socket.io-client';
 import type { Socket } from 'socket.io-client';
+import { getSessionAccessToken } from '@/src/lib/session';
 
 type TicketEvent = {
   eventName: string;
@@ -23,7 +24,6 @@ type JoinResponse = {
 };
 
 const API_URL = process.env.NEXT_PUBLIC_LOGIDESK_API_URL ?? 'http://localhost:3533/api/v1';
-const SESSION_TOKEN_KEYS = ['logiidentity.accessToken', 'logidesk.accessToken'];
 
 export function TicketRealtimePanel({ ticketId }: { ticketId: string }) {
   const [status, setStatus] = useState('Aguardando token de sessao');
@@ -31,36 +31,44 @@ export function TicketRealtimePanel({ ticketId }: { ticketId: string }) {
   const socketUrl = useMemo(() => API_URL.replace(/\/api\/v1\/?$/, ''), []);
 
   useEffect(() => {
-    const token = readSessionToken();
+    let active = true;
+    let socket: Socket | null = null;
 
-    if (!token) {
-      return undefined;
+    async function connect() {
+      const token = await getSessionAccessToken();
+
+      if (!active || !token) {
+        return;
+      }
+
+      socket = io(socketUrl, {
+        path: '/socket.io',
+        auth: { token },
+        withCredentials: true,
+        transports: ['websocket', 'polling'],
+      });
+
+      const registerEvent = (eventName: string) => (payload: Omit<TicketEvent, 'eventName'>) => {
+        setEvents((current) => [{ ...payload, eventName }, ...current].slice(0, 8));
+      };
+
+      socket.on('connect', () => {
+        socket?.emit('ticket:join', { ticketId }, (response: JoinResponse) => {
+          setStatus(response.ok ? `Conectado em ${response.room}` : `Sem acesso realtime: ${response.error ?? 'ACCESS_DENIED'}`);
+        });
+      });
+      socket.on('connect_error', () => setStatus('Tempo real indisponivel'));
+      socket.on('ticket:created', registerEvent('ticket:created'));
+      socket.on('ticket:updated', registerEvent('ticket:updated'));
+      socket.on('ticket:assigned', registerEvent('ticket:assigned'));
+      socket.on('ticket:message:created', registerEvent('ticket:message:created'));
     }
 
-    const socket: Socket = io(socketUrl, {
-      path: '/socket.io',
-      auth: { token },
-      withCredentials: true,
-      transports: ['websocket', 'polling'],
-    });
-
-    const registerEvent = (eventName: string) => (payload: Omit<TicketEvent, 'eventName'>) => {
-      setEvents((current) => [{ ...payload, eventName }, ...current].slice(0, 8));
-    };
-
-    socket.on('connect', () => {
-      socket.emit('ticket:join', { ticketId }, (response: JoinResponse) => {
-        setStatus(response.ok ? `Conectado em ${response.room}` : `Sem acesso realtime: ${response.error ?? 'ACCESS_DENIED'}`);
-      });
-    });
-    socket.on('connect_error', () => setStatus('Tempo real indisponivel'));
-    socket.on('ticket:created', registerEvent('ticket:created'));
-    socket.on('ticket:updated', registerEvent('ticket:updated'));
-    socket.on('ticket:assigned', registerEvent('ticket:assigned'));
-    socket.on('ticket:message:created', registerEvent('ticket:message:created'));
+    void connect();
 
     return () => {
-      socket.disconnect();
+      active = false;
+      socket?.disconnect();
     };
   }, [socketUrl, ticketId]);
 
@@ -86,18 +94,6 @@ export function TicketRealtimePanel({ ticketId }: { ticketId: string }) {
       )}
     </section>
   );
-}
-
-function readSessionToken() {
-  for (const key of SESSION_TOKEN_KEYS) {
-    const value = window.sessionStorage.getItem(key);
-
-    if (value) {
-      return value;
-    }
-  }
-
-  return null;
 }
 
 const panelStyle: CSSProperties = { border: '1px solid var(--desk-border)', borderRadius: 8, background: 'var(--desk-surface)', padding: 20 };

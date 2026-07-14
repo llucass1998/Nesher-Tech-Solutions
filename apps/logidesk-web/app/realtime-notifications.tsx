@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { io } from 'socket.io-client';
 import type { Socket } from 'socket.io-client';
+import { getSessionAccessToken } from '@/src/lib/session';
 
 type NotificationPayload = {
   id: string;
@@ -20,7 +21,6 @@ type NotificationPayload = {
 type ConnectionState = 'idle' | 'connecting' | 'connected' | 'error';
 
 const API_URL = process.env.NEXT_PUBLIC_LOGIDESK_API_URL ?? 'http://localhost:3533/api/v1';
-const SESSION_TOKEN_KEYS = ['logiidentity.accessToken', 'logidesk.accessToken'];
 
 export function RealtimeNotifications() {
   const [connectionState, setConnectionState] = useState<ConnectionState>('idle');
@@ -29,37 +29,45 @@ export function RealtimeNotifications() {
   const socketUrl = useMemo(() => API_URL.replace(/\/api\/v1\/?$/, ''), []);
 
   useEffect(() => {
-    const token = readSessionToken();
+    let socket: Socket | null = null;
+    let active = true;
 
-    if (!token) {
-      return undefined;
+    async function connect() {
+      const token = await getSessionAccessToken();
+
+      if (!active || !token) {
+        return;
+      }
+
+      socket = io(socketUrl, {
+        path: '/socket.io',
+        auth: { token },
+        withCredentials: true,
+        transports: ['websocket', 'polling'],
+      });
+
+      socket.on('connect', () => {
+        setConnectionState('connected');
+      });
+
+      socket.on('connect_error', () => {
+        setConnectionState('error');
+      });
+
+      socket.on('disconnect', () => {
+        setConnectionState('idle');
+      });
+
+      socket.on('notification:created', (notification: NotificationPayload) => {
+        setNotifications((current) => [notification, ...current.filter((item) => item.id !== notification.id)].slice(0, 5));
+      });
     }
 
-    const socket: Socket = io(socketUrl, {
-      path: '/socket.io',
-      auth: { token },
-      withCredentials: true,
-      transports: ['websocket', 'polling'],
-    });
-
-    socket.on('connect', () => {
-      setConnectionState('connected');
-    });
-
-    socket.on('connect_error', () => {
-      setConnectionState('error');
-    });
-
-    socket.on('disconnect', () => {
-      setConnectionState('idle');
-    });
-
-    socket.on('notification:created', (notification: NotificationPayload) => {
-      setNotifications((current) => [notification, ...current.filter((item) => item.id !== notification.id)].slice(0, 5));
-    });
+    void connect();
 
     return () => {
-      socket.disconnect();
+      active = false;
+      socket?.disconnect();
     };
   }, [socketUrl]);
 
@@ -81,18 +89,6 @@ export function RealtimeNotifications() {
       ))}
     </aside>
   );
-}
-
-function readSessionToken() {
-  for (const key of SESSION_TOKEN_KEYS) {
-    const value = window.sessionStorage.getItem(key);
-
-    if (value) {
-      return value;
-    }
-  }
-
-  return null;
 }
 
 function statusLabel(state: ConnectionState) {

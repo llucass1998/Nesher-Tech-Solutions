@@ -151,7 +151,7 @@ LogiFlow tem auth v1, ownership de motorista, rotas legadas depreciadas, dashboa
 
 LogiPeople possui fundacoes de organizacao, pessoas, recrutamento, onboarding, ponto, folha preliminar, beneficios, ausencias/ferias e analytics agregado.
 
-LogiDesk possui fundacao operacional com tickets, SLA preliminar, outbox, DLQ, worker, web, login Identity inicial e Socket.IO autenticado com consumo inicial de notificacoes no frontend. Processamento completo de workers, refresh/logout/guardas de rota no frontend e E2E Playwright completo ainda seguem pendentes.
+LogiDesk possui fundacao operacional com tickets, SLA preliminar, outbox, DLQ, worker, web, login/refresh/logout Identity inicial e Socket.IO autenticado com consumo inicial de notificacoes no frontend. Processamento completo de workers, chamadas REST autenticadas no frontend e E2E Playwright completo ainda seguem pendentes.
 
 ## Documentacao
 

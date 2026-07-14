@@ -112,7 +112,9 @@ Fluxo atual:
 3. LogiDesk web guarda o access token em `sessionStorage` como `logiidentity.accessToken` e `logidesk.accessToken`.
 4. Socket.IO usa o access token da sessao para autenticar notificacoes e rooms de ticket.
 
-Ainda pendente: refresh transparente, logout web, redirecionamento centralizado e guardas de rota.
+O web tambem tenta `POST /api/v1/auth/refresh` com `credentials: include` quando nao ha access token em `sessionStorage`. O logout web chama `POST /api/v1/auth/logout`, limpa a sessao local e redireciona para `/login`.
+
+Ainda pendente: interceptador para repetir automaticamente requisicoes REST apos `401` e validacao E2E em browser.
 
 ## Regras
 

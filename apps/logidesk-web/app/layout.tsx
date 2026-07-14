@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { RealtimeNotifications } from './realtime-notifications';
+import { SessionShell } from './session-shell';
 import './globals.css';
 
 export const metadata = {
@@ -44,7 +45,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               <p style={{ margin: 0, color: 'var(--desk-brand)', fontSize: 12, fontWeight: 800, letterSpacing: 1.6, textTransform: 'uppercase' }}>Atendimento integrado</p>
               <p style={{ margin: '4px 0 0', color: 'var(--desk-muted)', fontSize: 14 }}>Tickets, mensagens, notas internas, SLA e eventos vindos do LogiFlow.</p>
             </header>
-            <main style={{ padding: 28 }}>{children}</main>
+            <main style={{ padding: 28 }}>
+              <SessionShell>{children}</SessionShell>
+            </main>
           </div>
         </div>
         <RealtimeNotifications />

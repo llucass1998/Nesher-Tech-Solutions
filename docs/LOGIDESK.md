@@ -59,7 +59,10 @@ SSO web:
 - `/login` autentica contra `NEXT_PUBLIC_IDENTITY_API_URL`.
 - O refresh token continua como cookie HttpOnly emitido pelo Identity.
 - O access token e mantido em `sessionStorage` nas chaves `logiidentity.accessToken` e `logidesk.accessToken`.
-- O token de sessao alimenta Socket.IO e prepara a migracao das chamadas autenticadas.
+- O app tenta refresh usando o cookie HttpOnly quando nao ha access token em memoria de sessao.
+- O logout web revoga o refresh token no Identity, limpa a sessao local e redireciona para `/login`.
+- `SessionShell` exibe um guard visual para rotas operacionais sem sessao.
+- O token de sessao alimenta Socket.IO e prepara a migracao das chamadas REST autenticadas.
 
 Rotas:
 
@@ -185,8 +188,8 @@ A pagina `/settings` tambem lista, cria e desativa equipes, categorias e tags us
 
 ## Limites atuais
 
-- SSO/JWKS basico existe via `GET /api/v1/auth/me`; o web ja possui login Identity inicial, mas refresh transparente e guardas de rota ainda precisam evoluir.
-- Socket.IO autenticado ja existe no backend, valida `ticket:join` por ownership/RBAC e o frontend consome `notification:created` e eventos de ticket quando ha token de sessao; ainda falta refresh transparente, guardas de rota e validacao E2E em browser.
+- SSO/JWKS basico existe via `GET /api/v1/auth/me`; o web ja possui login Identity inicial, refresh por cookie HttpOnly, logout e guard visual de sessao. Ainda falta interceptar chamadas REST com retry apos `401`.
+- Socket.IO autenticado ja existe no backend, valida `ticket:join` por ownership/RBAC e o frontend consome `notification:created` e eventos de ticket quando ha token de sessao ou refresh valido; ainda falta validacao E2E em browser.
 - Preferencias de notificacao existem como persistencia/API/web preliminar e filtram criacao de notificacoes internas por usuario, mas ainda nao filtram entrega em tempo real por usuario autenticado.
 - Catalogos de equipes, categorias e tags ja possuem API e UI administrativa preliminar, mas ainda precisam de RBAC frontend real.
 - Worker LogiDesk despacha eventos com referencia LogiFlow de volta para o LogiFlow e publica espelho operacional em Redis Stream; DLQ do LogiDesk ja pode ser listada e reprocessada pela API, mas ainda falta validacao fim a fim com containers.
