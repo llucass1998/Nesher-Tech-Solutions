@@ -97,7 +97,7 @@ Data: 2026-07-13
 | `npm run logidesk:prisma:generate` | PASS | Prisma Client LogiDesk gerado apos schema operacional. |
 | `npx prisma validate --config apps/logidesk-api/prisma.config.ts` | PASS | Schema LogiDesk valido apos migration de preferencias de notificacao. |
 | `npm run typecheck -w logidesk-api` | PASS | API LogiDesk operacional compila. |
-| `npm run test -w logidesk-api` | PASS | 18 testes passaram, incluindo DLQ/reprocessamento, guardrails de anexos, notificacoes internas, opt-out por preferencia, ciclo de SLA e relatorio agregado. |
+| `npm run test -w logidesk-api` | PASS | 21 testes passaram, incluindo DLQ/reprocessamento, autorizacao DLQ, guardrails de anexos, notificacoes internas, opt-out por preferencia, ciclo de SLA e relatorio agregado. |
 | `npm run typecheck -w logidesk-worker` | PASS | Worker LogiDesk compila com avaliacao automatica de SLA. |
 | `npm run build -w logidesk-worker` | PASS | Build do worker LogiDesk passou com alerta/violacao de SLA. |
 | `npm run typecheck -w logidesk-web` | PASS | Dashboard, relatorios, configuracoes com catalogos e notificacoes LogiDesk compilam. |
