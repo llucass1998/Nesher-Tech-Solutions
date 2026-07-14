@@ -61,7 +61,7 @@ Ainda pendente:
 
 - Remocao definitiva das rotas legadas.
 - Processamento completo de outbox/retry/DLQ nos workers.
-- Socket.IO autenticado no backend do LogiDesk.
+- Socket.IO autenticado no backend do LogiDesk e consumo inicial no LogiDesk web.
 - E2E Playwright completo.
 
 ## LogiPeople
@@ -110,7 +110,7 @@ Implementado:
 Limitacoes:
 
 - SSO/JWKS basico conectado ao LogiIdentity por `GET /api/v1/auth/me`.
-- Socket.IO autenticado ja existe no backend do LogiDesk, mas consumo frontend e processamento completo dos workers ainda precisam evoluir.
+- Socket.IO autenticado ja existe no backend do LogiDesk e o web consome notificacoes quando ha token de sessao, mas SSO frontend, rooms dinamicas e processamento completo dos workers ainda precisam evoluir.
 - E2E completo LogiFlow/LogiDesk ainda nao existe.
 
 ## Infraestrutura

@@ -44,7 +44,7 @@ Banco:
 - Dead-letter table com API administrativa inicial de listagem e reprocessamento.
 - Auditoria.
 - Health checks `GET /api/v1/health/live` e `GET /api/v1/health/ready`.
-- Web com dashboard baseado em relatorio agregado, lista de chamados, Kanban, SLA, relatorios, notificacoes e configuracoes com equipes, categorias e tags.
+- Web com dashboard baseado em relatorio agregado, lista de chamados, Kanban, SLA, relatorios, notificacoes, consumo inicial de Socket.IO e configuracoes com equipes, categorias e tags.
 
 ## API principal
 
@@ -136,7 +136,7 @@ Evento implementado nesta etapa:
 
 - `notification:created`.
 
-O backend ja emite notificacoes persistidas para rooms de usuario, equipe e suporte. Inscricao dinamica em rooms de ticket pelo browser e consumo realtime no frontend ainda precisam evoluir antes de marcar Socket.IO como completo.
+O backend ja emite notificacoes persistidas para rooms de usuario, equipe e suporte. O web possui um client component global que conecta quando encontra token de sessao em `sessionStorage` nas chaves `logiidentity.accessToken` ou `logidesk.accessToken` e exibe notificacoes `notification:created`. Inscricao dinamica em rooms de ticket pelo browser e SSO frontend real ainda precisam evoluir antes de marcar Socket.IO como completo.
 
 `POST /tickets/:id/attachments` registra somente metadados do arquivo:
 
@@ -151,6 +151,8 @@ O backend ja emite notificacoes persistidas para rooms de usuario, equipe e supo
 O endpoint cria historico, auditoria e outbox. A API rejeita URL sem HTTPS, path traversal no nome, MIME fora da allowlist e extensao incompatível com o MIME. Upload binario, object storage, varredura antivirus e politicas de retencao ainda nao estao implementados.
 
 `GET /notifications` aceita filtros `userId`, `teamId` e `unread=true`. `PATCH /notifications/:id/read` marca uma notificacao como lida. Nesta etapa, notificacoes sao criadas automaticamente quando um chamado e atribuido a usuario ou equipe.
+
+A app shell do LogiDesk monta `RealtimeNotifications`, que tenta abrir Socket.IO apenas quando ha token de sessao no navegador. Sem token, o componente fica inativo e nao quebra a navegacao atual.
 
 `GET /reports/summary` retorna agregados operacionais sem dados sensiveis: totais, chamados ativos, chamados sem responsavel, notificacoes nao lidas, distribuicao por status, prioridade, origem e SLA.
 
@@ -169,7 +171,7 @@ A pagina `/settings` tambem lista, cria e desativa equipes, categorias e tags us
 ## Limites atuais
 
 - SSO/JWKS basico existe via `GET /api/v1/auth/me`; frontend SSO completo ainda precisa evoluir.
-- Socket.IO autenticado ja existe no backend e emite `notification:created`; frontend ainda nao consome esses eventos e ainda falta validacao E2E em browser.
+- Socket.IO autenticado ja existe no backend e o frontend consome `notification:created` quando ha token de sessao; ainda falta SSO frontend real, rooms dinamicas de ticket e validacao E2E em browser.
 - Preferencias de notificacao existem como persistencia/API/web preliminar e filtram criacao de notificacoes internas por usuario, mas ainda nao filtram entrega em tempo real por usuario autenticado.
 - Catalogos de equipes, categorias e tags ja possuem API e UI administrativa preliminar, mas ainda precisam de RBAC frontend real.
 - Worker LogiDesk despacha eventos com referencia LogiFlow de volta para o LogiFlow e publica espelho operacional em Redis Stream; DLQ do LogiDesk ja pode ser listada e reprocessada pela API, mas ainda falta validacao fim a fim com containers.
@@ -185,7 +187,8 @@ A pagina `/settings` tambem lista, cria e desativa equipes, categorias e tags us
 - `npm run typecheck -w logidesk-worker`: PASS.
 - `npm run build -w logidesk-worker`: PASS.
 - `npm run typecheck -w logidesk-web`: PASS.
-- `npm run build -w logidesk-web`: PASS, incluindo `/reports`.
+- `npm run lint -w logidesk-web`: PASS apos consumo inicial de Socket.IO.
+- `npm run build -w logidesk-web`: PASS, incluindo consumo inicial de Socket.IO.
 - `npm run lint`: PASS.
 - `npm run typecheck`: PASS.
 - `npm run test:workspaces`: PASS.

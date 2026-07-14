@@ -45,7 +45,8 @@ Data: 2026-07-14
 - Conexoes Socket.IO exigem JWT Identity no `handshake.auth.token` ou no header `Authorization`.
 - O backend cria rooms `user:{userId}`, `role:{role}` e `support` para `SUPPORT`/`ADMIN`.
 - Notificacoes persistidas agora emitem `notification:created` para rooms de usuario, equipe e suporte.
-- Frontend realtime, rooms dinamicas de ticket e E2E em browser continuam pendentes.
+- LogiDesk web agora monta cliente Socket.IO global e exibe `notification:created` quando ha token de sessao em `sessionStorage`.
+- SSO frontend real, rooms dinamicas de ticket e E2E em browser continuam pendentes.
 
 ## Matriz de regressao
 
@@ -110,6 +111,9 @@ Data: 2026-07-14
 | `npm run typecheck` | PASS | Raiz e workspaces compilaram apos a fundacao Socket.IO do LogiDesk. |
 | `npm run test:workspaces` | PASS | Identity, LogiDesk, LogiPeople e contratos passaram; LogiDesk API passou com 23 testes. |
 | `npm run build -w logidesk-api` | PASS | Build TypeScript do LogiDesk API passou apos anexar Socket.IO ao HTTP server. |
+| `npm run typecheck -w logidesk-web` | PASS | LogiDesk web compila com o client component de Socket.IO. |
+| `npm run lint -w logidesk-web` | PASS | Sem erros apos consumo inicial de Socket.IO. |
+| `npm run build -w logidesk-web` | PASS | Next build passou com `RealtimeNotifications`; aviso conhecido de root/lockfiles permanece. |
 | `npm audit --audit-level=high` | PASS | 0 vulnerabilidades. |
 | `docker compose --env-file .env.example build logidesk-api` | PASS | Imagem LogiDesk API construiu com Socket.IO; `npm ci` interno reportou 0 vulnerabilidades. |
 | `npm run typecheck -w logidesk-worker` | PASS | Worker LogiDesk compila com avaliacao automatica de SLA. |

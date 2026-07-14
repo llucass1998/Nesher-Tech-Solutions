@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { RealtimeNotifications } from './realtime-notifications';
 import './globals.css';
 
 export const metadata = {
@@ -45,6 +46,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <main style={{ padding: 28 }}>{children}</main>
           </div>
         </div>
+        <RealtimeNotifications />
       </body>
     </html>
   );

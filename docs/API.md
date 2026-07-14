@@ -182,7 +182,7 @@ Socket.IO:
 - rooms automaticas: `user:{userId}`, `role:{role}` e `support` para `SUPPORT`/`ADMIN`;
 - evento backend atual: `notification:created`.
 
-O consumo realtime pelo frontend ainda nao esta fechado.
+O LogiDesk web consome `notification:created` quando encontra access token em `sessionStorage` nas chaves `logiidentity.accessToken` ou `logidesk.accessToken`. SSO frontend real e rooms dinamicas de ticket ainda estao pendentes.
 
 `GET /dead-letter-events` lista ate 100 eventos em DLQ, ordenados por criacao decrescente. Aceita filtro `correlationId`.
 

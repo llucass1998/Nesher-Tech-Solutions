@@ -12,6 +12,7 @@
     "build": "next build"
   },
   "dependencies": {
-    "@logipeople/event-contracts": "0.1.0"
+    "@logipeople/event-contracts": "0.1.0",
+    "socket.io-client": "^4.8.3"
   }
 }
