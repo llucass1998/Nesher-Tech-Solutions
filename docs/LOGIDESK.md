@@ -1,6 +1,6 @@
 # LogiDesk
 
-Data: 2026-07-13
+Data: 2026-07-14
 
 ## Estado atual
 
@@ -19,9 +19,18 @@ Banco:
 ## Funcionalidades implementadas
 
 - Tickets com numero, status, prioridade, origem e referencias externas do LogiFlow.
+- Criacao manual de tickets operacionais.
 - Criacao idempotente de ticket a partir de ocorrencia do LogiFlow.
 - Mensagens.
 - Notas internas.
+- Edicao de notas internas.
+- Equipes de suporte.
+- Categorias.
+- Tags.
+- Atribuicao, troca de equipe e historico de atribuicoes.
+- Transicoes de status com validacao de maquina de estados.
+- Mudanca de prioridade.
+- Arquivamento/cancelamento.
 - Historico.
 - SLA preliminar por prioridade.
 - Outbox LogiDesk.
@@ -43,11 +52,35 @@ Rotas:
 - `GET /health/live`
 - `GET /health/ready`
 - `GET /tickets`
+- `POST /tickets`
 - `POST /tickets/from-logiflow`
 - `GET /tickets/:id`
+- `GET /tickets/:id/public`
 - `PATCH /tickets/:id`
+- `DELETE /tickets/:id`
+- `PATCH /tickets/:id/status`
+- `PATCH /tickets/:id/priority`
 - `POST /tickets/:id/messages`
 - `POST /tickets/:id/notes`
+- `GET /tickets/:id/internal-notes`
+- `POST /tickets/:id/internal-notes`
+- `PATCH /tickets/:id/internal-notes/:noteId`
+- `POST /tickets/:id/assign`
+- `DELETE /tickets/:id/assign`
+- `POST /tickets/:id/change-team`
+- `GET /tickets/:id/assignments`
+- `GET /teams`
+- `POST /teams`
+- `PATCH /teams/:id`
+- `DELETE /teams/:id`
+- `GET /categories`
+- `POST /categories`
+- `PATCH /categories/:id`
+- `DELETE /categories/:id`
+- `GET /tags`
+- `POST /tags`
+- `PATCH /tags/:id`
+- `DELETE /tags/:id`
 
 `POST /tickets/from-logiflow` exige:
 
@@ -57,11 +90,22 @@ Rotas:
 
 ## Limites atuais
 
-- SSO/JWKS real ainda nao foi conectado ao LogiFlow identity.
+- SSO/JWKS basico existe via `GET /api/v1/auth/me`; frontend SSO completo ainda precisa evoluir.
 - Socket.IO ainda nao esta emitindo eventos para browsers.
-- Worker BullMQ esta estruturado, mas o processamento de outbox ainda e inicial.
+- Worker LogiDesk despacha eventos com referencia LogiFlow de volta para o LogiFlow.
 - E2E Playwright completo LogiFlow -> LogiDesk ainda nao foi criado.
 - SLA e preliminar; calendario comercial, pausas e alertas completos ainda precisam evoluir.
+
+## Validacao recente
+
+- `npm run logidesk:prisma:generate`: PASS.
+- `npm run typecheck -w logidesk-api`: PASS.
+- `npm run test -w logidesk-api`: PASS, 9 testes.
+- `npm run lint`: PASS.
+- `npm run typecheck`: PASS.
+- `npm run test:workspaces`: PASS.
+- `npm run build:workspaces`: PASS.
+- `docker compose build logidesk-migrate logidesk-api logidesk-web`: PASS.
 
 ## Guardrail
 

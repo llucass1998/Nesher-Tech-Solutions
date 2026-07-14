@@ -11,8 +11,10 @@ enum TicketStatus {
   OPEN
   IN_PROGRESS
   WAITING_CUSTOMER
+  WAITING_INTERNAL
   RESOLVED
   CLOSED
+  CANCELED
   REOPENED
 }
 
@@ -47,34 +49,120 @@ enum OutboxStatus {
 }
 
 model Ticket {
-  id              String          @id @default(uuid())
-  number          String          @unique
+  id              String                @id @default(uuid())
+  number          String                @unique
   subject         String
   description     String
-  status          TicketStatus    @default(OPEN)
-  priority        TicketPriority  @default(MEDIUM)
-  source          TicketSource    @default(LOGIDESK)
+  status          TicketStatus          @default(OPEN)
+  priority        TicketPriority        @default(MEDIUM)
+  source          TicketSource          @default(LOGIDESK)
   requesterId     String?
+  requesterName   String?
   requesterEmail  String?
   assigneeId      String?
   teamId          String?
+  team            SupportTeam?          @relation(fields: [teamId], references: [id])
   category        String?
+  categoryId      String?
+  categoryRecord  TicketCategory?       @relation(fields: [categoryId], references: [id])
   externalSystem  String?
   externalId      String?
   deliveryId      String?
   occurrenceId    String?
   correlationId   String
   idempotencyKey  String?
+  canceledAt      DateTime?
+  archivedAt      DateTime?
   messages        TicketMessage[]
   notes           TicketNote[]
   history         TicketHistory[]
+  assignments     TicketAssignment[]
+  tagAssignments  TicketTagAssignment[]
   sla             TicketSla?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
 
   @@unique([externalSystem, externalId])
   @@index([status, priority])
+  @@index([teamId])
+  @@index([categoryId])
   @@index([correlationId])
+}
+
+model SupportTeam {
+  id          String              @id @default(uuid())
+  name        String              @unique
+  description String?
+  isActive    Boolean             @default(true)
+  tickets     Ticket[]
+  members     SupportTeamMember[]
+  assignments TicketAssignment[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+}
+
+model SupportTeamMember {
+  id        String      @id @default(uuid())
+  teamId    String
+  team      SupportTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId    String
+  role      String?
+  isActive  Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@unique([teamId, userId])
+  @@index([userId])
+}
+
+model TicketCategory {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  tickets     Ticket[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model TicketTag {
+  id          String                @id @default(uuid())
+  name        String                @unique
+  description String?
+  color       String?
+  isActive    Boolean               @default(true)
+  tickets     TicketTagAssignment[]
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+}
+
+model TicketTagAssignment {
+  id        String    @id @default(uuid())
+  ticketId  String
+  ticket    Ticket    @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  tagId     String
+  tag       TicketTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+
+  @@unique([ticketId, tagId])
+  @@index([tagId])
+}
+
+model TicketAssignment {
+  id           String       @id @default(uuid())
+  ticketId     String
+  ticket       Ticket       @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  assigneeId   String?
+  assignedById String?
+  teamId       String?
+  team         SupportTeam? @relation(fields: [teamId], references: [id])
+  reason       String?
+  correlationId String
+  createdAt    DateTime     @default(now())
+
+  @@index([ticketId, createdAt])
+  @@index([assigneeId])
+  @@index([teamId])
 }
 
 model TicketMessage {
@@ -92,30 +180,38 @@ model TicketMessage {
 }
 
 model TicketNote {
-  id            String   @id @default(uuid())
+  id            String    @id @default(uuid())
   ticketId      String
-  ticket        Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  ticket        Ticket    @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   authorId      String?
   body          String
   correlationId String
-  createdAt     DateTime @default(now())
+  editedAt      DateTime?
+  editedById    String?
+  createdAt     DateTime  @default(now())
 
   @@index([ticketId, createdAt])
 }
 
 model TicketHistory {
-  id            String   @id @default(uuid())
-  ticketId      String
-  ticket        Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  action        String
-  before        Json?
-  after         Json?
-  actorId       String?
-  actorRole     String?
-  correlationId String
-  createdAt     DateTime @default(now())
+  id             String        @id @default(uuid())
+  ticketId       String
+  ticket         Ticket        @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  action         String
+  before         Json?
+  after          Json?
+  previousStatus TicketStatus?
+  newStatus      TicketStatus?
+  actorId        String?
+  actorRole      String?
+  changedById    String?
+  reason         String?
+  requestId      String?
+  correlationId  String
+  createdAt      DateTime      @default(now())
 
   @@index([ticketId, createdAt])
+  @@index([previousStatus, newStatus])
 }
 
 model SlaPolicy {

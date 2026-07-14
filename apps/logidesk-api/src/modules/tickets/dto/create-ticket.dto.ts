@@ -1,19 +1,25 @@
 import { IsEmail, IsIn, IsOptional, IsString, IsUUID, MinLength } from 'class-validator';
 
-export class UpdateTicketDto {
-  @IsOptional()
+export class CreateTicketDto {
   @IsString()
   @MinLength(3)
-  subject?: string;
+  subject!: string;
 
-  @IsOptional()
   @IsString()
   @MinLength(3)
-  description?: string;
+  description!: string;
 
   @IsOptional()
   @IsIn(['LOW', 'MEDIUM', 'HIGH', 'URGENT'])
   priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+
+  @IsOptional()
+  @IsIn(['LOGIDESK', 'EMAIL', 'API'])
+  source?: 'LOGIDESK' | 'EMAIL' | 'API';
+
+  @IsOptional()
+  @IsString()
+  requesterId?: string;
 
   @IsOptional()
   @IsString()
@@ -43,9 +49,8 @@ export class UpdateTicketDto {
   @IsUUID(undefined, { each: true })
   tagIds?: string[];
 
-  @IsOptional()
   @IsUUID()
-  correlationId?: string;
+  correlationId!: string;
 
   @IsOptional()
   @IsString()

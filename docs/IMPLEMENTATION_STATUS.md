@@ -28,6 +28,7 @@ Data: 2026-07-13
 | Plataforma Fase 6 - Migrar auth LogiDesk | Parcial com SSO basico | `GET /api/v1/auth/me` valida token Identity; frontend SSO completo ainda pendente. |
 | Plataforma Fase 7 - Contratos e eventos | Implementada no pacote compartilhado | `packages/event-contracts` consolidado com envelope, eventos namespaced, payloads estritos e testes de contrato. Produtores/consumidores ainda precisam migrar dos nomes legados. |
 | Plataforma Fase 8 - Integração LogiFlow -> LogiDesk | Parcial implementada | `logiflow-worker` despacha Outbox HTTP para LogiDesk; `logidesk-worker` retorna eventos com `occurrenceId` para LogiFlow. Redis Streams, E2E e backoff progressivo ainda pendentes. |
+| Plataforma Fase 9 - LogiDesk operacional ampliado | Implementada no escopo atual | Tickets manuais, status/priority, equipes, categorias, tags, atribuições, notas internas editáveis, arquivamento e migrations LogiDesk validados. |
 
 ## Matriz de regressao
 
@@ -84,6 +85,10 @@ Data: 2026-07-13
 | `npm run build -w logidesk-worker` | PASS | Build do worker LogiDesk passou. |
 | `npm test -- src/__tests__/logiflow-operations-v1.test.ts` | PASS | 11 testes; inclui callback LogiDesk -> LogiFlow protegido por token de servico. |
 | `docker compose build logidesk-worker` | PASS | Imagem do worker com retorno para LogiFlow construiu. |
+| `npm run logidesk:prisma:generate` | PASS | Prisma Client LogiDesk gerado apos schema operacional. |
+| `npm run typecheck -w logidesk-api` | PASS | API LogiDesk operacional compila. |
+| `npm run test -w logidesk-api` | PASS | 9 testes passaram. |
+| `docker compose build logidesk-migrate logidesk-api logidesk-web` | PASS | Imagens LogiDesk API/web/migrate construidas. |
 
 ### Validacoes da Fase 5
 

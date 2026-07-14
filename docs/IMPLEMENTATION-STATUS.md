@@ -42,6 +42,7 @@ Phases 1-14 are in scope:
 | LogiDesk Identity validation | Partially implemented | LogiDesk exposes `GET /api/v1/auth/me` backed by Identity JWKS. Full frontend SSO remains pending. |
 | Platform event contracts | Implemented in shared package | `packages/event-contracts` now defines the strict versioned event envelope and namespaced events for LogiFlow, LogiDesk, LogiPeople and LogiPayroll. Runtime producers/consumers still need migration from legacy names. |
 | LogiFlow and LogiDesk dispatch | Partially implemented | `logiflow-worker` dispatches LogiFlow outbox records to LogiDesk. `logidesk-worker` dispatches ticket events with LogiFlow references back to LogiFlow. Redis Streams, progressive backoff and E2E remain pending. |
+| LogiDesk operational expansion | Implemented in current scope | Manual tickets, status and priority changes, teams, categories, tags, assignments, editable internal notes, archive/cancel actions and database migration are implemented and validated. |
 
 ## Identity validation evidence
 
@@ -61,6 +62,10 @@ Phases 1-14 are in scope:
 | `npm run build -w logidesk-worker` | PASS | LogiDesk worker build passed. |
 | `npm test -- src/__tests__/logiflow-operations-v1.test.ts` | PASS | 11 tests, including service-token callback from LogiDesk to LogiFlow. |
 | `docker compose build logidesk-worker` | PASS | LogiDesk worker Docker image built. |
+| `npm run logidesk:prisma:generate` | PASS | LogiDesk Prisma Client generated after operational schema. |
+| `npm run typecheck -w logidesk-api` | PASS | LogiDesk API compiles. |
+| `npm run test -w logidesk-api` | PASS | 9 tests passed. |
+| `docker compose build logidesk-migrate logidesk-api logidesk-web` | PASS | LogiDesk images built. |
 
 ## Explicitly not complete
 

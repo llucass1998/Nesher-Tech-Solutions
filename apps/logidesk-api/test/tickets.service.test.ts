@@ -1,47 +1,139 @@
-import { ConflictException } from '@nestjs/common';
+import { ConflictException, UnprocessableEntityException } from '@nestjs/common';
 import { describe, expect, it, vi } from 'vitest';
 import { TicketsService } from '../src/modules/tickets/tickets.service';
 
+const ticketRecord = {
+  id: 'ticket-1',
+  number: 'LD-000001',
+  subject: 'Entrega com atraso',
+  description: 'Motorista reportou bloqueio na doca.',
+  status: 'OPEN',
+  priority: 'HIGH',
+  source: 'LOGIFLOW',
+  requesterId: null,
+  requesterName: null,
+  requesterEmail: 'cliente@empresa.com',
+  assigneeId: null,
+  teamId: null,
+  category: null,
+  categoryId: null,
+  externalSystem: 'LOGIFLOW',
+  externalId: '33333333-3333-4333-8333-333333333333',
+  deliveryId: '22222222-2222-4222-8222-222222222222',
+  occurrenceId: '33333333-3333-4333-8333-333333333333',
+  correlationId: '11111111-1111-4111-8111-111111111111',
+  idempotencyKey: 'idem-1',
+  canceledAt: null,
+  archivedAt: null,
+  createdAt: new Date('2026-07-13T00:00:00.000Z'),
+  updatedAt: new Date('2026-07-13T00:00:00.000Z'),
+  messages: [],
+  notes: [],
+  history: [],
+  assignments: [],
+  tagAssignments: [],
+  team: null,
+  categoryRecord: null,
+  sla: null,
+};
+
 function createTicketsService() {
   const ticketCount = vi.fn().mockResolvedValue(0);
+  const ticketFindMany = vi.fn().mockResolvedValue([ticketRecord]);
   const ticketFindUnique = vi.fn().mockResolvedValue(null);
-  const ticketCreate = vi.fn().mockResolvedValue({
-    id: 'ticket-1',
-    number: 'LD-000001',
-    status: 'OPEN',
-    priority: 'HIGH',
-    correlationId: '11111111-1111-4111-8111-111111111111',
-  });
+  const ticketCreate = vi.fn().mockResolvedValue(ticketRecord);
+  const ticketUpdate = vi.fn().mockImplementation(({ data }) => Promise.resolve({ ...ticketRecord, ...data }));
+  const ticketSlaCreate = vi.fn().mockResolvedValue({});
+  const ticketHistoryCreate = vi.fn().mockResolvedValue({});
+  const ticketAssignmentCreate = vi.fn().mockResolvedValue({});
+  const ticketAssignmentFindMany = vi.fn().mockResolvedValue([]);
+  const ticketTagAssignmentCreateMany = vi.fn().mockResolvedValue({ count: 1 });
+  const ticketTagAssignmentDeleteMany = vi.fn().mockResolvedValue({ count: 1 });
   const idempotencyFindUnique = vi.fn().mockResolvedValue(null);
   const idempotencyUpsert = vi.fn().mockResolvedValue({});
   const outboxCreate = vi.fn().mockResolvedValue({});
   const auditCreate = vi.fn().mockResolvedValue({});
+  const ticketMessageCreate = vi.fn().mockResolvedValue({
+    id: 'message-1',
+    ticketId: 'ticket-1',
+    body: 'Mensagem publica',
+    internal: false,
+    correlationId: input.correlationId,
+  });
+  const ticketNoteCreate = vi.fn().mockResolvedValue({
+    id: 'note-1',
+    ticketId: 'ticket-1',
+    body: 'Nota interna',
+    correlationId: input.correlationId,
+  });
+  const ticketNoteFindMany = vi.fn().mockResolvedValue([]);
+  const ticketNoteFindFirst = vi.fn().mockResolvedValue({ id: 'note-1', ticketId: 'ticket-1', body: 'Nota interna' });
+  const ticketNoteUpdate = vi.fn().mockResolvedValue({ id: 'note-1', ticketId: 'ticket-1', body: 'Nota editada' });
+  const supportTeamCreate = vi.fn().mockResolvedValue({ id: 'team-1', name: 'Operacoes', isActive: true });
+  const supportTeamFindMany = vi.fn().mockResolvedValue([]);
+  const supportTeamFindUnique = vi.fn().mockResolvedValue({ id: 'team-1', name: 'Operacoes' });
+  const supportTeamUpdate = vi.fn().mockResolvedValue({ id: 'team-1', name: 'Operacoes', isActive: false });
+  const ticketCategoryCreate = vi.fn().mockResolvedValue({ id: 'category-1', name: 'Entrega', isActive: true });
+  const ticketCategoryFindMany = vi.fn().mockResolvedValue([]);
+  const ticketCategoryFindUnique = vi.fn().mockResolvedValue({ id: 'category-1', name: 'Entrega' });
+  const ticketCategoryUpdate = vi.fn().mockResolvedValue({ id: 'category-1', name: 'Entrega', isActive: false });
+  const ticketTagCreate = vi.fn().mockResolvedValue({ id: 'tag-1', name: 'SLA', isActive: true });
+  const ticketTagFindMany = vi.fn().mockResolvedValue([]);
+  const ticketTagFindUnique = vi.fn().mockResolvedValue({ id: 'tag-1', name: 'SLA' });
+  const ticketTagUpdate = vi.fn().mockResolvedValue({ id: 'tag-1', name: 'SLA', isActive: false });
 
   const tx = {
-    ticket: { create: ticketCreate },
+    ticket: { create: ticketCreate, update: ticketUpdate },
+    ticketSla: { create: ticketSlaCreate },
+    ticketHistory: { create: ticketHistoryCreate },
+    ticketAssignment: { create: ticketAssignmentCreate },
+    ticketTagAssignment: { createMany: ticketTagAssignmentCreateMany, deleteMany: ticketTagAssignmentDeleteMany },
     idempotencyRecord: { upsert: idempotencyUpsert },
     outboxEvent: { create: outboxCreate },
     auditLog: { create: auditCreate },
+    ticketMessage: { create: ticketMessageCreate },
+    ticketNote: { create: ticketNoteCreate, update: ticketNoteUpdate },
   };
 
   const prisma = {
     ticket: {
       count: ticketCount,
-      findMany: vi.fn(),
+      findMany: ticketFindMany,
       findUnique: ticketFindUnique,
-      update: vi.fn(),
+      create: ticketCreate,
+      update: ticketUpdate,
     },
-    idempotencyRecord: {
-      findUnique: idempotencyFindUnique,
-    },
-    outboxEvent: {
-      create: vi.fn(),
-    },
-    ticketMessage: {
-      create: vi.fn(),
-    },
+    ticketSla: { create: ticketSlaCreate },
+    ticketHistory: { create: ticketHistoryCreate },
+    ticketAssignment: { create: ticketAssignmentCreate, findMany: ticketAssignmentFindMany },
+    ticketTagAssignment: { createMany: ticketTagAssignmentCreateMany, deleteMany: ticketTagAssignmentDeleteMany },
+    idempotencyRecord: { findUnique: idempotencyFindUnique },
+    outboxEvent: { create: outboxCreate },
+    auditLog: { create: auditCreate },
+    ticketMessage: { create: ticketMessageCreate },
     ticketNote: {
-      create: vi.fn(),
+      create: ticketNoteCreate,
+      findMany: ticketNoteFindMany,
+      findFirst: ticketNoteFindFirst,
+      update: ticketNoteUpdate,
+    },
+    supportTeam: {
+      create: supportTeamCreate,
+      findMany: supportTeamFindMany,
+      findUnique: supportTeamFindUnique,
+      update: supportTeamUpdate,
+    },
+    ticketCategory: {
+      create: ticketCategoryCreate,
+      findMany: ticketCategoryFindMany,
+      findUnique: ticketCategoryFindUnique,
+      update: ticketCategoryUpdate,
+    },
+    ticketTag: {
+      create: ticketTagCreate,
+      findMany: ticketTagFindMany,
+      findUnique: ticketTagFindUnique,
+      update: ticketTagUpdate,
     },
     $transaction: vi.fn((callback: (client: typeof tx) => unknown) => callback(tx)),
   };
@@ -50,12 +142,25 @@ function createTicketsService() {
     service: new TicketsService(prisma as never),
     prisma,
     ticketCount,
+    ticketFindMany,
     ticketFindUnique,
     ticketCreate,
+    ticketUpdate,
+    ticketSlaCreate,
+    ticketHistoryCreate,
+    ticketAssignmentCreate,
+    ticketTagAssignmentCreateMany,
     idempotencyFindUnique,
     idempotencyUpsert,
     outboxCreate,
     auditCreate,
+    ticketMessageCreate,
+    ticketNoteCreate,
+    ticketNoteFindMany,
+    ticketNoteUpdate,
+    supportTeamCreate,
+    ticketCategoryCreate,
+    ticketTagCreate,
   };
 }
 
@@ -67,6 +172,20 @@ const input = {
   priority: 'HIGH' as const,
   requesterEmail: 'cliente@empresa.com',
   correlationId: '11111111-1111-4111-8111-111111111111',
+};
+
+const manualTicketInput = {
+  subject: 'Cliente sem comprovante',
+  description: 'Cliente solicitou segunda via do comprovante.',
+  priority: 'MEDIUM' as const,
+  requesterName: 'Maria Cliente',
+  requesterEmail: 'maria@empresa.com',
+  teamId: 'team-1',
+  assigneeId: 'agent-1',
+  categoryId: 'category-1',
+  tagIds: ['tag-1'],
+  correlationId: '44444444-4444-4444-8444-444444444444',
+  actorId: 'agent-1',
 };
 
 describe('TicketsService', () => {
@@ -133,5 +252,110 @@ describe('TicketsService', () => {
     });
 
     await expect(context.service.createFromLogiflow(input, 'idem-1')).rejects.toThrow(ConflictException);
+  });
+
+  it('creates a manual operational ticket with SLA, assignment, tags, history, audit and outbox', async () => {
+    const context = createTicketsService();
+
+    await expect(context.service.createTicket(manualTicketInput)).resolves.toMatchObject({ id: 'ticket-1' });
+
+    expect(context.ticketCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          source: 'LOGIDESK',
+          requesterName: 'Maria Cliente',
+          teamId: 'team-1',
+          assigneeId: 'agent-1',
+          categoryId: 'category-1',
+        }),
+      }),
+    );
+    expect(context.ticketSlaCreate).toHaveBeenCalled();
+    expect(context.ticketAssignmentCreate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ assigneeId: 'agent-1' }) }));
+    expect(context.ticketTagAssignmentCreateMany).toHaveBeenCalledWith(expect.objectContaining({ data: [{ ticketId: 'ticket-1', tagId: 'tag-1' }] }));
+    expect(context.ticketHistoryCreate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ action: 'ticket.created' }) }));
+    expect(context.auditCreate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ action: 'ticket.created' }) }));
+    expect(context.outboxCreate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ eventType: 'ticket.created' }) }));
+  });
+
+  it('lists, details and updates tickets without exposing internal messages as public messages', async () => {
+    const context = createTicketsService();
+    const publicTicketRecord = { ...ticketRecord } as Partial<typeof ticketRecord>;
+    delete publicTicketRecord.notes;
+    context.ticketFindUnique
+      .mockResolvedValueOnce({ ...ticketRecord, messages: [{ id: 'message-public', internal: false }], notes: [{ id: 'note-1' }] })
+      .mockResolvedValueOnce({ ...publicTicketRecord, messages: [{ id: 'message-public', internal: false }] })
+      .mockResolvedValueOnce(ticketRecord);
+
+    await expect(context.service.listTickets({ status: 'OPEN', priority: 'HIGH', search: 'Entrega' })).resolves.toHaveLength(1);
+    await expect(context.service.getTicket('ticket-1')).resolves.toMatchObject({ id: 'ticket-1', notes: [{ id: 'note-1' }] });
+    await expect(context.service.getPublicTicket('ticket-1')).resolves.not.toHaveProperty('notes');
+    await expect(context.service.updateTicket('ticket-1', { priority: 'URGENT', correlationId: input.correlationId })).resolves.toMatchObject({ priority: 'URGENT' });
+
+    expect(context.ticketUpdate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ priority: 'URGENT' }) }));
+    expect(context.ticketHistoryCreate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ action: 'ticket.updated' }) }));
+  });
+
+  it('enforces ticket status transition rules and records valid status changes', async () => {
+    const context = createTicketsService();
+    context.ticketFindUnique.mockResolvedValue({ ...ticketRecord, status: 'OPEN' });
+
+    await expect(context.service.changeStatus('ticket-1', { status: 'RESOLVED', correlationId: input.correlationId })).rejects.toThrow(UnprocessableEntityException);
+    await expect(context.service.changeStatus('ticket-1', { status: 'IN_PROGRESS', correlationId: input.correlationId, reason: 'Inicio do atendimento' })).resolves.toMatchObject({ status: 'IN_PROGRESS' });
+
+    expect(context.ticketHistoryCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: 'ticket.status_changed',
+          previousStatus: 'OPEN',
+          newStatus: 'IN_PROGRESS',
+        }),
+      }),
+    );
+  });
+
+  it('changes priority, assignment, team and unassignment with history and outbox', async () => {
+    const context = createTicketsService();
+    context.ticketFindUnique.mockResolvedValue({ ...ticketRecord, status: 'IN_PROGRESS', assigneeId: 'old-agent', teamId: 'old-team' });
+
+    await context.service.changePriority('ticket-1', { priority: 'URGENT', correlationId: input.correlationId, reason: 'SLA critico' });
+    await context.service.assignTicket('ticket-1', { assigneeId: 'agent-2', assignedById: 'lead-1', teamId: 'team-1', correlationId: input.correlationId });
+    await context.service.changeTeam('ticket-1', { teamId: 'team-2', assignedById: 'lead-1', correlationId: input.correlationId });
+    await context.service.unassignTicket('ticket-1', { assignedById: 'lead-1', correlationId: input.correlationId });
+
+    expect(context.ticketHistoryCreate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ action: 'ticket.priority_changed' }) }));
+    expect(context.ticketHistoryCreate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ action: 'ticket.assigned' }) }));
+    expect(context.ticketHistoryCreate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ action: 'ticket.team_changed' }) }));
+    expect(context.ticketHistoryCreate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ action: 'ticket.unassigned' }) }));
+    expect(context.outboxCreate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ eventType: 'ticket.priority_changed' }) }));
+  });
+
+  it('creates and edits internal notes without adding them to public ticket messages', async () => {
+    const context = createTicketsService();
+    context.ticketFindUnique.mockResolvedValue(ticketRecord);
+
+    await context.service.createNote('ticket-1', { body: 'Nota interna', authorRole: 'SUPPORT', authorId: 'agent-1', correlationId: input.correlationId });
+    await context.service.updateInternalNote('ticket-1', 'note-1', { body: 'Nota editada', editedById: 'agent-2', correlationId: input.correlationId });
+    await context.service.listInternalNotes('ticket-1');
+
+    expect(context.ticketNoteCreate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ body: 'Nota interna' }) }));
+    expect(context.ticketNoteUpdate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ body: 'Nota editada' }) }));
+    expect(context.ticketMessageCreate).not.toHaveBeenCalled();
+  });
+
+  it('creates and deactivates support teams, categories and tags with audit', async () => {
+    const context = createTicketsService();
+
+    await context.service.createTeam({ name: 'Operacoes', correlationId: input.correlationId });
+    await context.service.createCategory({ name: 'Entrega', correlationId: input.correlationId });
+    await context.service.createTag({ name: 'SLA', color: '#f97316', correlationId: input.correlationId });
+    await context.service.deleteTeam('team-1', { correlationId: input.correlationId });
+    await context.service.deleteCategory('category-1', { correlationId: input.correlationId });
+    await context.service.deleteTag('tag-1', { correlationId: input.correlationId });
+
+    expect(context.supportTeamCreate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ name: 'Operacoes' }) }));
+    expect(context.ticketCategoryCreate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ name: 'Entrega' }) }));
+    expect(context.ticketTagCreate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ name: 'SLA' }) }));
+    expect(context.auditCreate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ action: 'ticket_tag.deactivated' }) }));
   });
 });

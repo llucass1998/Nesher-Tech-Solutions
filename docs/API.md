@@ -123,11 +123,29 @@ Base local: `http://localhost:3533/api/v1`.
 - `GET /health/live`
 - `GET /health/ready`
 - `GET /tickets`
+- `POST /tickets`
 - `POST /tickets/from-logiflow`
 - `GET /tickets/:id`
+- `GET /tickets/:id/public`
 - `PATCH /tickets/:id`
+- `DELETE /tickets/:id`
+- `PATCH /tickets/:id/status`
+- `PATCH /tickets/:id/priority`
 - `POST /tickets/:id/messages`
 - `POST /tickets/:id/notes`
+- `GET /tickets/:id/internal-notes`
+- `POST /tickets/:id/internal-notes`
+- `PATCH /tickets/:id/internal-notes/:noteId`
+- `POST /tickets/:id/assign`
+- `DELETE /tickets/:id/assign`
+- `POST /tickets/:id/change-team`
+- `GET /tickets/:id/assignments`
+- `GET/POST /teams`
+- `PATCH/DELETE /teams/:id`
+- `GET/POST /categories`
+- `PATCH/DELETE /categories/:id`
+- `GET/POST /tags`
+- `PATCH/DELETE /tags/:id`
 
 `POST /tickets/from-logiflow` exige headers:
 
