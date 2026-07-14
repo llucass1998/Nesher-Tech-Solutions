@@ -34,6 +34,8 @@ Banco:
 - Arquivamento/cancelamento.
 - Notificacoes internas para atribuicao de chamados.
 - Preferencias preliminares de notificacao por usuario operacional.
+- Socket.IO autenticado por JWT Identity no backend.
+- Emissao inicial de `notification:created` para usuarios, equipes e suporte.
 - Historico.
 - SLA por prioridade com primeira resposta, pausa, retomada e conclusao operacional.
 - Worker de SLA para alerta e violacao automaticos.
@@ -104,6 +106,38 @@ Rotas:
 
 As rotas administrativas de DLQ aceitam `x-service-token` ou JWT Identity com role `ADMIN`/`SUPPORT`.
 
+## Socket.IO
+
+Endpoint:
+
+```text
+ws://localhost:3533/socket.io
+```
+
+A conexao exige token Identity no handshake:
+
+- `auth.token` com JWT ou `Bearer <jwt>`;
+- ou header `Authorization`.
+
+Rooms criadas automaticamente no backend:
+
+- `user:{userId}`;
+- `role:{role}`;
+- `support` para roles `SUPPORT` e `ADMIN`.
+
+Rooms usadas para emissao:
+
+- `user:{userId}`;
+- `team:{teamId}`;
+- `ticket:{ticketId}`;
+- `support`.
+
+Evento implementado nesta etapa:
+
+- `notification:created`.
+
+O backend ja emite notificacoes persistidas para rooms de usuario, equipe e suporte. Inscricao dinamica em rooms de ticket pelo browser e consumo realtime no frontend ainda precisam evoluir antes de marcar Socket.IO como completo.
+
 `POST /tickets/:id/attachments` registra somente metadados do arquivo:
 
 - `fileName`
@@ -135,7 +169,7 @@ A pagina `/settings` tambem lista, cria e desativa equipes, categorias e tags us
 ## Limites atuais
 
 - SSO/JWKS basico existe via `GET /api/v1/auth/me`; frontend SSO completo ainda precisa evoluir.
-- Socket.IO ainda nao esta emitindo eventos para browsers.
+- Socket.IO autenticado ja existe no backend e emite `notification:created`; frontend ainda nao consome esses eventos e ainda falta validacao E2E em browser.
 - Preferencias de notificacao existem como persistencia/API/web preliminar e filtram criacao de notificacoes internas por usuario, mas ainda nao filtram entrega em tempo real por usuario autenticado.
 - Catalogos de equipes, categorias e tags ja possuem API e UI administrativa preliminar, mas ainda precisam de RBAC frontend real.
 - Worker LogiDesk despacha eventos com referencia LogiFlow de volta para o LogiFlow e publica espelho operacional em Redis Stream; DLQ do LogiDesk ja pode ser listada e reprocessada pela API, mas ainda falta validacao fim a fim com containers.
@@ -147,7 +181,7 @@ A pagina `/settings` tambem lista, cria e desativa equipes, categorias e tags us
 - `npm run logidesk:prisma:generate`: PASS.
 - `npx prisma validate --config apps/logidesk-api/prisma.config.ts`: PASS.
 - `npm run typecheck -w logidesk-api`: PASS.
-- `npm run test -w logidesk-api`: PASS, 18 testes.
+- `npm run test -w logidesk-api`: PASS, 23 testes.
 - `npm run typecheck -w logidesk-worker`: PASS.
 - `npm run build -w logidesk-worker`: PASS.
 - `npm run typecheck -w logidesk-web`: PASS.

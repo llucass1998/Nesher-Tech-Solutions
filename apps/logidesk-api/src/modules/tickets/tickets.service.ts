@@ -1,7 +1,8 @@
-import { ConflictException, Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException, Optional, UnprocessableEntityException } from '@nestjs/common';
 import { createHash, randomUUID } from 'crypto';
 import { NotificationPreference, Prisma, TicketPriority, TicketStatus } from '../../generated/prisma';
 import { PrismaService } from '../../prisma/prisma.service';
+import { RealtimeService } from '../realtime/realtime.service';
 import { AssignTicketDto } from './dto/assign-ticket.dto';
 import { ChangeTicketPriorityDto } from './dto/change-ticket-priority.dto';
 import { ChangeTicketStatusDto } from './dto/change-ticket-status.dto';
@@ -76,7 +77,10 @@ type AuditInput = {
 
 @Injectable()
 export class TicketsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly realtime?: RealtimeService,
+  ) {}
 
   listTickets(filters: { status?: string; priority?: string; search?: string }) {
     const where: Prisma.TicketWhereInput = {
@@ -1186,7 +1190,7 @@ export class TicketsService {
       }
     }
 
-    return tx.notification.create({
+    const notification = await tx.notification.create({
       data: {
         type: input.type,
         title: input.title,
@@ -1197,6 +1201,8 @@ export class TicketsService {
         ...(input.teamId ? { teamId: input.teamId } : {}),
       },
     });
+    this.realtime?.emitNotification(notification);
+    return notification;
   }
 
   private notificationPreferenceData(input: UpdateNotificationPreferenceDto) {

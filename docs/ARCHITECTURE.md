@@ -126,7 +126,7 @@ Workflows:
 
 - Extrair regras de controllers LogiFlow para services/use cases.
 - Migrar consumidores antigos para Identity e remover autenticacao duplicada somente apos validacao.
-- Completar o LogiDesk empresarial: equipes, SLA completo, mensagens, notas internas, anexos, relatorios e Socket.IO.
+- Completar o LogiDesk empresarial: SLA completo, anexos binarios, relatorios avancados e consumo Socket.IO no frontend.
 - Completar processamento de Outbox, Redis/BullMQ, DLQ e reprocessamento distribuido.
-- Adicionar Socket.IO autenticado.
+- Expandir Socket.IO autenticado para rooms dinamicas de ticket e clientes web.
 - Cobrir E2E completo com Playwright.

@@ -175,6 +175,15 @@ As rotas administrativas de DLQ aceitam `x-service-token` ou JWT Identity com ro
 
 `GET /reports/summary` retorna totais e distribuicoes agregadas de chamados, origem, prioridade e SLA para dashboards operacionais. A rota nao retorna mensagens, notas internas, anexos ou dados pessoais detalhados.
 
+Socket.IO:
+
+- path: `/socket.io`;
+- token Identity em `handshake.auth.token` ou `Authorization`;
+- rooms automaticas: `user:{userId}`, `role:{role}` e `support` para `SUPPORT`/`ADMIN`;
+- evento backend atual: `notification:created`.
+
+O consumo realtime pelo frontend ainda nao esta fechado.
+
 `GET /dead-letter-events` lista ate 100 eventos em DLQ, ordenados por criacao decrescente. Aceita filtro `correlationId`.
 
 `POST /dead-letter-events/:id/reprocess` recoloca o `OutboxEvent` vinculado em `PENDING`, zera `attempts`, limpa `lastError`/`processedAt` e registra auditoria `dead_letter.reprocess_requested`. O registro de DLQ permanece como evidencia historica. A operacao rejeita evento sem outbox vinculado ou outbox que nao esteja mais em `DEAD_LETTER`.

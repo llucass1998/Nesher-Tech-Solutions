@@ -1,6 +1,6 @@
 # Implementation Status
 
-Data: 2026-07-13
+Data: 2026-07-14
 
 ## Status geral
 
@@ -38,6 +38,14 @@ Data: 2026-07-13
 - LogiFlow API agora possui `POST /api/v1/operations/dead-letter-events/:id/reprocess` para recolocar o `OutboxEvent` vinculado em `PENDING` e, quando aplicavel, a ocorrencia em `PENDING`.
 - O registro `DeadLetterEvent` permanece como evidencia historica.
 - Redis Streams agora recebe copia operacional dos eventos dos workers; ainda faltam validacao fim a fim em containers e consumidores stream-first.
+
+### Atualizacao atual - Socket.IO LogiDesk
+
+- LogiDesk API agora inicializa Socket.IO no mesmo HTTP server em `/socket.io`.
+- Conexoes Socket.IO exigem JWT Identity no `handshake.auth.token` ou no header `Authorization`.
+- O backend cria rooms `user:{userId}`, `role:{role}` e `support` para `SUPPORT`/`ADMIN`.
+- Notificacoes persistidas agora emitem `notification:created` para rooms de usuario, equipe e suporte.
+- Frontend realtime, rooms dinamicas de ticket e E2E em browser continuam pendentes.
 
 ## Matriz de regressao
 
@@ -97,7 +105,13 @@ Data: 2026-07-13
 | `npm run logidesk:prisma:generate` | PASS | Prisma Client LogiDesk gerado apos schema operacional. |
 | `npx prisma validate --config apps/logidesk-api/prisma.config.ts` | PASS | Schema LogiDesk valido apos migration de preferencias de notificacao. |
 | `npm run typecheck -w logidesk-api` | PASS | API LogiDesk operacional compila. |
-| `npm run test -w logidesk-api` | PASS | 21 testes passaram, incluindo DLQ/reprocessamento, autorizacao DLQ, guardrails de anexos, notificacoes internas, opt-out por preferencia, ciclo de SLA e relatorio agregado. |
+| `npm run test -w logidesk-api` | PASS | 23 testes passaram, incluindo DLQ/reprocessamento, autorizacao DLQ, guardrails de anexos, notificacoes internas, Socket.IO autenticado, opt-out por preferencia, ciclo de SLA e relatorio agregado. |
+| `npm run lint` | PASS | Sem erros apos a fundacao Socket.IO do LogiDesk. |
+| `npm run typecheck` | PASS | Raiz e workspaces compilaram apos a fundacao Socket.IO do LogiDesk. |
+| `npm run test:workspaces` | PASS | Identity, LogiDesk, LogiPeople e contratos passaram; LogiDesk API passou com 23 testes. |
+| `npm run build -w logidesk-api` | PASS | Build TypeScript do LogiDesk API passou apos anexar Socket.IO ao HTTP server. |
+| `npm audit --audit-level=high` | PASS | 0 vulnerabilidades. |
+| `docker compose --env-file .env.example build logidesk-api` | PASS | Imagem LogiDesk API construiu com Socket.IO; `npm ci` interno reportou 0 vulnerabilidades. |
 | `npm run typecheck -w logidesk-worker` | PASS | Worker LogiDesk compila com avaliacao automatica de SLA. |
 | `npm run build -w logidesk-worker` | PASS | Build do worker LogiDesk passou com alerta/violacao de SLA. |
 | `npm run typecheck -w logidesk-web` | PASS | Dashboard, relatorios, configuracoes com catalogos e notificacoes LogiDesk compilam. |
@@ -159,7 +173,7 @@ Todas as rotas legadas preservam o controller atual e passam a emitir:
 
 ## Bloqueios conhecidos
 
-- LogiDesk agora possui fundacao, mas ainda nao tem o produto empresarial completo: SSO real, Socket.IO autenticado, upload binario de anexos com storage seguro, calendario comercial/feriados de SLA, relatorios avancados, preferencias ligadas ao usuario autenticado e entrega de notificacoes em tempo real e E2E Playwright.
+- LogiDesk agora possui fundacao, mas ainda nao tem o produto empresarial completo: SSO frontend real, Socket.IO consumido pelo browser, upload binario de anexos com storage seguro, calendario comercial/feriados de SLA, relatorios avancados, preferencias ligadas ao usuario autenticado e E2E Playwright.
 - Outbox, Redis/BullMQ e DLQ existem como estrutura inicial; dispatchers HTTP possuem retry com backoff progressivo por polling, publicam espelho em Redis Streams e LogiFlow/LogiDesk possuem APIs administrativas iniciais de DLQ/reprocessamento. Consumidores stream-first e reprocessamento fim a fim ainda nao foram fechados.
 - O Compose validado cobre LogiFlow, LogiDesk, Redis, bancos, workers, APIs e webs.
 - Os workflows GitHub Actions existem para LogiFlow, LogiPeople, LogiDesk e integracao/plataforma.
@@ -179,9 +193,9 @@ Implementado:
 Ainda pendente:
 
 - SSO/JWKS real.
-- Socket.IO autenticado.
+- Socket.IO autenticado no backend; consumo frontend pendente.
 - SLA empresarial completo.
-- Upload binario de anexos, relatorios e notificacoes em tempo real.
+- Upload binario de anexos, relatorios avancados e consumo realtime no frontend.
 - E2E Playwright LogiFlow -> LogiDesk.
 
 ### Validacoes da Fase 6
@@ -707,6 +721,6 @@ Pendencias que ainda nao podem ser marcadas como PASS completo:
 - Dispatcher real de outbox LogiFlow -> LogiDesk.
 - Redis Streams, DLQ operacional e reprocessamento fim a fim.
 - SSO/JWKS real entre produtos.
-- Socket.IO autenticado.
+- Socket.IO autenticado no backend; consumo frontend pendente.
 - Testes de contrato consumer/provider.
 - E2E Playwright completo.
