@@ -129,14 +129,16 @@ Implementado:
 - Health checks.
 - `GET /api/v1/auth/me` validando JWT RS256 do LogiIdentity por JWKS e audience `logipayroll`.
 - Endpoint `GET /api/v1/payroll/capabilities`.
+- Endpoints iniciais `GET /api/v1/payroll/contracts` e `POST /api/v1/payroll/contracts` protegidos por Identity e permissao/role LogiPayroll.
 - Schema separado com referencias de colaborador, contratos, payroll runs, itens, outbox e inbox.
+- Criacao de contrato registra `OutboxEvent` `logipayroll.contract.created` sem salario, documento bruto, banco ou dados fiscais.
 - Docker Compose com `logipayroll-db`, `logipayroll-migrate`, `logipayroll-api`, `logipayroll-worker` e `logipayroll-web`.
 - CI dedicado `logipayroll-ci.yml`.
 
 Limitacoes:
 
 - Nenhum dado real foi migrado do LogiPeople.
-- Guards de autorizacao por permissao, APIs reais, eventos e integracoes ainda estao pendentes.
+- APIs reais de ponto, ferias, folha, holerites, testes de integracao com banco real, eventos consumidos por worker e integracoes ainda estao pendentes.
 
 ## Infraestrutura
 

@@ -30,7 +30,7 @@ Data: 2026-07-14
 | Plataforma Fase 8 - Integração LogiFlow -> LogiDesk | Parcial implementada | `logiflow-worker` despacha Outbox HTTP para LogiDesk; `logidesk-worker` retorna eventos com `occurrenceId` para LogiFlow. Backoff progressivo por polling foi adicionado; Redis Streams, E2E e reprocessamento administrativo ainda pendentes. |
 | Plataforma Fase 9 - LogiDesk operacional ampliado | Implementada no escopo atual | Tickets manuais, status/priority, equipes, categorias, tags com UI preliminar, atribuições, notas internas editáveis, metadados de anexos, notificacoes internas com opt-out por preferencia, preferencias preliminares de notificacao, ciclo de SLA, worker de alerta/violacao de SLA, relatorio agregado, dashboard e tela de relatorios com dados agregados, tela de notificacoes com leitura pela web, arquivamento e migrations LogiDesk validados. |
 
-| Plataforma Fase 10 - LogiPayroll separado | Fundacao criada | `apps/logipayroll-api`, `apps/logipayroll-web`, `apps/logipayroll-worker`, `databases/logipayroll`; schema Prisma separado, health/capabilities, auth Identity/JWKS basico, worker/web iniciais, Docker Compose e CI dedicado. APIs reais ainda pendentes. |
+| Plataforma Fase 10 - LogiPayroll separado | Fundacao criada | `apps/logipayroll-api`, `apps/logipayroll-web`, `apps/logipayroll-worker`, `databases/logipayroll`; schema Prisma separado, health/capabilities, auth Identity/JWKS basico, API inicial de contratos, worker/web iniciais, Docker Compose e CI dedicado. APIs de ponto/ferias/folha ainda pendentes. |
 
 ### Atualizacao atual - DLQ LogiFlow e LogiDesk
 
@@ -66,6 +66,8 @@ Data: 2026-07-14
 - Docker Compose agora inclui `logipayroll-db`, `logipayroll-migrate`, `logipayroll-api`, `logipayroll-worker` e `logipayroll-web`.
 - CI dedicado `logipayroll-ci.yml` criado com lint, typecheck, testes, build, Prisma validate, Compose config, Docker build e audit.
 - LogiPayroll API agora possui `GET /api/v1/auth/me` validando JWT RS256 do LogiIdentity via JWKS, issuer e audience `logipayroll`.
+- LogiPayroll API agora possui `GET /api/v1/payroll/contracts` e `POST /api/v1/payroll/contracts` protegidos por role/permissao.
+- Criacao de contrato grava `OutboxEvent` `logipayroll.contract.created` sem dados sensiveis de folha.
 - Nenhum dado real foi migrado do LogiPeople nesta etapa.
 
 Validacoes executadas em 2026-07-14:
@@ -78,7 +80,7 @@ Validacoes executadas em 2026-07-14:
 | `npm run typecheck -w logipayroll-api` | PASS | TypeScript sem erros. |
 | `npm run typecheck -w logipayroll-web` | PASS | TypeScript sem erros. |
 | `npm run typecheck -w logipayroll-worker` | PASS | TypeScript sem erros. |
-| `npm run test -w logipayroll-api` | PASS | 2 arquivos, 5 testes de auth Identity/JWKS e `auth/me`. |
+| `npm run test -w logipayroll-api` | PASS | 4 arquivos, 10 testes de auth Identity/JWKS, `auth/me`, permissao de contratos e redaction de dados sensiveis. |
 | `npm run test -w logipayroll-web` | PASS | Sem testes ainda; `passWithNoTests`. |
 | `npm run test -w logipayroll-worker` | PASS | Sem testes ainda; `passWithNoTests`. |
 | `npm run build -w logipayroll-api` | PASS | Build TypeScript passou. |

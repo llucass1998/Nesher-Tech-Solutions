@@ -44,8 +44,14 @@ Endpoints iniciais:
 - `GET /health/ready`
 - `GET /auth/me`
 - `GET /payroll/capabilities`
+- `GET /payroll/contracts`
+- `POST /payroll/contracts`
 
 `GET /auth/me` valida tokens RS256 emitidos pelo LogiIdentity via JWKS, exige audience `logipayroll` e retorna apenas dados publicos do usuario autenticado.
+
+`GET /payroll/contracts` exige role `ADMIN`/`PAYROLL_ADMIN` ou permissao `logipayroll.contract.read`.
+
+`POST /payroll/contracts` exige role `ADMIN`/`PAYROLL_ADMIN` ou permissao `logipayroll.contract.write`, cria/atualiza a referencia minima do colaborador, cria contrato e grava `OutboxEvent` `logipayroll.contract.created`. A resposta e o evento nao incluem documento bruto, salario, dados bancarios, descontos ou dados fiscais.
 
 ## Banco
 
@@ -70,7 +76,7 @@ Nao existem relacoes Prisma com bancos de LogiPeople, LogiFlow ou LogiDesk.
 - `npm run build -w logipayroll-api`: PASS.
 - `npm run build -w logipayroll-worker`: PASS.
 - `npm run build -w logipayroll-web`: PASS.
-- `npm run test -w logipayroll-api`: PASS, 5 testes.
+- `npm run test -w logipayroll-api`: PASS, 10 testes.
 - `npx prisma validate --config apps/logipayroll-api/prisma.config.ts`: PASS.
 - `docker compose --env-file .env.example config`: PASS.
 - `docker compose --env-file .env.example build --progress plain logipayroll-api`: PASS.
@@ -81,7 +87,8 @@ Nao existem relacoes Prisma com bancos de LogiPeople, LogiFlow ou LogiDesk.
 ## Pendencias
 
 - Guards de autorizacao por dominio e permissoes em endpoints reais.
-- APIs reais de contratos, ponto, ferias, folha e holerites.
+- APIs reais de ponto, ferias, folha e holerites.
+- Testes de integracao com banco real para contratos.
 - Eventos `logipayroll.*` em `packages/event-contracts`.
 - Integracao LogiPeople -> LogiPayroll.
 - Integracao LogiPayroll -> LogiFlow para indisponibilidade operacional.
