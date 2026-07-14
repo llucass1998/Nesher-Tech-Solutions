@@ -111,7 +111,7 @@ Limitacoes:
 
 - SSO/JWKS basico conectado ao LogiIdentity por `GET /api/v1/auth/me` e login/refresh/logout inicial no LogiDesk web.
 - Socket.IO autenticado ja existe no backend do LogiDesk, `ticket:join` valida acesso e o web consome notificacoes/eventos de ticket quando ha token de sessao ou refresh valido.
-- O helper REST do web ja envia Authorization no browser. Notificacoes e configuracoes ja usam mutacoes client-side autenticadas. A API possui RBAC REST de transicao para mutacoes quando `LOGIDESK_REQUIRE_REST_AUTH=true`; ainda falta migrar tickets e leituras SSR para sessao autenticada, ligar a flag por padrao, aplicar ownership fino e completar processamento dos workers.
+- O helper REST do web ja envia Authorization no browser. Notificacoes e configuracoes ja usam mutacoes client-side autenticadas, e server actions antigas de tickets foram removidas. A API possui RBAC REST de transicao para mutacoes quando `LOGIDESK_REQUIRE_REST_AUTH=true`; ainda falta criar UI de mutacao de tickets autenticada, migrar leituras SSR para sessao autenticada, ligar a flag por padrao, aplicar ownership fino e completar processamento dos workers.
 - E2E completo LogiFlow/LogiDesk ainda nao existe.
 
 ## Infraestrutura
