@@ -69,4 +69,4 @@ Aviso conhecido no ambiente atual. O projeto usa `npm` e `package-lock.json`; `p
 
 ## LogiDesk incompleto
 
-Nao e falha de build. A fundacao LogiDesk existe, mas o produto empresarial completo ainda nao inclui SSO frontend real, rooms dinamicas de Socket.IO, E2E completo, SLA avancado, anexos binarios e dispatcher completo de outbox/DLQ. Ver `docs/LOGIDESK.md`.
+Nao e falha de build. A fundacao LogiDesk existe, mas o produto empresarial completo ainda nao inclui SSO frontend real, tela de detalhe assinando rooms de Socket.IO, E2E completo, SLA avancado, anexos binarios e dispatcher completo de outbox/DLQ. Ver `docs/LOGIDESK.md`.

@@ -1,7 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import type { Server as HttpServer } from 'http';
 import { Server } from 'socket.io';
 import type { Socket } from 'socket.io';
+import { PrismaService } from '../../prisma/prisma.service';
 import { IdentityJwksService, LogiIdentityClaims } from '../auth/identity-jwks.service';
 
 type NotificationPayload = {
@@ -16,10 +17,22 @@ type NotificationPayload = {
   createdAt?: Date | string;
 };
 
+type JoinTicketPayload = {
+  ticketId?: unknown;
+};
+
+type JoinTicketResponse = {
+  ok: boolean;
+  room?: string;
+  error?: 'VALIDATION_ERROR' | 'ACCESS_DENIED';
+};
+
 @Injectable()
 export class RealtimeService {
   private readonly logger = new Logger(RealtimeService.name);
   private server: Server | null = null;
+
+  constructor(@Optional() private readonly prisma?: PrismaService) {}
 
   attach(httpServer: HttpServer, identityJwks: IdentityJwksService, corsOrigin: string) {
     if (this.server) {
@@ -56,6 +69,8 @@ export class RealtimeService {
         userId: socket.data.userId,
         roles: socket.data.roles,
       });
+
+      socket.on('ticket:join', (payload: JoinTicketPayload, ack?: (response: JoinTicketResponse) => void) => this.handleJoinTicket(socket, payload, ack));
     });
   }
 
@@ -115,5 +130,71 @@ export class RealtimeService {
     if (roles.includes('SUPPORT') || roles.includes('ADMIN')) {
       socket.join('support');
     }
+  }
+
+  private async handleJoinTicket(socket: Socket, payload: JoinTicketPayload, ack?: (response: JoinTicketResponse) => void) {
+    const ticketId = typeof payload?.ticketId === 'string' ? payload.ticketId : undefined;
+
+    if (!ticketId) {
+      ack?.({ ok: false, error: 'VALIDATION_ERROR' });
+      return;
+    }
+
+    const allowed = await this.canAccessTicket(socket, ticketId);
+
+    if (!allowed) {
+      this.logger.warn({
+        operation: 'socket.ticket_join.denied',
+        socketId: socket.id,
+        userId: socket.data.userId,
+        ticketId,
+      });
+      ack?.({ ok: false, error: 'ACCESS_DENIED' });
+      return;
+    }
+
+    const room = `ticket:${ticketId}`;
+    socket.join(room);
+    ack?.({ ok: true, room });
+  }
+
+  private async canAccessTicket(socket: Socket, ticketId: string) {
+    if (!this.prisma) {
+      return false;
+    }
+
+    const roles = Array.isArray(socket.data.roles) ? socket.data.roles : [];
+    const userId = typeof socket.data.userId === 'string' ? socket.data.userId : undefined;
+
+    if (!userId) {
+      return false;
+    }
+
+    const ticket = await this.prisma.ticket.findUnique({
+      where: { id: ticketId },
+      select: {
+        requesterId: true,
+        assigneeId: true,
+        team: {
+          select: {
+            members: {
+              where: { userId, isActive: true },
+              select: { id: true },
+              take: 1,
+            },
+          },
+        },
+      },
+    });
+
+    if (!ticket) {
+      return false;
+    }
+
+    if (roles.includes('ADMIN') || roles.includes('SUPPORT')) {
+      return true;
+    }
+
+    return ticket.requesterId === userId || ticket.assigneeId === userId || Boolean(ticket.team?.members.length);
   }
 }

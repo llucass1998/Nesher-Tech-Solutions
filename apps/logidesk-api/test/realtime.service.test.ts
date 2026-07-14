@@ -22,12 +22,13 @@ import { RealtimeService } from '../src/modules/realtime/realtime.service';
 function createSocket() {
   return {
     id: 'socket-1',
-    data: {},
+    data: {} as Record<string, unknown>,
     handshake: {
       auth: { token: 'socket-token' },
       headers: {},
     },
     join: vi.fn(),
+    on: vi.fn(),
   };
 }
 
@@ -87,5 +88,64 @@ describe('RealtimeService', () => {
       id: 'notification-1',
       createdAt: '2026-07-14T10:00:00.000Z',
     }));
+  });
+
+  it('joins ticket rooms only after access is verified', async () => {
+    const prisma = {
+      ticket: {
+        findUnique: vi.fn().mockResolvedValue({
+          requesterId: 'requester-1',
+          assigneeId: null,
+          team: { members: [] },
+        }),
+      },
+    };
+    const realtime = new RealtimeService(prisma as never);
+    const socket = createSocket();
+    socket.data.userId = 'requester-1';
+    socket.data.roles = ['CUSTOMER'];
+    const ack = vi.fn();
+
+    realtime.attach({} as never, { verifyAuthorizationHeader: vi.fn() } as never, 'http://localhost:3500');
+    const connectionHandler = socketIoMock.server.on.mock.calls.find((call) => call[0] === 'connection')?.[1];
+
+    expect(connectionHandler).toBeDefined();
+    connectionHandler?.(socket);
+
+    const joinHandler = socket.on.mock.calls.find((call) => call[0] === 'ticket:join')?.[1];
+
+    expect(joinHandler).toBeDefined();
+    await joinHandler?.({ ticketId: 'ticket-1' }, ack);
+
+    expect(prisma.ticket.findUnique).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'ticket-1' } }));
+    expect(socket.join).toHaveBeenCalledWith('ticket:ticket-1');
+    expect(ack).toHaveBeenCalledWith({ ok: true, room: 'ticket:ticket-1' });
+  });
+
+  it('rejects ticket room joins without ownership or support role', async () => {
+    const prisma = {
+      ticket: {
+        findUnique: vi.fn().mockResolvedValue({
+          requesterId: 'requester-1',
+          assigneeId: null,
+          team: { members: [] },
+        }),
+      },
+    };
+    const realtime = new RealtimeService(prisma as never);
+    const socket = createSocket();
+    socket.data.userId = 'other-user';
+    socket.data.roles = ['CUSTOMER'];
+    const ack = vi.fn();
+
+    realtime.attach({} as never, { verifyAuthorizationHeader: vi.fn() } as never, 'http://localhost:3500');
+    const connectionHandler = socketIoMock.server.on.mock.calls.find((call) => call[0] === 'connection')?.[1];
+    connectionHandler?.(socket);
+
+    const joinHandler = socket.on.mock.calls.find((call) => call[0] === 'ticket:join')?.[1];
+    await joinHandler?.({ ticketId: 'ticket-1' }, ack);
+
+    expect(socket.join).not.toHaveBeenCalledWith('ticket:ticket-1');
+    expect(ack).toHaveBeenCalledWith({ ok: false, error: 'ACCESS_DENIED' });
   });
 });

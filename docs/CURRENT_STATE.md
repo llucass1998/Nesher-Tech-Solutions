@@ -110,7 +110,7 @@ Implementado:
 Limitacoes:
 
 - SSO/JWKS basico conectado ao LogiIdentity por `GET /api/v1/auth/me`.
-- Socket.IO autenticado ja existe no backend do LogiDesk e o web consome notificacoes quando ha token de sessao, mas SSO frontend, rooms dinamicas e processamento completo dos workers ainda precisam evoluir.
+- Socket.IO autenticado ja existe no backend do LogiDesk, `ticket:join` valida acesso e o web consome notificacoes quando ha token de sessao, mas SSO frontend, tela de detalhe assinando rooms e processamento completo dos workers ainda precisam evoluir.
 - E2E completo LogiFlow/LogiDesk ainda nao existe.
 
 ## Infraestrutura

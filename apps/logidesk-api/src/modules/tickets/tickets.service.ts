@@ -1,6 +1,6 @@
 import { ConflictException, Injectable, NotFoundException, Optional, UnprocessableEntityException } from '@nestjs/common';
 import { createHash, randomUUID } from 'crypto';
-import { NotificationPreference, Prisma, TicketPriority, TicketStatus } from '../../generated/prisma';
+import { NotificationPreference, Prisma, Ticket, TicketPriority, TicketStatus } from '../../generated/prisma';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RealtimeService } from '../realtime/realtime.service';
 import { AssignTicketDto } from './dto/assign-ticket.dto';
@@ -164,7 +164,7 @@ export class TicketsService {
     const priority = input.priority ?? 'MEDIUM';
     const source = input.source ?? 'LOGIDESK';
 
-    return this.prisma.$transaction(async (tx) => {
+    const ticket = await this.prisma.$transaction(async (tx) => {
       const ticket = await tx.ticket.create({
         data: {
           number,
@@ -227,6 +227,9 @@ export class TicketsService {
 
       return ticket;
     });
+
+    this.realtime?.emitTicketEvent('ticket:created', ticket.id, this.ticketRealtimePayload(ticket));
+    return ticket;
   }
 
   async createFromLogiflow(input: CreateTicketFromLogiflowDto, idempotencyKey?: string) {
@@ -255,7 +258,7 @@ export class TicketsService {
     const now = new Date();
     const number = await this.nextTicketNumber();
 
-    return this.prisma.$transaction(async (tx) => {
+    const ticket = await this.prisma.$transaction(async (tx) => {
       const ticket = await tx.ticket.create({
         data: {
           number,
@@ -312,13 +315,16 @@ export class TicketsService {
 
       return ticket;
     });
+
+    this.realtime?.emitTicketEvent('ticket:created', ticket.id, this.ticketRealtimePayload(ticket));
+    return ticket;
   }
 
   async updateTicket(id: string, input: UpdateTicketDto) {
     const current = await this.ensureTicket(id);
     const correlationId = input.correlationId ?? (current.correlationId || randomUUID());
 
-    return this.prisma.$transaction(async (tx) => {
+    const ticket = await this.prisma.$transaction(async (tx) => {
       const ticket = await tx.ticket.update({
         where: { id },
         data: {
@@ -362,6 +368,9 @@ export class TicketsService {
 
       return ticket;
     });
+
+    this.realtime?.emitTicketEvent('ticket:updated', ticket.id, this.ticketRealtimePayload(ticket));
+    return ticket;
   }
 
   async changeStatus(id: string, input: ChangeTicketStatusDto) {
@@ -375,7 +384,7 @@ export class TicketsService {
       });
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    const ticket = await this.prisma.$transaction(async (tx) => {
       const ticket = await tx.ticket.update({
         where: { id },
         data: {
@@ -413,12 +422,18 @@ export class TicketsService {
 
       return ticket;
     });
+
+    this.realtime?.emitTicketEvent('ticket:updated', ticket.id, {
+      ...this.ticketRealtimePayload(ticket),
+      previousStatus: current.status,
+    });
+    return ticket;
   }
 
   async changePriority(id: string, input: ChangeTicketPriorityDto) {
     const current = await this.ensureTicket(id);
 
-    return this.prisma.$transaction(async (tx) => {
+    const ticket = await this.prisma.$transaction(async (tx) => {
       const ticket = await tx.ticket.update({ where: { id }, data: { priority: input.priority } });
 
       await this.createHistory(tx, {
@@ -447,6 +462,12 @@ export class TicketsService {
 
       return ticket;
     });
+
+    this.realtime?.emitTicketEvent('ticket:updated', ticket.id, {
+      ...this.ticketRealtimePayload(ticket),
+      previousPriority: current.priority,
+    });
+    return ticket;
   }
 
   archiveTicket(id: string, input: ChangeTicketStatusDto) {
@@ -456,7 +477,7 @@ export class TicketsService {
   async createMessage(ticketId: string, input: CreateMessageDto) {
     const current = await this.ensureTicket(ticketId);
 
-    return this.prisma.$transaction(async (tx) => {
+    const message = await this.prisma.$transaction(async (tx) => {
       const message = await tx.ticketMessage.create({
         data: {
           ticketId,
@@ -485,6 +506,17 @@ export class TicketsService {
 
       return message;
     });
+
+    if (!message.internal) {
+      this.realtime?.emitTicketEvent('ticket:message:created', ticketId, {
+        ticketId,
+        messageId: message.id,
+        authorRole: message.authorRole,
+        createdAt: message.createdAt.toISOString(),
+      });
+    }
+
+    return message;
   }
 
   async createNote(ticketId: string, input: CreateMessageDto) {
@@ -567,7 +599,7 @@ export class TicketsService {
   async assignTicket(ticketId: string, input: AssignTicketDto) {
     const current = await this.ensureTicket(ticketId);
 
-    return this.prisma.$transaction(async (tx) => {
+    const ticket = await this.prisma.$transaction(async (tx) => {
       const ticket = await tx.ticket.update({
         where: { id: ticketId },
         data: {
@@ -614,6 +646,9 @@ export class TicketsService {
 
       return ticket;
     });
+
+    this.realtime?.emitTicketEvent('ticket:assigned', ticket.id, this.ticketRealtimePayload(ticket));
+    return ticket;
   }
 
   async listNotifications(filters: { userId?: string; teamId?: string; unread?: boolean }) {
@@ -1077,6 +1112,19 @@ export class TicketsService {
     key: T,
   ) {
     return rows.map((row) => ({ value: row[key], count: row._count._all }));
+  }
+
+  private ticketRealtimePayload(ticket: Ticket) {
+    return {
+      ticketId: ticket.id,
+      ticketNumber: ticket.number,
+      status: ticket.status,
+      priority: ticket.priority,
+      assigneeId: ticket.assigneeId,
+      teamId: ticket.teamId,
+      correlationId: ticket.correlationId,
+      updatedAt: ticket.updatedAt.toISOString(),
+    };
   }
 
   private optionalTicketCreateData(input: CreateTicketDto) {

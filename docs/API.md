@@ -180,9 +180,10 @@ Socket.IO:
 - path: `/socket.io`;
 - token Identity em `handshake.auth.token` ou `Authorization`;
 - rooms automaticas: `user:{userId}`, `role:{role}` e `support` para `SUPPORT`/`ADMIN`;
-- evento backend atual: `notification:created`.
+- room dinamica: `ticket:{ticketId}` via `ticket:join`, validada por existencia do ticket, roles `ADMIN`/`SUPPORT`, solicitante, responsavel ou membro ativo da equipe;
+- eventos backend atuais: `notification:created`, `ticket:created`, `ticket:updated`, `ticket:assigned` e `ticket:message:created`.
 
-O LogiDesk web consome `notification:created` quando encontra access token em `sessionStorage` nas chaves `logiidentity.accessToken` ou `logidesk.accessToken`. SSO frontend real e rooms dinamicas de ticket ainda estao pendentes.
+O LogiDesk web consome `notification:created` quando encontra access token em `sessionStorage` nas chaves `logiidentity.accessToken` ou `logidesk.accessToken`. SSO frontend real e tela de detalhe assinando room de ticket ainda estao pendentes.
 
 `GET /dead-letter-events` lista ate 100 eventos em DLQ, ordenados por criacao decrescente. Aceita filtro `correlationId`.
 
