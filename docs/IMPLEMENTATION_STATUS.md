@@ -28,7 +28,7 @@ Data: 2026-07-13
 | Plataforma Fase 6 - Migrar auth LogiDesk | Parcial com SSO basico | `GET /api/v1/auth/me` valida token Identity; frontend SSO completo ainda pendente. |
 | Plataforma Fase 7 - Contratos e eventos | Implementada no pacote compartilhado | `packages/event-contracts` consolidado com envelope, eventos namespaced, payloads estritos e testes de contrato. Produtores/consumidores ainda precisam migrar dos nomes legados. |
 | Plataforma Fase 8 - Integração LogiFlow -> LogiDesk | Parcial implementada | `logiflow-worker` despacha Outbox HTTP para LogiDesk; `logidesk-worker` retorna eventos com `occurrenceId` para LogiFlow. Redis Streams, E2E e backoff progressivo ainda pendentes. |
-| Plataforma Fase 9 - LogiDesk operacional ampliado | Implementada no escopo atual | Tickets manuais, status/priority, equipes, categorias, tags, atribuições, notas internas editáveis, metadados de anexos, notificacoes internas, ciclo de SLA, worker de alerta/violacao de SLA, relatorio agregado, dashboard com dados agregados, tela de notificacoes, arquivamento e migrations LogiDesk validados. |
+| Plataforma Fase 9 - LogiDesk operacional ampliado | Implementada no escopo atual | Tickets manuais, status/priority, equipes, categorias, tags, atribuições, notas internas editáveis, metadados de anexos, notificacoes internas, ciclo de SLA, worker de alerta/violacao de SLA, relatorio agregado, dashboard com dados agregados, tela de notificacoes com leitura pela web, arquivamento e migrations LogiDesk validados. |
 
 ## Matriz de regressao
 
@@ -90,14 +90,15 @@ Data: 2026-07-13
 | `npm run test -w logidesk-api` | PASS | 13 testes passaram, incluindo metadados de anexos, notificacoes internas, ciclo de SLA e relatorio agregado. |
 | `npm run typecheck -w logidesk-worker` | PASS | Worker LogiDesk compila com avaliacao automatica de SLA. |
 | `npm run build -w logidesk-worker` | PASS | Build do worker LogiDesk passou com alerta/violacao de SLA. |
-| `npm run typecheck -w logidesk-web` | PASS | Dashboard LogiDesk compila consumindo `/reports/summary`. |
+| `npm run typecheck -w logidesk-web` | PASS | Dashboard e notificacoes LogiDesk compilam, incluindo acao de leitura pela web. |
 | `npm run build -w logidesk-web` | PASS | Build Next do LogiDesk passou com dashboard e notificacoes; aviso conhecido de root/lockfiles permanece. |
-| `npm run lint` | PASS | Sem erros apos anexos de chamados. |
-| `npm run typecheck` | PASS | Raiz e workspaces compilaram apos anexos de chamados. |
+| `npm run lint` | PASS | Sem erros apos notificacoes web. |
+| `npm run typecheck` | PASS | Raiz e workspaces compilaram apos notificacoes web. |
 | `npm run test:workspaces` | PASS | Identity, LogiDesk, LogiPeople e contratos passaram; pacotes sem testes usaram `passWithNoTests`. |
 | `npm run build:workspaces` | PASS | Workspaces passaram; aviso conhecido do Next sobre root/lockfiles multiplos permanece. |
 | `npm audit --audit-level=high` | PASS | 0 vulnerabilidades. |
 | `docker compose --env-file .env.example build logidesk-migrate logidesk-api` | PASS | Primeira tentativa sem env falhou por `IDENTITY_DB_PASSWORD` ausente; repeticao com `.env.example` construiu as imagens. |
+| `docker compose --env-file .env.example build logidesk-web` | PASS | Imagem web construiu apos acao de leitura de notificacoes; `npm ci` interno reportou 0 vulnerabilidades. |
 
 ### Validacoes da Fase 5
 
@@ -143,7 +144,7 @@ Todas as rotas legadas preservam o controller atual e passam a emitir:
 
 ## Bloqueios conhecidos
 
-- LogiDesk agora possui fundacao, mas ainda nao tem o produto empresarial completo: SSO real, Socket.IO autenticado, upload binario de anexos com storage seguro, calendario comercial/feriados de SLA, relatorios avancados, notificacoes em tempo real e E2E Playwright.
+- LogiDesk agora possui fundacao, mas ainda nao tem o produto empresarial completo: SSO real, Socket.IO autenticado, upload binario de anexos com storage seguro, calendario comercial/feriados de SLA, relatorios avancados, preferencias e entrega de notificacoes em tempo real e E2E Playwright.
 - Outbox, Redis/BullMQ e DLQ existem como estrutura inicial; o dispatcher com retry/backoff persistente, DLQ operacional e reprocessamento fim a fim ainda nao foi fechado.
 - O Compose validado cobre LogiFlow, LogiDesk, Redis, bancos, workers, APIs e webs.
 - Os workflows GitHub Actions existem para LogiFlow, LogiPeople, LogiDesk e integracao/plataforma.

@@ -115,7 +115,7 @@ O endpoint cria historico, auditoria e outbox. Upload binario, object storage, v
 
 O dashboard web consome `/reports/summary` para os cards e distribuicoes, e `/tickets` apenas para a fila recente.
 
-A pagina `/notifications` consome `GET /notifications?unread=true` e exibe alertas pendentes de atribuicao, SLA e eventos operacionais. A marcacao como lida ainda esta disponivel apenas na API.
+A pagina `/notifications` consome `GET /notifications?unread=true`, exibe alertas pendentes de atribuicao, SLA e eventos operacionais, e permite marcar cada notificacao como lida pela web usando `PATCH /notifications/:id/read`.
 
 ## Limites atuais
 
@@ -138,7 +138,9 @@ A pagina `/notifications` consome `GET /notifications?unread=true` e exibe alert
 - `npm run typecheck`: PASS.
 - `npm run test:workspaces`: PASS.
 - `npm run build:workspaces`: PASS.
+- `npm audit --audit-level=high`: PASS.
 - `docker compose build logidesk-migrate logidesk-api logidesk-web`: PASS.
+- `docker compose --env-file .env.example build logidesk-web`: PASS apos leitura web de notificacoes.
 
 ## Guardrail
 

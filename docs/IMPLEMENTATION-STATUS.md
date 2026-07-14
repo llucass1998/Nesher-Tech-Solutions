@@ -42,7 +42,7 @@ Phases 1-14 are in scope:
 | LogiDesk Identity validation | Partially implemented | LogiDesk exposes `GET /api/v1/auth/me` backed by Identity JWKS. Full frontend SSO remains pending. |
 | Platform event contracts | Implemented in shared package | `packages/event-contracts` now defines the strict versioned event envelope and namespaced events for LogiFlow, LogiDesk, LogiPeople and LogiPayroll. Runtime producers/consumers still need migration from legacy names. |
 | LogiFlow and LogiDesk dispatch | Partially implemented | `logiflow-worker` dispatches LogiFlow outbox records to LogiDesk. `logidesk-worker` dispatches ticket events with LogiFlow references back to LogiFlow. Redis Streams, progressive backoff and E2E remain pending. |
-| LogiDesk operational expansion | Implemented in current scope | Manual tickets, status and priority changes, teams, categories, tags, assignments, editable internal notes, attachment metadata, internal notifications, SLA lifecycle, automatic SLA warning/breach worker, aggregate reporting, dashboard backed by aggregate data, notifications page, archive/cancel actions and database migration are implemented and validated. |
+| LogiDesk operational expansion | Implemented in current scope | Manual tickets, status and priority changes, teams, categories, tags, assignments, editable internal notes, attachment metadata, internal notifications, SLA lifecycle, automatic SLA warning/breach worker, aggregate reporting, dashboard backed by aggregate data, notifications page with web read action, archive/cancel actions and database migration are implemented and validated. |
 
 ## Identity validation evidence
 
@@ -67,14 +67,15 @@ Phases 1-14 are in scope:
 | `npm run test -w logidesk-api` | PASS | 13 tests passed, including attachment metadata, internal notifications, SLA lifecycle and aggregate reporting. |
 | `npm run typecheck -w logidesk-worker` | PASS | LogiDesk worker compiles with automatic SLA evaluation. |
 | `npm run build -w logidesk-worker` | PASS | LogiDesk worker build passed with SLA warning/breach handling. |
-| `npm run typecheck -w logidesk-web` | PASS | LogiDesk dashboard compiles using `/reports/summary`. |
+| `npm run typecheck -w logidesk-web` | PASS | LogiDesk dashboard and notifications compile, including the web read action. |
 | `npm run build -w logidesk-web` | PASS | LogiDesk Next build passed with dashboard and notifications; known root/multiple lockfile warning remains. |
-| `npm run lint` | PASS | No errors after ticket attachment metadata. |
-| `npm run typecheck` | PASS | Root and workspace typechecks passed. |
+| `npm run lint` | PASS | No errors after web notifications. |
+| `npm run typecheck` | PASS | Root and workspace typechecks passed after web notifications. |
 | `npm run test:workspaces` | PASS | Identity, LogiDesk, LogiPeople and contracts passed; packages without tests used `passWithNoTests`. |
 | `npm run build:workspaces` | PASS | Workspace builds passed; known Next root/multiple lockfile warning remains. |
 | `npm audit --audit-level=high` | PASS | 0 vulnerabilities. |
 | `docker compose --env-file .env.example build logidesk-migrate logidesk-api` | PASS | First attempt without env failed on missing `IDENTITY_DB_PASSWORD`; rerun with `.env.example` built the images. |
+| `docker compose --env-file .env.example build logidesk-web` | PASS | Web image built after notification read action; internal `npm ci` reported 0 vulnerabilities. |
 
 ## Explicitly not complete
 
@@ -91,8 +92,7 @@ Phases 1-14 are in scope:
 - Time and attendance is implemented only as a preliminary foundation and is not legally validated.
 - Real LogiFlow/LogiDesk integration events are not enabled.
 - LogiDesk attachments currently store metadata only; binary upload, object storage, antivirus scanning and retention policies are not implemented.
-- LogiDesk notifications are persisted and readable, but real-time Socket.IO delivery and user preference settings are not implemented.
-- LogiDesk web lists unread notifications, but marking notifications as read is still API-only.
+- LogiDesk notifications are persisted, readable and can be marked as read from the web UI, but real-time Socket.IO delivery and user preference settings are not implemented.
 - LogiDesk SLA records first response, pause, resume, resolution and automatic warning/breach events, but business calendars and holidays are not implemented.
 
 ## Known risks

@@ -1,4 +1,5 @@
 import { fetchLogiDesk, SupportNotification } from '@/src/lib/api';
+import { markNotificationReadAction } from './actions';
 
 export default async function NotificationsPage() {
   const result = await fetchLogiDesk<SupportNotification[]>('/notifications?unread=true');
@@ -32,7 +33,15 @@ export default async function NotificationsPage() {
                     <Badge value={notification.ticket.priority} />
                   </div>
                 ) : null}
-                <p style={{ ...mutedStyle, marginTop: 12 }}>Criada em {formatDate(notification.createdAt)}</p>
+                <div style={footerStyle}>
+                  <p style={{ ...mutedStyle, margin: 0 }}>Criada em {formatDate(notification.createdAt)}</p>
+                  <form action={markNotificationReadAction}>
+                    <input type="hidden" name="notificationId" value={notification.id} />
+                    <button type="submit" style={buttonStyle}>
+                      Marcar como lida
+                    </button>
+                  </form>
+                </div>
               </article>
             ))}
           </div>
@@ -61,5 +70,16 @@ function formatDate(value: string) {
 
 const panelStyle = { border: '1px solid var(--desk-border)', borderRadius: 8, background: 'var(--desk-surface)', padding: 20 };
 const notificationStyle = { border: '1px solid var(--desk-border)', borderRadius: 8, padding: 16, background: 'var(--desk-surface)' };
+const footerStyle = { display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' as const, marginTop: 12 };
+const buttonStyle = {
+  border: '1px solid var(--desk-border)',
+  borderRadius: 8,
+  background: 'var(--desk-text)',
+  color: 'var(--desk-surface)',
+  padding: '8px 12px',
+  fontSize: 13,
+  fontWeight: 800,
+  cursor: 'pointer',
+};
 const titleStyle = { margin: 0, fontSize: 28 };
 const mutedStyle = { margin: '6px 0 0', color: 'var(--desk-muted)', fontSize: 14 };
