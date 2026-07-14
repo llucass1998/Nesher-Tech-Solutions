@@ -55,6 +55,17 @@ Endpoints iniciais:
 
 O payload do evento e validado pelo schema Zod compartilhado `logipayrollContractCreatedDataSchema` em `packages/event-contracts`.
 
+## Worker
+
+`apps/logipayroll-worker` processa a Outbox inicial:
+
+- busca eventos `PENDING` ou `FAILED` elegiveis para retry;
+- valida `logipayroll.contract.created` pelo contrato compartilhado;
+- publica no Redis Stream `LOGIPAYROLL_EVENT_STREAM`;
+- marca sucesso como `PROCESSED`;
+- marca falha temporaria como `FAILED`;
+- envia evento permanente ou esgotado para `DEAD_LETTER` e registra `DeadLetterEvent`.
+
 ## Banco
 
 Schema inicial:
@@ -85,12 +96,14 @@ Nao existem relacoes Prisma com bancos de LogiPeople, LogiFlow ou LogiDesk.
 - `docker compose --env-file .env.example build --progress plain logipayroll-web`: PASS.
 - `docker compose --env-file .env.example build --progress plain logipayroll-worker`: PASS.
 - `docker compose --env-file .env.example build --progress plain logipayroll-migrate`: PASS.
+- `npm run test -w logipayroll-worker`: PASS, 3 testes.
 
 ## Pendencias
 
 - Guards de autorizacao por dominio e permissoes em endpoints reais.
 - APIs reais de ponto, ferias, folha e holerites.
 - Testes de integracao com banco real para contratos.
+- Consumidores reais das mensagens publicadas em `logipayroll.events`.
 - Eventos adicionais `logipayroll.*` para folha, holerites, desligamentos e disponibilidade.
 - Integracao LogiPeople -> LogiPayroll.
 - Integracao LogiPayroll -> LogiFlow para indisponibilidade operacional.

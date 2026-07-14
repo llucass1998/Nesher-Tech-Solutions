@@ -7,6 +7,7 @@
     "target": "ES2022",
     "baseUrl": ".",
     "paths": {
+      "@logipeople/event-contracts": ["../../packages/event-contracts/src/index.ts"],
       "@logipeople/logger": ["../../packages/logger/src/index.ts"]
     }
   },

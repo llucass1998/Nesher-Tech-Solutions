@@ -69,6 +69,7 @@ Data: 2026-07-14
 - LogiPayroll API agora possui `GET /api/v1/payroll/contracts` e `POST /api/v1/payroll/contracts` protegidos por role/permissao.
 - Criacao de contrato grava `OutboxEvent` `logipayroll.contract.created` sem dados sensiveis de folha.
 - `logipayroll.contract.created` foi alinhado em `packages/event-contracts` com schema Zod estrito e a API valida o payload antes de persistir Outbox.
+- `logipayroll-worker` agora publica Outbox valida em Redis Streams, aplica retry/backoff e registra `DeadLetterEvent`.
 - Nenhum dado real foi migrado do LogiPeople nesta etapa.
 
 Validacoes executadas em 2026-07-14:
@@ -83,7 +84,7 @@ Validacoes executadas em 2026-07-14:
 | `npm run typecheck -w logipayroll-worker` | PASS | TypeScript sem erros. |
 | `npm run test -w logipayroll-api` | PASS | 4 arquivos, 10 testes de auth Identity/JWKS, `auth/me`, permissao de contratos e redaction de dados sensiveis. |
 | `npm run test -w logipayroll-web` | PASS | Sem testes ainda; `passWithNoTests`. |
-| `npm run test -w logipayroll-worker` | PASS | Sem testes ainda; `passWithNoTests`. |
+| `npm run test -w logipayroll-worker` | PASS | 1 arquivo, 3 testes de publish, retry e DLQ. |
 | `npm run build -w logipayroll-api` | PASS | Build TypeScript passou. |
 | `npm run build -w logipayroll-web` | PASS | Next build passou; aviso conhecido de root/lockfiles permanece. |
 | `npm run build -w logipayroll-worker` | PASS | Build TypeScript passou. |

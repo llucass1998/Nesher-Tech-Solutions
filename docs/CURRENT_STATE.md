@@ -133,13 +133,14 @@ Implementado:
 - Schema separado com referencias de colaborador, contratos, payroll runs, itens, outbox e inbox.
 - Criacao de contrato registra `OutboxEvent` `logipayroll.contract.created` sem salario, documento bruto, banco ou dados fiscais.
 - Evento `logipayroll.contract.created` possui contrato Zod versionado em `packages/event-contracts` e e validado pela API antes da Outbox.
+- Worker LogiPayroll publica Outbox valida em Redis Streams, aplica retry/backoff e registra `DeadLetterEvent` para falhas permanentes ou esgotadas.
 - Docker Compose com `logipayroll-db`, `logipayroll-migrate`, `logipayroll-api`, `logipayroll-worker` e `logipayroll-web`.
 - CI dedicado `logipayroll-ci.yml`.
 
 Limitacoes:
 
 - Nenhum dado real foi migrado do LogiPeople.
-- APIs reais de ponto, ferias, folha, holerites, testes de integracao com banco real, eventos adicionais, eventos consumidos por worker e integracoes ainda estao pendentes.
+- APIs reais de ponto, ferias, folha, holerites, testes de integracao com banco real, consumidores downstream dos eventos, eventos adicionais e integracoes ainda estao pendentes.
 
 ## Infraestrutura
 
