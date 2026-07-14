@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   logideskTicketCreatedEventSchema,
   logiflowOccurrenceEscalatedEventSchema,
+  logipayrollContractCreatedEventSchema,
   logipayrollLeaveApprovedEventSchema,
   parsePlatformEvent,
   platformEventTypeSchema,
@@ -98,10 +99,51 @@ describe('platform event contracts', () => {
     expect(result.success).toBe(false);
   });
 
+  it('accepts a LogiPayroll contract created event without restricted payroll details', () => {
+    const event = logipayrollContractCreatedEventSchema.parse({
+      ...baseEnvelope,
+      eventType: 'logipayroll.contract.created',
+      data: {
+        contractId: '99999999-9999-4999-8999-999999999999',
+        employeeId: ids.employeeId,
+        identityUserId: ids.userId,
+        logiPeopleId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+        startsAt: '2026-07-14T00:00:00.000Z',
+        endsAt: null,
+        status: 'ACTIVE',
+      },
+    });
+
+    expect(event.eventType).toBe('logipayroll.contract.created');
+    expect(event.data).not.toHaveProperty('salaryAmount');
+    expect(event.data).not.toHaveProperty('bankAccount');
+  });
+
+  it('rejects LogiPayroll contract events with salary or bank data', () => {
+    const result = logipayrollContractCreatedEventSchema.safeParse({
+      ...baseEnvelope,
+      eventType: 'logipayroll.contract.created',
+      data: {
+        contractId: '99999999-9999-4999-8999-999999999999',
+        employeeId: ids.employeeId,
+        identityUserId: ids.userId,
+        logiPeopleId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+        startsAt: '2026-07-14T00:00:00.000Z',
+        endsAt: null,
+        status: 'ACTIVE',
+        salaryAmount: '10000.00',
+        bankAccount: '12345-6',
+      },
+    });
+
+    expect(result.success).toBe(false);
+  });
+
   it('lists the expected platform event type literals', () => {
     expect(platformEventTypeSchema.options).toContain('logiflow.occurrence.escalated');
     expect(platformEventTypeSchema.options).toContain('logidesk.ticket.status_changed');
     expect(platformEventTypeSchema.options).toContain('logipeople.employee.operational_eligibility_changed');
+    expect(platformEventTypeSchema.options).toContain('logipayroll.contract.created');
     expect(platformEventTypeSchema.options).toContain('logipayroll.leave.approved');
   });
 });

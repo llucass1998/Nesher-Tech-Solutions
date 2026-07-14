@@ -340,15 +340,20 @@ export const logipeopleEmployeeTerminatedEventSchema = platformEvent(
   }),
 );
 
+export const logipayrollContractCreatedDataSchema = z.object({
+  contractId: uuidSchema,
+  employeeId: uuidSchema,
+  identityUserId: uuidSchema.nullable(),
+  logiPeopleId: uuidSchema.nullable(),
+  startsAt: isoDateTimeSchema,
+  endsAt: isoDateTimeSchema.nullable(),
+  status: z.enum(['ACTIVE', 'SUSPENDED', 'ENDED']),
+});
+
 export const logipayrollContractCreatedEventSchema = platformEvent(
   'logipayroll.contract.created',
   1,
-  z.object({
-    contractId: uuidSchema,
-    employeeId: uuidSchema,
-    startsAt: z.string().date(),
-    status: z.enum(['DRAFT', 'ACTIVE', 'SUSPENDED', 'ENDED']),
-  }),
+  logipayrollContractCreatedDataSchema,
 );
 
 export const logipayrollLeaveApprovedEventSchema = platformEvent(
@@ -442,4 +447,5 @@ export type LogideskTicketStatusChangedEvent = z.infer<typeof logideskTicketStat
 export type LogipeopleEmployeeOperationalEligibilityChangedEvent = z.infer<
   typeof logipeopleEmployeeOperationalEligibilityChangedEventSchema
 >;
+export type LogipayrollContractCreatedEvent = z.infer<typeof logipayrollContractCreatedEventSchema>;
 export type LogipayrollLeaveApprovedEvent = z.infer<typeof logipayrollLeaveApprovedEventSchema>;

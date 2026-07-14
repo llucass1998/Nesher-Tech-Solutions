@@ -68,6 +68,7 @@ Data: 2026-07-14
 - LogiPayroll API agora possui `GET /api/v1/auth/me` validando JWT RS256 do LogiIdentity via JWKS, issuer e audience `logipayroll`.
 - LogiPayroll API agora possui `GET /api/v1/payroll/contracts` e `POST /api/v1/payroll/contracts` protegidos por role/permissao.
 - Criacao de contrato grava `OutboxEvent` `logipayroll.contract.created` sem dados sensiveis de folha.
+- `logipayroll.contract.created` foi alinhado em `packages/event-contracts` com schema Zod estrito e a API valida o payload antes de persistir Outbox.
 - Nenhum dado real foi migrado do LogiPeople nesta etapa.
 
 Validacoes executadas em 2026-07-14:

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { logipayrollContractCreatedDataSchema } from '@logipeople/event-contracts';
 import { PrismaService } from '../../prisma/prisma.service';
 import { LogiIdentityClaims } from '../auth/identity-jwks.service';
 import { CreateContractDto } from './dto/create-contract.dto';
@@ -75,21 +76,23 @@ export class PayrollService {
         include: { employee: true },
       });
 
+      const eventPayload = logipayrollContractCreatedDataSchema.parse({
+        contractId: created.id,
+        employeeId: created.employeeId,
+        identityUserId: created.employee.identityUserId,
+        logiPeopleId: created.employee.logiPeopleId,
+        status: created.status,
+        startsAt: created.startsAt.toISOString(),
+        endsAt: created.endsAt?.toISOString() ?? null,
+      });
+
       await tx.outboxEvent.create({
         data: {
           eventType: 'logipayroll.contract.created',
           eventVersion: 1,
           correlationId: correlationId ?? null,
           causationId: claims.sessionId ?? null,
-          payload: {
-            contractId: created.id,
-            employeeId: created.employeeId,
-            identityUserId: created.employee.identityUserId,
-            logiPeopleId: created.employee.logiPeopleId,
-            status: created.status,
-            startsAt: created.startsAt.toISOString(),
-            endsAt: created.endsAt?.toISOString() ?? null,
-          },
+          payload: eventPayload,
         },
       });
 

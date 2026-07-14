@@ -53,6 +53,8 @@ Endpoints iniciais:
 
 `POST /payroll/contracts` exige role `ADMIN`/`PAYROLL_ADMIN` ou permissao `logipayroll.contract.write`, cria/atualiza a referencia minima do colaborador, cria contrato e grava `OutboxEvent` `logipayroll.contract.created`. A resposta e o evento nao incluem documento bruto, salario, dados bancarios, descontos ou dados fiscais.
 
+O payload do evento e validado pelo schema Zod compartilhado `logipayrollContractCreatedDataSchema` em `packages/event-contracts`.
+
 ## Banco
 
 Schema inicial:
@@ -89,7 +91,7 @@ Nao existem relacoes Prisma com bancos de LogiPeople, LogiFlow ou LogiDesk.
 - Guards de autorizacao por dominio e permissoes em endpoints reais.
 - APIs reais de ponto, ferias, folha e holerites.
 - Testes de integracao com banco real para contratos.
-- Eventos `logipayroll.*` em `packages/event-contracts`.
+- Eventos adicionais `logipayroll.*` para folha, holerites, desligamentos e disponibilidade.
 - Integracao LogiPeople -> LogiPayroll.
 - Integracao LogiPayroll -> LogiFlow para indisponibilidade operacional.
 - Testes unitarios, integracao e contrato.

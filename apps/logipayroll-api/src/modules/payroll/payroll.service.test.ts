@@ -3,8 +3,8 @@ import { PayrollService } from './payroll.service';
 
 function createContractRecord() {
   return {
-    id: 'contract-1',
-    employeeId: 'employee-1',
+    id: '99999999-9999-4999-8999-999999999999',
+    employeeId: '88888888-8888-4888-8888-888888888888',
     type: 'CLT',
     startsAt: new Date('2026-07-14T00:00:00.000Z'),
     endsAt: null,
@@ -12,8 +12,8 @@ function createContractRecord() {
     createdAt: new Date('2026-07-14T01:00:00.000Z'),
     updatedAt: new Date('2026-07-14T01:00:00.000Z'),
     employee: {
-      id: 'employee-1',
-      identityUserId: 'identity-user-1',
+      id: '88888888-8888-4888-8888-888888888888',
+      identityUserId: '77777777-7777-4777-8777-777777777777',
       logiPeopleId: '11111111-1111-4111-8111-111111111111',
       fullName: 'Employee One',
       documentHash: 'hash-only',
@@ -34,7 +34,7 @@ describe('PayrollService contracts', () => {
     const service = new PayrollService(prisma as never);
 
     await expect(service.listContracts()).resolves.toEqual([expect.objectContaining({
-      id: 'contract-1',
+      id: '99999999-9999-4999-8999-999999999999',
       employee: expect.not.objectContaining({ documentHash: 'hash-only' }),
     })]);
   });
@@ -63,7 +63,7 @@ describe('PayrollService contracts', () => {
     const response = await service.createContract({
       employee: {
         logiPeopleId: '11111111-1111-4111-8111-111111111111',
-        identityUserId: 'identity-user-1',
+        identityUserId: '77777777-7777-4777-8777-777777777777',
         fullName: 'Employee One',
         documentHash: 'hash-only',
       },
