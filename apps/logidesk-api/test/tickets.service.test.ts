@@ -370,20 +370,23 @@ describe('TicketsService', () => {
     expect(context.outboxCreate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ eventType: 'ticket.created' }) }));
   });
 
-  it('lists, details and updates tickets without exposing internal messages as public messages', async () => {
+  it('lists, details and updates tickets without exposing internal notes as public messages', async () => {
     const context = createTicketsService();
     const publicTicketRecord = { ...ticketRecord } as Partial<typeof ticketRecord>;
     delete publicTicketRecord.notes;
     context.ticketFindUnique
-      .mockResolvedValueOnce({ ...ticketRecord, messages: [{ id: 'message-public', internal: false }], notes: [{ id: 'note-1' }] })
+      .mockResolvedValueOnce({ ...publicTicketRecord, messages: [{ id: 'message-public', internal: false }] })
       .mockResolvedValueOnce({ ...publicTicketRecord, messages: [{ id: 'message-public', internal: false }] })
       .mockResolvedValueOnce(ticketRecord);
 
     await expect(context.service.listTickets({ status: 'OPEN', priority: 'HIGH', search: 'Entrega' })).resolves.toHaveLength(1);
-    await expect(context.service.getTicket('ticket-1')).resolves.toMatchObject({ id: 'ticket-1', notes: [{ id: 'note-1' }] });
+    await expect(context.service.getTicket('ticket-1')).resolves.not.toHaveProperty('notes');
     await expect(context.service.getPublicTicket('ticket-1')).resolves.not.toHaveProperty('notes');
     await expect(context.service.updateTicket('ticket-1', { priority: 'URGENT', correlationId: input.correlationId })).resolves.toMatchObject({ priority: 'URGENT' });
 
+    expect(context.ticketFindUnique).toHaveBeenCalledWith(expect.objectContaining({
+      include: expect.not.objectContaining({ notes: expect.anything() }),
+    }));
     expect(context.ticketUpdate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ priority: 'URGENT' }) }));
     expect(context.ticketHistoryCreate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ action: 'ticket.updated' }) }));
   });

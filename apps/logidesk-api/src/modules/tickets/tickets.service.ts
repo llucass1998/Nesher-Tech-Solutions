@@ -119,7 +119,6 @@ export class TicketsService {
       where: { id },
       include: {
         messages: { where: { internal: false }, orderBy: { createdAt: 'asc' } },
-        notes: { orderBy: { createdAt: 'asc' } },
         attachments: { orderBy: { createdAt: 'asc' } },
         history: { orderBy: { createdAt: 'asc' } },
         assignments: { orderBy: { createdAt: 'asc' } },

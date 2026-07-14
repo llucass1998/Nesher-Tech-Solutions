@@ -171,6 +171,8 @@ As rotas administrativas de DLQ aceitam `x-service-token` ou JWT Identity com ro
 
 Mutacoes operacionais e administrativas do LogiDesk podem exigir JWT Identity quando `LOGIDESK_REQUIRE_REST_AUTH=true`. Este modo cobre criacao/edicao de chamados, status, prioridade, atribuicoes, notas internas, anexos, preferencias de notificacao e catalogos. Notificacoes, configuracoes e acoes do detalhe do ticket no web ja usam Client Components com `Authorization`. O modo permanece desligado por padrao enquanto as leituras server-side autenticadas ainda nao forem concluidas.
 
+`GET /tickets/:id` retorna mensagens publicas, anexos, historico e contexto operacional, mas nao retorna notas internas. Notas internas devem ser lidas apenas por `GET /tickets/:id/internal-notes`, que participa do RBAC REST de transicao quando `LOGIDESK_REQUIRE_REST_AUTH=true`.
+
 `POST /tickets/:id/attachments` registra metadados auditados do anexo. Campos aceitos: `fileName`, `contentType`, `sizeBytes`, `url`, `storageKey`, `uploadedById` e `correlationId`. A API rejeita URL sem HTTPS, path traversal no nome, tamanho acima de 25 MB, MIME fora da allowlist e extensao incompativel com o MIME. O upload fisico do arquivo ainda deve ser feito por storage externo ate a fase de object storage seguro.
 
 `GET /notifications` lista notificacoes internas e aceita `userId`, `teamId` e `unread=true`. `PATCH /notifications/:id/read` marca a notificacao como lida.

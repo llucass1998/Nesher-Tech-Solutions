@@ -46,6 +46,7 @@ Banco:
 - Health checks `GET /api/v1/health/live` e `GET /api/v1/health/ready`.
 - Web com login Identity, dashboard baseado em relatorio agregado, lista de chamados, detalhe do chamado, Kanban, SLA, relatorios, notificacoes, consumo inicial de Socket.IO e configuracoes com equipes, categorias e tags.
 - Detalhe web do chamado com acoes client-side autenticadas para status, prioridade, resposta publica e nota interna.
+- `GET /tickets/:id` nao inclui notas internas; elas ficam restritas ao endpoint dedicado `GET /tickets/:id/internal-notes`.
 
 ## API principal
 
@@ -163,7 +164,7 @@ Eventos implementados nesta etapa:
 
 O backend ja emite notificacoes persistidas para rooms de usuario, equipe e suporte. O web possui um client component global que conecta quando encontra token de sessao em `sessionStorage` nas chaves `logiidentity.accessToken` ou `logidesk.accessToken` e exibe notificacoes `notification:created`.
 
-Clientes podem solicitar entrada em room de ticket com `ticket:join` e payload `{ "ticketId": "uuid" }`. O backend so aceita a inscricao quando o ticket existe e o usuario e `ADMIN`/`SUPPORT`, solicitante, responsavel ou membro ativo da equipe do ticket. Notas internas nao sao emitidas em `ticket:{ticketId}` para evitar vazamento a solicitantes/clientes.
+Clientes podem solicitar entrada em room de ticket com `ticket:join` e payload `{ "ticketId": "uuid" }`. O backend so aceita a inscricao quando o ticket existe e o usuario e `ADMIN`/`SUPPORT`, solicitante, responsavel ou membro ativo da equipe do ticket. Notas internas nao sao emitidas em `ticket:{ticketId}` nem retornadas pelo detalhe principal do ticket para evitar vazamento a solicitantes/clientes.
 
 O detalhe web do chamado assina a room autorizada do ticket quando ha token de sessao e mostra eventos novos durante a sessao. SSO frontend real e validacao E2E ainda precisam evoluir antes de marcar Socket.IO como completo.
 
