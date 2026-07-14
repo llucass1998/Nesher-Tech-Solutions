@@ -44,8 +44,10 @@ O `logiflow-worker`:
 4. envia `POST /api/v1/tickets/from-logiflow`;
 5. envia `x-service-token`, `idempotency-key` e `x-correlation-id`;
 6. marca sucesso como `COMPLETED`;
-7. marca falha temporaria como `FAILED`;
-8. envia falha permanente ou excesso de tentativas para `DeadLetterEvent`.
+7. publica uma copia operacional em Redis Stream `logiflow.events`;
+8. marca falha temporaria como `FAILED`;
+9. envia falha permanente ou excesso de tentativas para `DeadLetterEvent`;
+10. publica falhas e DLQ no mesmo stream com `status`.
 
 Eventos `FAILED` usam backoff exponencial calculado por `attempts` e `updatedAt`, sem criar coluna extra de agenda. Por padrao o atraso inicia em 30 segundos e cresce ate 900 segundos. O worker registra `retryDelaySeconds` nos logs de falha.
 
@@ -58,6 +60,8 @@ Variaveis:
 - `LOGIFLOW_OUTBOX_MAX_ATTEMPTS`
 - `LOGIFLOW_OUTBOX_RETRY_BASE_DELAY_SECONDS`
 - `LOGIFLOW_OUTBOX_RETRY_MAX_DELAY_SECONDS`
+- `LOGIFLOW_EVENT_STREAM`
+- `EVENT_STREAM_MAXLEN`
 
 ## Dispatcher LogiDesk
 
@@ -70,8 +74,10 @@ O `logidesk-worker`:
 5. envia `POST /api/v1/integrations/logidesk/ticket-updates` quando o ticket tem referencia logistica;
 6. envia `x-service-token` e `x-correlation-id`;
 7. marca sucesso como `COMPLETED`;
-8. marca falha temporaria como `FAILED`;
-9. envia falha permanente ou excesso de tentativas para `DeadLetterEvent`.
+8. publica uma copia operacional em Redis Stream `logidesk.events`;
+9. marca falha temporaria como `FAILED`;
+10. envia falha permanente ou excesso de tentativas para `DeadLetterEvent`;
+11. publica falhas e DLQ no mesmo stream com `status`.
 
 Eventos `FAILED` usam o mesmo backoff exponencial por `attempts` e `updatedAt`. O worker registra `retryDelaySeconds` nos logs de falha para facilitar investigacao.
 
@@ -102,6 +108,8 @@ Variaveis:
 - `LOGIDESK_OUTBOX_MAX_ATTEMPTS`
 - `LOGIDESK_OUTBOX_RETRY_BASE_DELAY_SECONDS`
 - `LOGIDESK_OUTBOX_RETRY_MAX_DELAY_SECONDS`
+- `LOGIDESK_EVENT_STREAM`
+- `EVENT_STREAM_MAXLEN`
 
 ## Contratos
 
@@ -140,7 +148,7 @@ Para marcar integracao como pronta, confirmar:
 
 ## Limites Atuais
 
-- O dispatcher usa polling PostgreSQL; Redis Streams ainda nao foi adotado para este fluxo.
+- O dispatcher ainda usa polling PostgreSQL como mecanismo principal de entrega; Redis Streams recebe copia operacional dos eventos processados, falhos e enviados para DLQ.
 - Backoff progressivo existe no polling de `FAILED`.
 - LogiFlow e LogiDesk possuem API administrativa inicial para listar DLQ e reprocessar outbox em `DEAD_LETTER`; falta validar reprocessamento fim a fim com containers.
 - Socket.IO distribuido ainda nao foi conectado.

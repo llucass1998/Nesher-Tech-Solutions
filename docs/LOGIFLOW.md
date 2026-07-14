@@ -73,7 +73,7 @@ flowchart TD
 
 ## Limitacoes atuais
 
-- O worker LogiFlow existe e despacha outbox por HTTP, mas Redis Streams ainda nao foi adotado nesse fluxo.
+- O worker LogiFlow existe, despacha outbox por HTTP e publica espelho operacional em Redis Stream.
 - DLQ operacional existe como endpoint inicial; falta validar reprocessamento fim a fim com containers.
 - Nao ha mapa com ownership completo.
 - E2E completo LogiFlow -> LogiDesk ainda nao foi automatizado.

@@ -1,5 +1,6 @@
 import { Worker } from 'bullmq';
 import { randomUUID } from 'crypto';
+import { Redis } from 'ioredis';
 import { Pool } from 'pg';
 import { createPlatformLogger } from '@logipeople/logger';
 
@@ -14,7 +15,10 @@ const slaWarningWindowMinutes = Number(process.env.LOGIDESK_SLA_WARNING_WINDOW_M
 const maxAttempts = Number(process.env.LOGIDESK_OUTBOX_MAX_ATTEMPTS ?? 5);
 const retryBaseDelaySeconds = Number(process.env.LOGIDESK_OUTBOX_RETRY_BASE_DELAY_SECONDS ?? 30);
 const retryMaxDelaySeconds = Number(process.env.LOGIDESK_OUTBOX_RETRY_MAX_DELAY_SECONDS ?? 900);
+const eventStreamName = process.env.LOGIDESK_EVENT_STREAM ?? 'logidesk.events';
+const eventStreamMaxLen = Math.max(100, Number(process.env.EVENT_STREAM_MAXLEN ?? 10000));
 const connection = buildRedisConnection(redisUrl);
+const streamPublisher = new Redis(redisUrl, { maxRetriesPerRequest: null });
 const pool = databaseUrl ? new Pool({ connectionString: databaseUrl }) : null;
 
 const outboxWorker = new Worker(
@@ -153,6 +157,7 @@ async function dispatchOutboxEvent(event: OutboxEventRow) {
     const body = mapTicketEventToLogiflowRequest(event);
     if (!body) {
       await markCompleted(event.id);
+      await publishStreamEvent(event, 'skipped_no_logiflow_reference');
       logger.info(
         {
           operation: 'outbox.dispatch',
@@ -186,6 +191,7 @@ async function dispatchOutboxEvent(event: OutboxEventRow) {
     }
 
     await markCompleted(event.id);
+    await publishStreamEvent(event, 'completed');
     logger.info(
       {
         operation: 'outbox.dispatch',
@@ -429,6 +435,8 @@ async function markFailed(event: OutboxEventRow, error: unknown) {
     throw transactionError;
   }
 
+  await publishStreamEvent(event, status.toLowerCase());
+
   logger.error(
     {
       operation: 'outbox.dispatch',
@@ -448,6 +456,7 @@ async function shutdown() {
   clearInterval(poller);
   clearInterval(slaPoller);
   await Promise.all([outboxWorker.close(), slaWorker.close()]);
+  await streamPublisher.quit();
   await pool?.end();
   logger.info({ module: 'worker', operation: 'shutdown', status: 'ok' }, 'LogiDesk worker stopped');
 }
@@ -481,6 +490,46 @@ function asOptionalString(value: unknown) {
 
 function calculateRetryDelaySeconds(attempts: number) {
   return Math.min(retryMaxDelaySeconds, retryBaseDelaySeconds * 2 ** Math.max(attempts - 1, 0));
+}
+
+async function publishStreamEvent(event: OutboxEventRow, status: string) {
+  try {
+    await streamPublisher.xadd(
+      eventStreamName,
+      'MAXLEN',
+      '~',
+      eventStreamMaxLen,
+      '*',
+      'eventId',
+      event.id,
+      'eventType',
+      toNamespacedTicketEventType(event.eventType),
+      'eventVersion',
+      String(event.eventVersion),
+      'correlationId',
+      event.correlationId,
+      'causationId',
+      event.causationId ?? '',
+      'producer',
+      'logidesk-worker',
+      'status',
+      status,
+      'payload',
+      JSON.stringify(event.payload ?? {}),
+    );
+  } catch (error) {
+    logger.warn(
+      {
+        operation: 'redis_stream.publish',
+        stream: eventStreamName,
+        outboxEventId: event.id,
+        eventType: event.eventType,
+        correlationId: event.correlationId,
+        error: error instanceof Error ? error.message : 'Unknown Redis Streams error',
+      },
+      'LogiDesk event stream publish failed',
+    );
+  }
 }
 
 class PermanentDispatchError extends Error {}
