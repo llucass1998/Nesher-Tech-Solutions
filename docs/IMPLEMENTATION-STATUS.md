@@ -40,6 +40,7 @@ Phases 1-14 are in scope:
 | LogiIdentity foundation | Implemented | Added `apps/identity-api`, `apps/identity-worker`, `databases/identity`, RS256/JWKS, rotating refresh token sessions, Docker services and CI. |
 | LogiFlow Identity validation | Partially implemented | LogiFlow accepts Identity tokens through JWKS when `IDENTITY_JWKS_URL` is configured, while local auth remains as compatibility fallback. |
 | LogiDesk Identity validation | Partially implemented | LogiDesk exposes `GET /api/v1/auth/me` backed by Identity JWKS. Full frontend SSO remains pending. |
+| Platform event contracts | Implemented in shared package | `packages/event-contracts` now defines the strict versioned event envelope and namespaced events for LogiFlow, LogiDesk, LogiPeople and LogiPayroll. Runtime producers/consumers still need migration from legacy names. |
 
 ## Identity validation evidence
 
@@ -50,6 +51,8 @@ Phases 1-14 are in scope:
 | `npm run test -w identity-api` | PASS | 1 unit test passed. |
 | `docker compose up -d` | PASS | Identity, LogiFlow, LogiDesk, Redis, databases, workers and webs became healthy. |
 | Identity smoke test | PASS | Login, refresh, logout, JWKS, LogiFlow `/api/v1/auth/me` and LogiDesk `/api/v1/auth/me` passed. |
+| `npm run typecheck -w @logipeople/event-contracts` | PASS | Event contract package compiles. |
+| `npm run test -w @logipeople/event-contracts` | PASS | 5 contract tests passed. |
 
 ## Explicitly not complete
 

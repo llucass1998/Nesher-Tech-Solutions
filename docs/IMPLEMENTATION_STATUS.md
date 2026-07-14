@@ -26,6 +26,7 @@ Data: 2026-07-13
 | Plataforma Fase 4 - JWT RS256 e JWKS | Implementada no escopo inicial | `/.well-known/jwks.json` retornou 1 chave e tokens foram aceitos por LogiFlow/LogiDesk. |
 | Plataforma Fase 5 - Migrar auth LogiFlow | Parcial com fallback | `verificarAccessTokenV1` aceita Identity JWKS quando `IDENTITY_JWKS_URL` esta configurada; login local legado preservado. |
 | Plataforma Fase 6 - Migrar auth LogiDesk | Parcial com SSO basico | `GET /api/v1/auth/me` valida token Identity; frontend SSO completo ainda pendente. |
+| Plataforma Fase 7 - Contratos e eventos | Implementada no pacote compartilhado | `packages/event-contracts` consolidado com envelope, eventos namespaced, payloads estritos e testes de contrato. Produtores/consumidores ainda precisam migrar dos nomes legados. |
 
 ## Matriz de regressao
 
@@ -54,6 +55,7 @@ Data: 2026-07-13
 | LogiIdentity login/JWKS | Servico nao existia | Nao | Sim | PASS no smoke Docker |
 | LogiFlow valida token Identity | LogiFlow usava token local | Nao | Sim | PASS no smoke Docker via `/api/v1/auth/me` |
 | LogiDesk valida token Identity | LogiDesk nao tinha auth Identity | Nao | Sim | PASS no smoke Docker via `/api/v1/auth/me` |
+| Contratos de eventos da plataforma | Eventos parciais e nomes inconsistentes | Nao | Sim | PASS em `packages/event-contracts` |
 
 ## Validacoes
 
@@ -72,6 +74,8 @@ Data: 2026-07-13
 | `docker compose build identity-migrate identity-api identity-worker logiflow-api logidesk-api` | PASS | Primeira tentativa teve `ECONNRESET` em `npm ci`; repeticao passou. |
 | `docker compose up -d` | PASS | Identity, LogiFlow, LogiDesk, Redis, bancos, workers e webs saudaveis. |
 | Smoke Identity/SSO basico | PASS | Login, refresh, logout, JWKS, LogiFlow `/api/v1/auth/me` e LogiDesk `/api/v1/auth/me`. |
+| `npm run typecheck -w @logipeople/event-contracts` | PASS | Schemas e tipos de eventos compilaram. |
+| `npm run test -w @logipeople/event-contracts` | PASS | 5 testes de contrato passaram. |
 
 ### Validacoes da Fase 5
 
