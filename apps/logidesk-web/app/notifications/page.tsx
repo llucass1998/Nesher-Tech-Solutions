@@ -1,5 +1,5 @@
 import { fetchLogiDesk, SupportNotification } from '@/src/lib/api';
-import { markNotificationReadAction } from './actions';
+import { NotificationsClient } from './notifications-client';
 
 export default async function NotificationsPage() {
   const result = await fetchLogiDesk<SupportNotification[]>('/notifications?unread=true');
@@ -13,39 +13,7 @@ export default async function NotificationsPage() {
       </section>
       {result.error ? <StateCard title="API indisponivel" message={result.error} /> : null}
       <section style={panelStyle}>
-        {notifications.length === 0 ? (
-          <p style={mutedStyle}>Nenhuma notificacao pendente.</p>
-        ) : (
-          <div style={{ display: 'grid', gap: 12 }}>
-            {notifications.map((notification) => (
-              <article key={notification.id} style={notificationStyle}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
-                  <div>
-                    <p style={{ margin: 0, fontWeight: 800 }}>{notification.title}</p>
-                    <p style={mutedStyle}>{notification.body}</p>
-                  </div>
-                  <Badge value={notification.type} />
-                </div>
-                {notification.ticket ? (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
-                    <Badge value={notification.ticket.number} />
-                    <Badge value={notification.ticket.status} />
-                    <Badge value={notification.ticket.priority} />
-                  </div>
-                ) : null}
-                <div style={footerStyle}>
-                  <p style={{ ...mutedStyle, margin: 0 }}>Criada em {formatDate(notification.createdAt)}</p>
-                  <form action={markNotificationReadAction}>
-                    <input type="hidden" name="notificationId" value={notification.id} />
-                    <button type="submit" style={buttonStyle}>
-                      Marcar como lida
-                    </button>
-                  </form>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
+        <NotificationsClient notifications={notifications} />
       </section>
     </div>
   );
@@ -60,26 +28,6 @@ function StateCard({ title, message }: { title: string; message: string }) {
   );
 }
 
-function Badge({ value }: { value: string }) {
-  return <span style={{ borderRadius: 999, background: 'var(--desk-surface-muted)', padding: '4px 8px', fontSize: 12, fontWeight: 800 }}>{value}</span>;
-}
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
-}
-
 const panelStyle = { border: '1px solid var(--desk-border)', borderRadius: 8, background: 'var(--desk-surface)', padding: 20 };
-const notificationStyle = { border: '1px solid var(--desk-border)', borderRadius: 8, padding: 16, background: 'var(--desk-surface)' };
-const footerStyle = { display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' as const, marginTop: 12 };
-const buttonStyle = {
-  border: '1px solid var(--desk-border)',
-  borderRadius: 8,
-  background: 'var(--desk-text)',
-  color: 'var(--desk-surface)',
-  padding: '8px 12px',
-  fontSize: 13,
-  fontWeight: 800,
-  cursor: 'pointer',
-};
 const titleStyle = { margin: 0, fontSize: 28 };
 const mutedStyle = { margin: '6px 0 0', color: 'var(--desk-muted)', fontSize: 14 };

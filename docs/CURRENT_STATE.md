@@ -105,13 +105,13 @@ Implementado:
 
 - Tickets, mensagens, notas internas, historico, SLA preliminar, outbox, DLQ, auditoria e health checks.
 - Criacao idempotente de ticket a partir do LogiFlow.
-- Web com login Identity, refresh por cookie HttpOnly, logout, guard visual de sessao, helper REST com Authorization/retry no browser, dashboard, chamados, detalhe do chamado, Kanban, SLA e configuracoes.
+- Web com login Identity, refresh por cookie HttpOnly, logout, guard visual de sessao, helper REST com Authorization/retry no browser, dashboard, chamados, detalhe do chamado, Kanban, SLA, notificacoes e configuracoes.
 
 Limitacoes:
 
 - SSO/JWKS basico conectado ao LogiIdentity por `GET /api/v1/auth/me` e login/refresh/logout inicial no LogiDesk web.
 - Socket.IO autenticado ja existe no backend do LogiDesk, `ticket:join` valida acesso e o web consome notificacoes/eventos de ticket quando ha token de sessao ou refresh valido.
-- O helper REST do web ja envia Authorization no browser. A API possui RBAC REST de transicao para mutacoes quando `LOGIDESK_REQUIRE_REST_AUTH=true`; ainda falta migrar SSR/server actions para sessao autenticada, ligar a flag por padrao, aplicar ownership fino e completar processamento dos workers.
+- O helper REST do web ja envia Authorization no browser. Notificacoes e configuracoes ja usam mutacoes client-side autenticadas. A API possui RBAC REST de transicao para mutacoes quando `LOGIDESK_REQUIRE_REST_AUTH=true`; ainda falta migrar tickets e leituras SSR para sessao autenticada, ligar a flag por padrao, aplicar ownership fino e completar processamento dos workers.
 - E2E completo LogiFlow/LogiDesk ainda nao existe.
 
 ## Infraestrutura
