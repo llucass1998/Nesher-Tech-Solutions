@@ -42,7 +42,7 @@ Banco:
 - Dead-letter table.
 - Auditoria.
 - Health checks `GET /api/v1/health/live` e `GET /api/v1/health/ready`.
-- Web com dashboard baseado em relatorio agregado, lista de chamados, Kanban, SLA, notificacoes e configuracoes.
+- Web com dashboard baseado em relatorio agregado, lista de chamados, Kanban, SLA, relatorios, notificacoes e configuracoes.
 
 ## API principal
 
@@ -118,6 +118,8 @@ O endpoint cria historico, auditoria e outbox. Upload binario, object storage, v
 
 O dashboard web consome `/reports/summary` para os cards e distribuicoes, e `/tickets` apenas para a fila recente.
 
+A pagina `/reports` consome `/reports/summary` e exibe totais, alertas de prioridade/SLA e distribuicoes por status, prioridade, origem e SLA.
+
 A pagina `/notifications` consome `GET /notifications?unread=true`, exibe alertas pendentes de atribuicao, SLA e eventos operacionais, e permite marcar cada notificacao como lida pela web usando `PATCH /notifications/:id/read`.
 
 A pagina `/settings` consome `GET /notification-preferences/logidesk-web` e grava preferencias preliminares com `PATCH /notification-preferences/:userId`. A API respeita essas preferencias ao criar notificacoes de usuario. Esta etapa usa um `userId` operacional fixo ate o frontend concluir o SSO real do LogiIdentity.
@@ -140,7 +142,7 @@ A pagina `/settings` consome `GET /notification-preferences/logidesk-web` e grav
 - `npm run typecheck -w logidesk-worker`: PASS.
 - `npm run build -w logidesk-worker`: PASS.
 - `npm run typecheck -w logidesk-web`: PASS.
-- `npm run build -w logidesk-web`: PASS.
+- `npm run build -w logidesk-web`: PASS, incluindo `/reports`.
 - `npm run lint`: PASS.
 - `npm run typecheck`: PASS.
 - `npm run test:workspaces`: PASS.
