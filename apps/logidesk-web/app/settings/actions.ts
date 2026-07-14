@@ -27,6 +27,20 @@ export async function deactivateTagAction(formData: FormData) {
   await deactivateCatalog('/tags', formData);
 }
 
+export async function updateNotificationPreferencesAction(formData: FormData) {
+  const userId = optionalString(formData.get('userId')) ?? 'logidesk-web';
+  await mutateLogiDesk(`/notification-preferences/${userId}`, 'PATCH', {
+    inAppEnabled: formData.has('inAppEnabled'),
+    emailEnabled: formData.has('emailEnabled'),
+    assignmentEnabled: formData.has('assignmentEnabled'),
+    slaEnabled: formData.has('slaEnabled'),
+    messageEnabled: formData.has('messageEnabled'),
+    correlationId: newCorrelationId(),
+    actorId: 'logidesk-web',
+  });
+  revalidatePath('/settings');
+}
+
 async function createCatalog(path: string, formData: FormData) {
   await mutateLogiDesk(path, 'POST', {
     name: String(formData.get('name') ?? ''),

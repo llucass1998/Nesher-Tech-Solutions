@@ -229,6 +229,22 @@ model Notification {
   @@index([ticketId, createdAt])
 }
 
+model NotificationPreference {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  inAppEnabled      Boolean  @default(true)
+  emailEnabled      Boolean  @default(false)
+  assignmentEnabled Boolean  @default(true)
+  slaEnabled        Boolean  @default(true)
+  messageEnabled    Boolean  @default(true)
+  updatedById       String?
+  correlationId     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([updatedAt])
+}
+
 model TicketHistory {
   id             String        @id @default(uuid())
   ticketId       String

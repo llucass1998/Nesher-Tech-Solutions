@@ -9,6 +9,7 @@ import { CreateAttachmentDto } from './dto/create-attachment.dto';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { CreateTicketFromLogiflowDto } from './dto/create-ticket-from-logiflow.dto';
+import { UpdateNotificationPreferenceDto } from './dto/notification-preference.dto';
 import { CreateSupportCatalogDto, UpdateSupportCatalogDto } from './dto/support-catalog.dto';
 import { UpdateInternalNoteDto } from './dto/update-internal-note.dto';
 import { UpdateTicketDto } from './dto/update-ticket.dto';
@@ -633,6 +634,54 @@ export class TicketsService {
     });
   }
 
+  async getNotificationPreferences(userId: string) {
+    const current = await this.prisma.notificationPreference.findUnique({ where: { userId } });
+
+    if (current) {
+      return current;
+    }
+
+    return this.prisma.notificationPreference.create({
+      data: { userId },
+    });
+  }
+
+  async updateNotificationPreferences(userId: string, input: UpdateNotificationPreferenceDto) {
+    const current = await this.prisma.notificationPreference.findUnique({ where: { userId } });
+    const correlationId = input.correlationId ?? randomUUID();
+    const data = {
+      ...this.notificationPreferenceData(input),
+      correlationId,
+      ...(input.actorId ? { updatedById: input.actorId } : {}),
+    };
+
+    return this.prisma.$transaction(async (tx) => {
+      const preference = await tx.notificationPreference.upsert({
+        where: { userId },
+        create: {
+          userId,
+          ...data,
+        },
+        update: data,
+      });
+
+      await tx.auditLog.create({
+        data: {
+          action: 'notification.preference_updated',
+          entityType: 'NotificationPreference',
+          entityId: preference.id,
+          actorRole: 'SUPPORT',
+          correlationId,
+          ...(input.actorId ? { actorId: input.actorId } : {}),
+          ...(current ? { before: current as unknown as Prisma.InputJsonValue } : {}),
+          after: preference as unknown as Prisma.InputJsonValue,
+        },
+      });
+
+      return preference;
+    });
+  }
+
   async getReportsSummary() {
     const [
       totalTickets,
@@ -1037,6 +1086,16 @@ export class TicketsService {
         ...(input.teamId ? { teamId: input.teamId } : {}),
       },
     });
+  }
+
+  private notificationPreferenceData(input: UpdateNotificationPreferenceDto) {
+    return {
+      ...(typeof input.inAppEnabled === 'boolean' ? { inAppEnabled: input.inAppEnabled } : {}),
+      ...(typeof input.emailEnabled === 'boolean' ? { emailEnabled: input.emailEnabled } : {}),
+      ...(typeof input.assignmentEnabled === 'boolean' ? { assignmentEnabled: input.assignmentEnabled } : {}),
+      ...(typeof input.slaEnabled === 'boolean' ? { slaEnabled: input.slaEnabled } : {}),
+      ...(typeof input.messageEnabled === 'boolean' ? { messageEnabled: input.messageEnabled } : {}),
+    };
   }
 
   private recordFirstResponse(

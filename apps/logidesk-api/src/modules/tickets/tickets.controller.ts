@@ -6,6 +6,7 @@ import { CreateAttachmentDto } from './dto/create-attachment.dto';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { CreateTicketFromLogiflowDto } from './dto/create-ticket-from-logiflow.dto';
+import { UpdateNotificationPreferenceDto } from './dto/notification-preference.dto';
 import { CreateSupportCatalogDto, UpdateSupportCatalogDto } from './dto/support-catalog.dto';
 import { TicketActionDto } from './dto/ticket-action.dto';
 import { UpdateInternalNoteDto } from './dto/update-internal-note.dto';
@@ -149,6 +150,16 @@ export class TicketsController {
   @Patch('notifications/:id/read')
   markNotificationRead(@Param('id') id: string) {
     return this.ticketsService.markNotificationRead(id);
+  }
+
+  @Get('notification-preferences/:userId')
+  getNotificationPreferences(@Param('userId') userId: string) {
+    return this.ticketsService.getNotificationPreferences(userId);
+  }
+
+  @Patch('notification-preferences/:userId')
+  updateNotificationPreferences(@Param('userId') userId: string, @Body() body: UpdateNotificationPreferenceDto) {
+    return this.ticketsService.updateNotificationPreferences(userId, body);
   }
 
   @Get('reports/summary')

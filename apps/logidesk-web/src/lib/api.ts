@@ -86,6 +86,20 @@ export interface SupportNotification {
   } | null;
 }
 
+export interface SupportNotificationPreference {
+  id: string;
+  userId: string;
+  inAppEnabled: boolean;
+  emailEnabled: boolean;
+  assignmentEnabled: boolean;
+  slaEnabled: boolean;
+  messageEnabled: boolean;
+  updatedById?: string | null;
+  correlationId?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export type LogiDeskResult<T> = Promise<{ data?: T; error?: string }>;
 
 export async function fetchLogiDesk<T>(path: string): LogiDeskResult<T> {

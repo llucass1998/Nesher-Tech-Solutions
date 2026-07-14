@@ -33,6 +33,7 @@ Banco:
 - Mudanca de prioridade.
 - Arquivamento/cancelamento.
 - Notificacoes internas para atribuicao de chamados.
+- Preferencias preliminares de notificacao por usuario operacional.
 - Historico.
 - SLA por prioridade com primeira resposta, pausa, retomada e conclusao operacional.
 - Worker de SLA para alerta e violacao automaticos.
@@ -73,6 +74,8 @@ Rotas:
 - `POST /tickets/:id/attachments`
 - `GET /notifications`
 - `PATCH /notifications/:id/read`
+- `GET /notification-preferences/:userId`
+- `PATCH /notification-preferences/:userId`
 - `GET /reports/summary`
 - `POST /tickets/:id/assign`
 - `DELETE /tickets/:id/assign`
@@ -117,10 +120,13 @@ O dashboard web consome `/reports/summary` para os cards e distribuicoes, e `/ti
 
 A pagina `/notifications` consome `GET /notifications?unread=true`, exibe alertas pendentes de atribuicao, SLA e eventos operacionais, e permite marcar cada notificacao como lida pela web usando `PATCH /notifications/:id/read`.
 
+A pagina `/settings` consome `GET /notification-preferences/logidesk-web` e grava preferencias preliminares com `PATCH /notification-preferences/:userId`. Esta etapa usa um `userId` operacional fixo ate o frontend concluir o SSO real do LogiIdentity.
+
 ## Limites atuais
 
 - SSO/JWKS basico existe via `GET /api/v1/auth/me`; frontend SSO completo ainda precisa evoluir.
 - Socket.IO ainda nao esta emitindo eventos para browsers.
+- Preferencias de notificacao existem como persistencia/API/web preliminar, mas ainda nao filtram entrega em tempo real por usuario autenticado.
 - Worker LogiDesk despacha eventos com referencia LogiFlow de volta para o LogiFlow.
 - E2E Playwright completo LogiFlow -> LogiDesk ainda nao foi criado.
 - SLA registra primeira resposta, pausa em `WAITING_CUSTOMER`, retomada em `IN_PROGRESS`, conclusao em `RESOLVED`/`CLOSED` e alerta/violacao automaticos pelo worker. Calendario comercial e feriados ainda precisam evoluir.
@@ -128,8 +134,9 @@ A pagina `/notifications` consome `GET /notifications?unread=true`, exibe alerta
 ## Validacao recente
 
 - `npm run logidesk:prisma:generate`: PASS.
+- `npx prisma validate --config apps/logidesk-api/prisma.config.ts`: PASS.
 - `npm run typecheck -w logidesk-api`: PASS.
-- `npm run test -w logidesk-api`: PASS, 13 testes.
+- `npm run test -w logidesk-api`: PASS, 14 testes.
 - `npm run typecheck -w logidesk-worker`: PASS.
 - `npm run build -w logidesk-worker`: PASS.
 - `npm run typecheck -w logidesk-web`: PASS.
@@ -141,6 +148,7 @@ A pagina `/notifications` consome `GET /notifications?unread=true`, exibe alerta
 - `npm audit --audit-level=high`: PASS.
 - `docker compose build logidesk-migrate logidesk-api logidesk-web`: PASS.
 - `docker compose --env-file .env.example build logidesk-web`: PASS apos leitura web de notificacoes.
+- `docker compose --env-file .env.example build logidesk-migrate logidesk-api logidesk-web`: PASS apos preferencias de notificacao.
 
 ## Guardrail
 

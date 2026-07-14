@@ -65,6 +65,9 @@ function createTicketsService() {
   const notificationFindMany = vi.fn().mockResolvedValue([]);
   const notificationFindUnique = vi.fn().mockResolvedValue({ id: 'notification-1', readAt: null });
   const notificationUpdate = vi.fn().mockResolvedValue({ id: 'notification-1', readAt: new Date('2026-07-14T00:00:00.000Z') });
+  const notificationPreferenceCreate = vi.fn().mockResolvedValue({ id: 'preference-1', userId: 'agent-1', inAppEnabled: true, emailEnabled: false });
+  const notificationPreferenceFindUnique = vi.fn().mockResolvedValue(null);
+  const notificationPreferenceUpsert = vi.fn().mockResolvedValue({ id: 'preference-1', userId: 'agent-1', inAppEnabled: true, emailEnabled: true });
   const ticketMessageCreate = vi.fn().mockResolvedValue({
     id: 'message-1',
     ticketId: 'ticket-1',
@@ -114,6 +117,7 @@ function createTicketsService() {
     outboxEvent: { create: outboxCreate },
     auditLog: { create: auditCreate },
     notification: { create: notificationCreate },
+    notificationPreference: { upsert: notificationPreferenceUpsert },
     ticketMessage: { create: ticketMessageCreate },
     ticketNote: { create: ticketNoteCreate, update: ticketNoteUpdate },
     ticketAttachment: { create: ticketAttachmentCreate },
@@ -141,6 +145,11 @@ function createTicketsService() {
       findMany: notificationFindMany,
       findUnique: notificationFindUnique,
       update: notificationUpdate,
+    },
+    notificationPreference: {
+      create: notificationPreferenceCreate,
+      findUnique: notificationPreferenceFindUnique,
+      upsert: notificationPreferenceUpsert,
     },
     ticketMessage: { create: ticketMessageCreate },
     ticketNote: {
@@ -198,6 +207,9 @@ function createTicketsService() {
     notificationFindMany,
     notificationFindUnique,
     notificationUpdate,
+    notificationPreferenceCreate,
+    notificationPreferenceFindUnique,
+    notificationPreferenceUpsert,
     ticketMessageCreate,
     ticketNoteCreate,
     ticketNoteFindMany,
@@ -457,6 +469,40 @@ describe('TicketsService', () => {
     expect(context.notificationUpdate).toHaveBeenCalledWith(expect.objectContaining({
       where: { id: 'notification-1' },
       data: expect.objectContaining({ readAt: expect.any(Date) }),
+    }));
+  });
+
+  it('creates default notification preferences and updates them with audit', async () => {
+    const context = createTicketsService();
+
+    await expect(context.service.getNotificationPreferences('agent-1')).resolves.toMatchObject({
+      userId: 'agent-1',
+      inAppEnabled: true,
+    });
+    expect(context.notificationPreferenceCreate).toHaveBeenCalledWith({ data: { userId: 'agent-1' } });
+
+    await expect(context.service.updateNotificationPreferences('agent-1', {
+      emailEnabled: true,
+      assignmentEnabled: false,
+      actorId: 'admin-1',
+      correlationId: input.correlationId,
+    })).resolves.toMatchObject({
+      id: 'preference-1',
+      userId: 'agent-1',
+      emailEnabled: true,
+    });
+
+    expect(context.notificationPreferenceUpsert).toHaveBeenCalledWith(expect.objectContaining({
+      where: { userId: 'agent-1' },
+      create: expect.objectContaining({ userId: 'agent-1', emailEnabled: true, assignmentEnabled: false }),
+      update: expect.objectContaining({ emailEnabled: true, assignmentEnabled: false }),
+    }));
+    expect(context.auditCreate).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        action: 'notification.preference_updated',
+        entityType: 'NotificationPreference',
+        actorId: 'admin-1',
+      }),
     }));
   });
 
