@@ -45,6 +45,7 @@ function createTicketsService() {
   const ticketCreate = vi.fn().mockResolvedValue(ticketRecord);
   const ticketUpdate = vi.fn().mockImplementation(({ data }) => Promise.resolve({ ...ticketRecord, ...data }));
   const ticketSlaCreate = vi.fn().mockResolvedValue({});
+  const ticketSlaUpdate = vi.fn().mockResolvedValue({});
   const ticketHistoryCreate = vi.fn().mockResolvedValue({});
   const ticketAssignmentCreate = vi.fn().mockResolvedValue({});
   const ticketAssignmentFindMany = vi.fn().mockResolvedValue([]);
@@ -99,7 +100,7 @@ function createTicketsService() {
 
   const tx = {
     ticket: { create: ticketCreate, update: ticketUpdate },
-    ticketSla: { create: ticketSlaCreate },
+    ticketSla: { create: ticketSlaCreate, update: ticketSlaUpdate },
     ticketHistory: { create: ticketHistoryCreate },
     ticketAssignment: { create: ticketAssignmentCreate },
     ticketTagAssignment: { createMany: ticketTagAssignmentCreateMany, deleteMany: ticketTagAssignmentDeleteMany },
@@ -120,7 +121,7 @@ function createTicketsService() {
       create: ticketCreate,
       update: ticketUpdate,
     },
-    ticketSla: { create: ticketSlaCreate },
+    ticketSla: { create: ticketSlaCreate, update: ticketSlaUpdate },
     ticketHistory: { create: ticketHistoryCreate },
     ticketAssignment: { create: ticketAssignmentCreate, findMany: ticketAssignmentFindMany },
     ticketTagAssignment: { createMany: ticketTagAssignmentCreateMany, deleteMany: ticketTagAssignmentDeleteMany },
@@ -174,6 +175,7 @@ function createTicketsService() {
     ticketCreate,
     ticketUpdate,
     ticketSlaCreate,
+    ticketSlaUpdate,
     ticketHistoryCreate,
     ticketAssignmentCreate,
     ticketTagAssignmentCreateMany,
@@ -345,6 +347,62 @@ describe('TicketsService', () => {
         }),
       }),
     );
+  });
+
+  it('updates SLA lifecycle on pause, resume, resolution and first response', async () => {
+    const context = createTicketsService();
+    const sla = {
+      id: 'sla-1',
+      ticketId: 'ticket-1',
+      status: 'RUNNING',
+      firstResponseDueAt: new Date('2026-07-14T10:00:00.000Z'),
+      resolutionDueAt: new Date('2026-07-14T18:00:00.000Z'),
+      firstRespondedAt: null,
+      resolvedAt: null,
+      pausedAt: null,
+      pausedDurationSeconds: 0,
+      warningEmittedAt: null,
+      breachedAt: null,
+      createdAt: new Date('2026-07-14T00:00:00.000Z'),
+      updatedAt: new Date('2026-07-14T00:00:00.000Z'),
+    };
+
+    context.ticketFindUnique.mockResolvedValueOnce({ ...ticketRecord, status: 'IN_PROGRESS', sla });
+    await context.service.changeStatus('ticket-1', { status: 'WAITING_CUSTOMER', correlationId: input.correlationId });
+    expect(context.ticketSlaUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      where: { ticketId: 'ticket-1' },
+      data: expect.objectContaining({ status: 'PAUSED', pausedAt: expect.any(Date) }),
+    }));
+
+    context.ticketFindUnique.mockResolvedValueOnce({
+      ...ticketRecord,
+      status: 'WAITING_CUSTOMER',
+      sla: { ...sla, status: 'PAUSED', pausedAt: new Date(Date.now() - 3000) },
+    });
+    await context.service.changeStatus('ticket-1', { status: 'IN_PROGRESS', correlationId: input.correlationId });
+    expect(context.ticketSlaUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      where: { ticketId: 'ticket-1' },
+      data: expect.objectContaining({ status: 'RUNNING', pausedAt: null, pausedDurationSeconds: expect.any(Number) }),
+    }));
+
+    context.ticketFindUnique.mockResolvedValueOnce({ ...ticketRecord, status: 'IN_PROGRESS', sla });
+    await context.service.changeStatus('ticket-1', { status: 'RESOLVED', correlationId: input.correlationId });
+    expect(context.ticketSlaUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      where: { ticketId: 'ticket-1' },
+      data: expect.objectContaining({ status: 'MET', resolvedAt: expect.any(Date), pausedAt: null }),
+    }));
+
+    context.ticketFindUnique.mockResolvedValueOnce({ ...ticketRecord, status: 'IN_PROGRESS', sla });
+    await context.service.createMessage('ticket-1', {
+      body: 'Resposta ao cliente',
+      authorRole: 'SUPPORT',
+      authorId: 'agent-1',
+      correlationId: input.correlationId,
+    });
+    expect(context.ticketSlaUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      where: { ticketId: 'ticket-1' },
+      data: expect.objectContaining({ firstRespondedAt: expect.any(Date) }),
+    }));
   });
 
   it('changes priority, assignment, team and unassignment with history and outbox', async () => {

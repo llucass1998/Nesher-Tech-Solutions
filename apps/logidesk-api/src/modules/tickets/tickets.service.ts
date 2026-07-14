@@ -366,6 +366,7 @@ export class TicketsService {
           ...(target === 'CANCELED' ? { canceledAt: new Date() } : {}),
         },
       });
+      await this.updateSlaForStatusChange(tx, current, target);
 
       await this.createHistory(tx, {
         ticketId: id,
@@ -436,7 +437,7 @@ export class TicketsService {
   }
 
   async createMessage(ticketId: string, input: CreateMessageDto) {
-    await this.ensureTicket(ticketId);
+    const current = await this.ensureTicket(ticketId);
 
     return this.prisma.$transaction(async (tx) => {
       const message = await tx.ticketMessage.create({
@@ -463,6 +464,7 @@ export class TicketsService {
         messageId: message.id,
         internal: message.internal,
       }, message.id);
+      await this.recordFirstResponse(tx, current, input);
 
       return message;
     });
@@ -993,6 +995,66 @@ export class TicketsService {
         ...(input.teamId ? { teamId: input.teamId } : {}),
       },
     });
+  }
+
+  private recordFirstResponse(
+    tx: Prisma.TransactionClient,
+    ticket: TicketWithRelations,
+    input: CreateMessageDto,
+  ) {
+    if (input.internal || input.authorRole !== 'SUPPORT' || !ticket.sla || ticket.sla.firstRespondedAt) {
+      return Promise.resolve(null);
+    }
+
+    return tx.ticketSla.update({
+      where: { ticketId: ticket.id },
+      data: { firstRespondedAt: new Date() },
+    });
+  }
+
+  private updateSlaForStatusChange(
+    tx: Prisma.TransactionClient,
+    ticket: TicketWithRelations,
+    target: TicketStatus,
+  ) {
+    if (!ticket.sla) {
+      return Promise.resolve(null);
+    }
+
+    if (target === 'WAITING_CUSTOMER') {
+      return tx.ticketSla.update({
+        where: { ticketId: ticket.id },
+        data: {
+          status: 'PAUSED',
+          pausedAt: ticket.sla.pausedAt ?? new Date(),
+        },
+      });
+    }
+
+    if (target === 'IN_PROGRESS' && ticket.sla.pausedAt) {
+      const pausedSeconds = Math.max(0, Math.floor((Date.now() - ticket.sla.pausedAt.getTime()) / 1000));
+      return tx.ticketSla.update({
+        where: { ticketId: ticket.id },
+        data: {
+          status: 'RUNNING',
+          pausedAt: null,
+          pausedDurationSeconds: ticket.sla.pausedDurationSeconds + pausedSeconds,
+        },
+      });
+    }
+
+    if (target === 'RESOLVED' || target === 'CLOSED') {
+      return tx.ticketSla.update({
+        where: { ticketId: ticket.id },
+        data: {
+          status: 'MET',
+          resolvedAt: new Date(),
+          pausedAt: null,
+        },
+      });
+    }
+
+    return Promise.resolve(null);
   }
 
   private createOutbox(
