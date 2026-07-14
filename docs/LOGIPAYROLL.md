@@ -70,7 +70,7 @@ O payload do evento e validado pelo schema Zod compartilhado `logipayrollContrac
 
 LogiPeople agora grava `OutboxEvent` `logipeople.employee.hired` quando um colaborador e criado. O evento contem apenas `employeeId`, `personId` e `startDate`, validado pelo contrato compartilhado.
 
-Ele ainda nao e consumido automaticamente pelo LogiPayroll. A entrega por worker, o consumo idempotente e o mapeamento para contrato ficam como proxima etapa.
+O worker do LogiPeople publica esse evento no Redis Stream `LOGIPEOPLE_EVENT_STREAM` com retry/backoff e DLQ. Ele ainda nao e consumido automaticamente pelo LogiPayroll; o consumidor idempotente e o mapeamento para contrato ficam como proxima etapa.
 
 ## Banco
 
@@ -111,6 +111,6 @@ Nao existem relacoes Prisma com bancos de LogiPeople, LogiFlow ou LogiDesk.
 - Testes de integracao com banco real para contratos.
 - Consumidores reais das mensagens publicadas em `logipayroll.events`.
 - Eventos adicionais `logipayroll.*` para folha, holerites, desligamentos e disponibilidade.
-- Worker e consumidor idempotente para concluir a integracao LogiPeople -> LogiPayroll.
+- Consumidor idempotente no LogiPayroll para concluir a integracao LogiPeople -> LogiPayroll.
 - Integracao LogiPayroll -> LogiFlow para indisponibilidade operacional.
 - Testes unitarios, integracao e contrato.

@@ -1,0 +1,24 @@
+FROM node:24-alpine AS builder
+WORKDIR /app
+ENV NEXT_TELEMETRY_DISABLED=1
+ARG NEXT_PUBLIC_LOGIPEOPLE_API_URL=http://localhost:3433/api/v1
+ENV NEXT_PUBLIC_LOGIPEOPLE_API_URL=$NEXT_PUBLIC_LOGIPEOPLE_API_URL
+COPY . .
+RUN npm ci
+RUN npm run build -w logipeople-web
+
+FROM node:24-alpine AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_PUBLIC_LOGIPEOPLE_API_URL=http://localhost:3433/api/v1
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/apps/logipeople-web ./apps/logipeople-web
+COPY --from=builder /app/packages ./packages
+RUN addgroup -S logipeople && adduser -S logipeople -G logipeople \
+  && chown -R logipeople:logipeople /app
+USER logipeople
+WORKDIR /app/apps/logipeople-web
+EXPOSE 3400
+CMD ["npm", "run", "start"]

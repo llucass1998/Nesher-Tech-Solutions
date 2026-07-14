@@ -71,7 +71,7 @@ Estrutura:
 
 - `apps/logipeople-api`: NestJS API.
 - `apps/logipeople-web`: Next.js App Router.
-- `apps/logipeople-worker`: worker bootstrap.
+- `apps/logipeople-worker`: worker de Outbox.
 - `databases/logipeople`: Prisma schema, migrations e seed.
 - `packages/*`: auth, contracts, event-contracts, config e logger.
 
@@ -88,12 +88,14 @@ Implementado:
 - Ausencias e ferias preliminares.
 - Analytics agregados.
 - Outbox inicial `logipeople.employee.hired` ao criar colaborador, validada por contrato compartilhado e limitada a `employeeId`, `personId` e `startDate`.
+- Worker LogiPeople publica Outbox valida no Redis Stream `LOGIPEOPLE_EVENT_STREAM`, aplica retry/backoff e registra `DeadLetterEvent`.
+- Docker Compose com `logipeople-db`, `logipeople-migrate`, `logipeople-api`, `logipeople-worker` e `logipeople-web`.
 
 Limitacoes:
 
 - Dados sensiveis e DP continuam preliminares.
 - eSocial real, calculos legais, pagamentos, provisoes e automacoes externas nao estao implementados.
-- Worker de entrega da Outbox LogiPeople para Redis Streams e consumo automatico pelo LogiPayroll ainda nao estao implementados.
+- Consumo automatico do evento `logipeople.employee.hired` pelo LogiPayroll ainda nao esta implementado.
 
 ## LogiDesk
 
@@ -146,7 +148,7 @@ Limitacoes:
 
 ## Infraestrutura
 
-- Docker Compose existe para Identity, LogiFlow, LogiDesk, LogiPayroll, Redis e workers.
+- Docker Compose existe para Identity, LogiFlow, LogiDesk, LogiPeople, LogiPayroll, Redis e workers.
 - GitHub Actions existem para Identity, LogiFlow, LogiDesk, LogiPeople, LogiPayroll e integracao/plataforma.
 - `.env.example` contem placeholders e nao segredos reais.
 

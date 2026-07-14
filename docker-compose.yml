@@ -321,6 +321,109 @@ services:
       retries: 5
     restart: unless-stopped
 
+  logipeople-db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${LOGIPEOPLE_DB_NAME:-logipeople}
+      POSTGRES_USER: ${LOGIPEOPLE_DB_USER:-logipeople}
+      POSTGRES_PASSWORD: ${LOGIPEOPLE_DB_PASSWORD:?set LOGIPEOPLE_DB_PASSWORD}
+    ports:
+      - "${LOGIPEOPLE_DB_PORT:-5439}:5432"
+    volumes:
+      - logipeople-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  logipeople-migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.logipeople-api
+    command: ["npx", "prisma", "migrate", "deploy", "--config", "apps/logipeople-api/prisma.config.ts"]
+    environment:
+      NODE_ENV: production
+      LOGIPEOPLE_DATABASE_URL: postgresql://${LOGIPEOPLE_DB_USER:-logipeople}:${LOGIPEOPLE_DB_PASSWORD:?set LOGIPEOPLE_DB_PASSWORD}@logipeople-db:5432/${LOGIPEOPLE_DB_NAME:-logipeople}?schema=public
+    depends_on:
+      logipeople-db:
+        condition: service_healthy
+    restart: "no"
+
+  logipeople-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.logipeople-api
+    environment:
+      NODE_ENV: production
+      LOGIPEOPLE_PORT: 3433
+      LOGIPEOPLE_WEB_ORIGIN: ${LOGIPEOPLE_WEB_ORIGIN:-http://localhost:3400}
+      LOGIPEOPLE_DATABASE_URL: postgresql://${LOGIPEOPLE_DB_USER:-logipeople}:${LOGIPEOPLE_DB_PASSWORD:?set LOGIPEOPLE_DB_PASSWORD}@logipeople-db:5432/${LOGIPEOPLE_DB_NAME:-logipeople}?schema=public
+      REDIS_URL: redis://redis:6379
+      LOGIIDENTITY_ISSUER: ${LOGIIDENTITY_ISSUER:-logiidentity.local}
+      LOGIIDENTITY_AUDIENCE: ${LOGIIDENTITY_AUDIENCE:-logipeople}
+      LOGIIDENTITY_JWT_SECRET: ${LOGIIDENTITY_JWT_SECRET:?set LOGIIDENTITY_JWT_SECRET}
+    depends_on:
+      logipeople-db:
+        condition: service_healthy
+      logipeople-migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    ports:
+      - "${LOGIPEOPLE_API_PORT:-3433}:3433"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3433/api/v1/health/live >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  logipeople-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.workspace-worker
+      args:
+        WORKSPACE: logipeople-worker
+    environment:
+      NODE_ENV: production
+      REDIS_URL: redis://redis:6379
+      LOGIPEOPLE_DATABASE_URL: postgresql://${LOGIPEOPLE_DB_USER:-logipeople}:${LOGIPEOPLE_DB_PASSWORD:?set LOGIPEOPLE_DB_PASSWORD}@logipeople-db:5432/${LOGIPEOPLE_DB_NAME:-logipeople}?schema=public
+      LOGIPEOPLE_OUTBOX_POLL_INTERVAL_MS: ${LOGIPEOPLE_OUTBOX_POLL_INTERVAL_MS:-5000}
+      LOGIPEOPLE_OUTBOX_MAX_ATTEMPTS: ${LOGIPEOPLE_OUTBOX_MAX_ATTEMPTS:-5}
+      LOGIPEOPLE_OUTBOX_RETRY_BASE_DELAY_SECONDS: ${LOGIPEOPLE_OUTBOX_RETRY_BASE_DELAY_SECONDS:-30}
+      LOGIPEOPLE_OUTBOX_RETRY_MAX_DELAY_SECONDS: ${LOGIPEOPLE_OUTBOX_RETRY_MAX_DELAY_SECONDS:-900}
+      LOGIPEOPLE_EVENT_STREAM: ${LOGIPEOPLE_EVENT_STREAM:-logipeople.events}
+      EVENT_STREAM_MAXLEN: ${EVENT_STREAM_MAXLEN:-10000}
+    depends_on:
+      redis:
+        condition: service_healthy
+      logipeople-api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  logipeople-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.logipeople-web
+      args:
+        NEXT_PUBLIC_LOGIPEOPLE_API_URL: ${NEXT_PUBLIC_LOGIPEOPLE_API_URL:-http://localhost:3433/api/v1}
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_LOGIPEOPLE_API_URL: ${NEXT_PUBLIC_LOGIPEOPLE_API_URL:-http://localhost:3433/api/v1}
+    depends_on:
+      logipeople-api:
+        condition: service_healthy
+    ports:
+      - "${LOGIPEOPLE_WEB_PORT:-3400}:3400"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3400 >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   logipayroll-db:
     image: postgres:17-alpine
     environment:
@@ -430,4 +533,5 @@ volumes:
   identity-db-data:
   logiflow-db-data:
   logidesk-db-data:
+  logipeople-db-data:
   logipayroll-db-data:

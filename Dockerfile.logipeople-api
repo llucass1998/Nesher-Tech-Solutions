@@ -1,0 +1,20 @@
+FROM node:24-alpine AS builder
+WORKDIR /app
+COPY . .
+RUN npm ci
+RUN npm run logipeople:prisma:generate
+RUN npm run build -w logipeople-api
+
+FROM node:24-alpine AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/apps/logipeople-api ./apps/logipeople-api
+COPY --from=builder /app/packages ./packages
+COPY --from=builder /app/databases/logipeople ./databases/logipeople
+RUN addgroup -S logipeople && adduser -S logipeople -G logipeople \
+  && chown -R logipeople:logipeople /app
+USER logipeople
+EXPOSE 3433
+CMD ["node", "apps/logipeople-api/dist/src/main.js"]

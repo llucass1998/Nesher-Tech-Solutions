@@ -71,6 +71,8 @@ Data: 2026-07-14
 - `logipayroll.contract.created` foi alinhado em `packages/event-contracts` com schema Zod estrito e a API valida o payload antes de persistir Outbox.
 - `logipayroll-worker` agora publica Outbox valida em Redis Streams, aplica retry/backoff e registra `DeadLetterEvent`.
 - LogiPeople agora grava Outbox `logipeople.employee.hired` ao criar colaborador, validada por `packages/event-contracts` e sem dados restritos.
+- `logipeople-worker` agora publica `logipeople.employee.hired` em Redis Streams, aplica retry/backoff e registra `DeadLetterEvent`.
+- Docker Compose agora inclui `logipeople-db`, `logipeople-migrate`, `logipeople-api`, `logipeople-worker` e `logipeople-web`.
 - Nenhum dado real foi migrado do LogiPeople nesta etapa.
 
 Validacoes executadas em 2026-07-14:
@@ -101,6 +103,16 @@ Validacoes executadas em 2026-07-14:
 | `npm run typecheck -w logipeople-api` | PASS | TypeScript sem erros. |
 | `npm run test -w logipeople-api` | PASS | 10 arquivos, 50 testes; inclui emissao de `logipeople.employee.hired` sem salario/documento. |
 | `npm run build -w logipeople-api` | PASS | Build TypeScript passou. |
+| `npm run lint -w logipeople-worker` | PASS | Sem erros; aviso conhecido do plugin Next sobre ausencia de `pages`. |
+| `npm run typecheck -w logipeople-worker` | PASS | TypeScript sem erros. |
+| `npm run test -w logipeople-worker` | PASS | 1 arquivo, 3 testes de publish, retry e DLQ. |
+| `npm run build -w logipeople-worker` | PASS | Build TypeScript passou. |
+| `npm run typecheck -w logipeople-web` | PASS | TypeScript sem erros apos build Next gerar tipos. |
+| `npm run build -w logipeople-web` | PASS | Next build passou; aviso conhecido de root/lockfiles permanece. |
+| `docker compose --env-file .env.example build --progress plain logipeople-api` | PASS | Imagem API construiu. |
+| `docker compose --env-file .env.example build --progress plain logipeople-worker` | PASS | Imagem worker construiu; build inicial lento pelo `chown -R`. |
+| `docker compose --env-file .env.example build --progress plain logipeople-web` | PASS | Imagem web construiu. |
+| `docker compose --env-file .env.example build --progress plain logipeople-migrate` | PASS | Imagem migrate construiu. |
 | `npm run lint` | PASS | ESLint do monorepo sem erros. |
 | `npm run typecheck` | PASS | Typecheck do monorepo e workspaces sem erros. |
 | `npm run test:workspaces` | PASS | Testes de workspaces passaram. |

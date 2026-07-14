@@ -1236,7 +1236,19 @@ model OutboxEvent {
   createdAt     DateTime @default(now())
   processedAt   DateTime?
   lastError     String?
+  deadLetter    DeadLetterEvent?
 
   @@index([status, createdAt])
   @@index([eventType])
+}
+
+model DeadLetterEvent {
+  id            String      @id @default(uuid())
+  outboxEventId String      @unique
+  eventType     String
+  payload       Json
+  error         String
+  correlationId String?
+  createdAt     DateTime    @default(now())
+  outboxEvent   OutboxEvent @relation(fields: [outboxEventId], references: [id])
 }
