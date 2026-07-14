@@ -1,3 +1,5 @@
+import { getSessionAccessToken, refreshIdentitySession } from './session';
+
 const API_URL = process.env.NEXT_PUBLIC_LOGIDESK_API_URL ?? 'http://localhost:3533/api/v1';
 
 export interface SupportCatalogItem {
@@ -117,7 +119,7 @@ export async function mutateLogiDesk<T>(path: string, method: 'POST' | 'PATCH' |
 
 async function requestLogiDesk<T>(path: string, init: RequestInit): LogiDeskResult<T> {
   try {
-    const response = await fetch(`${API_URL}${path}`, init);
+    const response = await fetchWithOptionalAuth(path, init);
 
     if (!response.ok) {
       return { error: `LogiDesk API respondeu ${response.status}.` };
@@ -127,6 +129,43 @@ async function requestLogiDesk<T>(path: string, init: RequestInit): LogiDeskResu
   } catch (error) {
     return { error: error instanceof Error ? error.message : 'Falha ao conectar no LogiDesk API.' };
   }
+}
+
+async function fetchWithOptionalAuth(path: string, init: RequestInit) {
+  const request = await withAuthorization(init);
+  const response = await fetch(`${API_URL}${path}`, request);
+
+  if (response.status !== 401 || typeof window === 'undefined') {
+    return response;
+  }
+
+  const refreshed = await refreshIdentitySession();
+
+  if (!refreshed) {
+    return response;
+  }
+
+  return fetch(`${API_URL}${path}`, await withAuthorization(init));
+}
+
+async function withAuthorization(init: RequestInit): Promise<RequestInit> {
+  if (typeof window === 'undefined') {
+    return init;
+  }
+
+  const token = await getSessionAccessToken();
+
+  if (!token) {
+    return init;
+  }
+
+  const headers = new Headers(init.headers);
+  headers.set('authorization', `Bearer ${token}`);
+
+  return {
+    ...init,
+    headers,
+  };
 }
 
 export function newCorrelationId() {

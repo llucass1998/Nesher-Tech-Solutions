@@ -183,7 +183,7 @@ Socket.IO:
 - room dinamica: `ticket:{ticketId}` via `ticket:join`, validada por existencia do ticket, roles `ADMIN`/`SUPPORT`, solicitante, responsavel ou membro ativo da equipe;
 - eventos backend atuais: `notification:created`, `ticket:created`, `ticket:updated`, `ticket:assigned` e `ticket:message:created`.
 
-O LogiDesk web possui `/login`, tenta refresh por cookie HttpOnly quando nao ha access token em `sessionStorage`, consome `notification:created` globalmente e assina `ticket:{ticketId}` na tela `/tickets/[id]`. Interceptador REST para retry apos `401` ainda esta pendente.
+O LogiDesk web possui `/login`, tenta refresh por cookie HttpOnly quando nao ha access token em `sessionStorage`, injeta `Authorization` em chamadas REST no browser, repete uma vez apos `401`, consome `notification:created` globalmente e assina `ticket:{ticketId}` na tela `/tickets/[id]`.
 
 `GET /dead-letter-events` lista ate 100 eventos em DLQ, ordenados por criacao decrescente. Aceita filtro `correlationId`.
 

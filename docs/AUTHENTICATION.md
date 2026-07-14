@@ -114,7 +114,9 @@ Fluxo atual:
 
 O web tambem tenta `POST /api/v1/auth/refresh` com `credentials: include` quando nao ha access token em `sessionStorage`. O logout web chama `POST /api/v1/auth/logout`, limpa a sessao local e redireciona para `/login`.
 
-Ainda pendente: interceptador para repetir automaticamente requisicoes REST apos `401` e validacao E2E em browser.
+O helper REST do LogiDesk web injeta `Authorization: Bearer <accessToken>` em chamadas executadas no browser. Se a API responder `401`, ele tenta refresh uma unica vez e repete a chamada original com o novo access token.
+
+Ainda pendente: aplicar ownership/RBAC real em todas as rotas REST do LogiDesk API e validar o fluxo em E2E de browser.
 
 ## Regras
 
