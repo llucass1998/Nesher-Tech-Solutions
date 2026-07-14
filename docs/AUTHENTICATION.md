@@ -103,7 +103,16 @@ LogiDesk valida tokens emitidos pelo Identity via:
 - `IDENTITY_ISSUER`
 - `IDENTITY_AUDIENCE`
 
-O SSO de frontend ainda precisa ser completado para usar refresh transparente e redirecionamento centralizado.
+O LogiDesk web agora possui `/login` apontando para `NEXT_PUBLIC_IDENTITY_API_URL`.
+
+Fluxo atual:
+
+1. `POST /api/v1/auth/login` no Identity com `credentials: include`.
+2. Identity emite refresh token em cookie HttpOnly.
+3. LogiDesk web guarda o access token em `sessionStorage` como `logiidentity.accessToken` e `logidesk.accessToken`.
+4. Socket.IO usa o access token da sessao para autenticar notificacoes e rooms de ticket.
+
+Ainda pendente: refresh transparente, logout web, redirecionamento centralizado e guardas de rota.
 
 ## Regras
 

@@ -41,6 +41,11 @@ Obrigatorias no Compose:
 - `JWT_SECRET`
 - `PAYMENTS_API_KEY`
 
+Identity:
+
+- `IDENTITY_WEB_ORIGIN` aceita uma ou mais origens separadas por virgula para CORS com credenciais.
+- `NEXT_PUBLIC_IDENTITY_API_URL` aponta os frontends para o Identity API.
+
 ## CI/CD
 
 Workflows:

@@ -48,7 +48,8 @@ Data: 2026-07-14
 - `ticket:join` agora valida existencia do ticket e acesso por `ADMIN`/`SUPPORT`, solicitante, responsavel ou membro ativo da equipe antes de entrar em `ticket:{ticketId}`.
 - Fluxos de ticket emitem `ticket:created`, `ticket:updated`, `ticket:assigned` e mensagens nao internas em `ticket:message:created`.
 - LogiDesk web agora monta cliente Socket.IO global, exibe `notification:created` quando ha token de sessao em `sessionStorage` e a rota `/tickets/[id]` assina a room autorizada do ticket.
-- SSO frontend real e E2E em browser continuam pendentes.
+- LogiDesk web agora possui `/login` contra o Identity, guardando access token somente em `sessionStorage`; refresh transparente, logout web, guardas de rota e E2E em browser continuam pendentes.
+- Identity API aceita lista de origens em `IDENTITY_WEB_ORIGIN` para permitir LogiDesk web e LogiFlow web no mesmo ambiente.
 
 ## Matriz de regressao
 
@@ -115,9 +116,14 @@ Data: 2026-07-14
 | `npm run build -w logidesk-api` | PASS | Build TypeScript do LogiDesk API passou apos anexar Socket.IO ao HTTP server. |
 | `npm run typecheck -w logidesk-web` | PASS | LogiDesk web compila com o client component de Socket.IO. |
 | `npm run lint -w logidesk-web` | PASS | Sem erros apos detalhe realtime do chamado. |
-| `npm run build -w logidesk-web` | PASS | Next build passou com `RealtimeNotifications` e `/tickets/[id]`; aviso conhecido de root/lockfiles permanece. |
+| `npm run build -w logidesk-web` | PASS | Next build passou com `/login`, `RealtimeNotifications` e `/tickets/[id]`; aviso conhecido de root/lockfiles permanece. |
+| `npm run typecheck -w identity-api` | PASS | Identity API compila com CORS multi-origem. |
+| `npm run test -w identity-api` | PASS | Suite Identity passou apos CORS multi-origem. |
 | `npm audit --audit-level=high` | PASS | 0 vulnerabilidades. |
 | `docker compose --env-file .env.example build logidesk-api` | PASS | Imagem LogiDesk API construiu com Socket.IO; `npm ci` interno reportou 0 vulnerabilidades. |
+| `docker compose --env-file .env.example config` | PASS | Compose renderiza `IDENTITY_WEB_ORIGIN` multi-origem e `NEXT_PUBLIC_IDENTITY_API_URL` para LogiDesk web. |
+| `docker compose --env-file .env.example build identity-api` | PASS | Imagem Identity API construiu apos CORS multi-origem; `npm ci` interno reportou 0 vulnerabilidades. |
+| `docker compose --env-file .env.example build logidesk-web` | PASS | Imagem LogiDesk web construiu com `/login`, `/tickets/[id]` e `NEXT_PUBLIC_IDENTITY_API_URL`; `npm ci` interno reportou 0 vulnerabilidades. |
 | `npm run typecheck -w logidesk-worker` | PASS | Worker LogiDesk compila com avaliacao automatica de SLA. |
 | `npm run build -w logidesk-worker` | PASS | Build do worker LogiDesk passou com alerta/violacao de SLA. |
 | `npm run typecheck -w logidesk-web` | PASS | Dashboard, relatorios, configuracoes com catalogos e notificacoes LogiDesk compilam. |
@@ -179,7 +185,7 @@ Todas as rotas legadas preservam o controller atual e passam a emitir:
 
 ## Bloqueios conhecidos
 
-- LogiDesk agora possui fundacao, mas ainda nao tem o produto empresarial completo: SSO frontend real, upload binario de anexos com storage seguro, calendario comercial/feriados de SLA, relatorios avancados, preferencias ligadas ao usuario autenticado e E2E Playwright.
+- LogiDesk agora possui fundacao, mas ainda nao tem o produto empresarial completo: refresh transparente/logout/guardas de rota no SSO frontend, upload binario de anexos com storage seguro, calendario comercial/feriados de SLA, relatorios avancados, preferencias ligadas ao usuario autenticado e E2E Playwright.
 - Outbox, Redis/BullMQ e DLQ existem como estrutura inicial; dispatchers HTTP possuem retry com backoff progressivo por polling, publicam espelho em Redis Streams e LogiFlow/LogiDesk possuem APIs administrativas iniciais de DLQ/reprocessamento. Consumidores stream-first e reprocessamento fim a fim ainda nao foram fechados.
 - O Compose validado cobre LogiFlow, LogiDesk, Redis, bancos, workers, APIs e webs.
 - Os workflows GitHub Actions existem para LogiFlow, LogiPeople, LogiDesk e integracao/plataforma.

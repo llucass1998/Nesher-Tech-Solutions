@@ -15,6 +15,7 @@ const navItems = [
   { href: '/reports', label: 'Relatorios' },
   { href: '/notifications', label: 'Notificacoes' },
   { href: '/settings', label: 'Configuracoes' },
+  { href: '/login', label: 'Entrar' },
 ];
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

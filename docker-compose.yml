@@ -52,7 +52,7 @@ services:
       IDENTITY_JWT_KID: ${IDENTITY_JWT_KID:-identity-local-dev}
       IDENTITY_JWT_PRIVATE_KEY: ${IDENTITY_JWT_PRIVATE_KEY:-}
       IDENTITY_JWT_PUBLIC_KEY: ${IDENTITY_JWT_PUBLIC_KEY:-}
-      IDENTITY_WEB_ORIGIN: ${IDENTITY_WEB_ORIGIN:-http://localhost:3600}
+      IDENTITY_WEB_ORIGIN: ${IDENTITY_WEB_ORIGIN:-http://localhost:3500,http://localhost:3000}
       REDIS_URL: redis://redis:6379
     depends_on:
       identity-db:
@@ -303,9 +303,11 @@ services:
       dockerfile: Dockerfile.logidesk-web
       args:
         NEXT_PUBLIC_LOGIDESK_API_URL: ${NEXT_PUBLIC_LOGIDESK_API_URL:-http://localhost:3533/api/v1}
+        NEXT_PUBLIC_IDENTITY_API_URL: ${NEXT_PUBLIC_IDENTITY_API_URL:-http://localhost:3633}
     environment:
       NODE_ENV: production
       NEXT_PUBLIC_LOGIDESK_API_URL: ${NEXT_PUBLIC_LOGIDESK_API_URL:-http://localhost:3533/api/v1}
+      NEXT_PUBLIC_IDENTITY_API_URL: ${NEXT_PUBLIC_IDENTITY_API_URL:-http://localhost:3633}
     depends_on:
       logidesk-api:
         condition: service_healthy

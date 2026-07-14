@@ -9,7 +9,7 @@ async function bootstrap() {
 
   app.use(helmet());
   app.enableCors({
-    origin: process.env.IDENTITY_WEB_ORIGIN ?? true,
+    origin: identityCorsOrigins(),
     credentials: true,
   });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
@@ -18,3 +18,14 @@ async function bootstrap() {
 }
 
 bootstrap();
+
+function identityCorsOrigins() {
+  const configured = process.env.IDENTITY_WEB_ORIGIN;
+
+  if (!configured) {
+    return true;
+  }
+
+  const origins = configured.split(',').map((origin) => origin.trim()).filter(Boolean);
+  return origins.length === 1 ? origins[0] : origins;
+}
