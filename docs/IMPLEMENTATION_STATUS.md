@@ -73,6 +73,8 @@ Data: 2026-07-14
 - LogiPeople agora grava Outbox `logipeople.employee.hired` ao criar colaborador, validada por `packages/event-contracts` e sem dados restritos.
 - `logipeople-worker` agora publica `logipeople.employee.hired` em Redis Streams, aplica retry/backoff e registra `DeadLetterEvent`.
 - Docker Compose agora inclui `logipeople-db`, `logipeople-migrate`, `logipeople-api`, `logipeople-worker` e `logipeople-web`.
+- `logipayroll-worker` agora consome `logipeople.employee.hired` de `LOGIPEOPLE_EVENT_STREAM`, registra `InboxMessage`, atualiza `ConsumerCheckpoint` e cria/atualiza `PayrollEmployeeReference` minima sem dados sensiveis.
+- `Dockerfile.workspace-worker` removeu `chown -R /app` e passou a usar `COPY --chown` para reduzir o custo de build dos workers.
 - Nenhum dado real foi migrado do LogiPeople nesta etapa.
 
 Validacoes executadas em 2026-07-14:
@@ -87,7 +89,7 @@ Validacoes executadas em 2026-07-14:
 | `npm run typecheck -w logipayroll-worker` | PASS | TypeScript sem erros. |
 | `npm run test -w logipayroll-api` | PASS | 4 arquivos, 10 testes de auth Identity/JWKS, `auth/me`, permissao de contratos e redaction de dados sensiveis. |
 | `npm run test -w logipayroll-web` | PASS | Sem testes ainda; `passWithNoTests`. |
-| `npm run test -w logipayroll-worker` | PASS | 1 arquivo, 3 testes de publish, retry e DLQ. |
+| `npm run test -w logipayroll-worker` | PASS | 2 arquivos, 6 testes de publish, retry, DLQ, Inbox/idempotencia e checkpoint. |
 | `npm run build -w logipayroll-api` | PASS | Build TypeScript passou. |
 | `npm run build -w logipayroll-web` | PASS | Next build passou; aviso conhecido de root/lockfiles permanece. |
 | `npm run build -w logipayroll-worker` | PASS | Build TypeScript passou. |
@@ -113,6 +115,7 @@ Validacoes executadas em 2026-07-14:
 | `docker compose --env-file .env.example build --progress plain logipeople-worker` | PASS | Imagem worker construiu; build inicial lento pelo `chown -R`. |
 | `docker compose --env-file .env.example build --progress plain logipeople-web` | PASS | Imagem web construiu. |
 | `docker compose --env-file .env.example build --progress plain logipeople-migrate` | PASS | Imagem migrate construiu. |
+| `docker compose --env-file .env.example build --progress plain logipayroll-worker` apos consumidor LogiPeople | BLOCKED | Docker Desktop retornou erro 500 em `_ping` apos builds longos; `docker version` tambem nao respondeu no timeout. Validacao local de lint/typecheck/test/build passou. |
 | `npm run lint` | PASS | ESLint do monorepo sem erros. |
 | `npm run typecheck` | PASS | Typecheck do monorepo e workspaces sem erros. |
 | `npm run test:workspaces` | PASS | Testes de workspaces passaram. |

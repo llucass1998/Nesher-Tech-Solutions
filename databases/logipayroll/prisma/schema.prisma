@@ -96,6 +96,14 @@ model InboxMessage {
   processedAt DateTime @default(now())
 }
 
+model ConsumerCheckpoint {
+  id            String   @id @default(uuid())
+  consumerName  String   @unique
+  streamName    String
+  lastMessageId String   @default("0-0")
+  updatedAt     DateTime @updatedAt
+}
+
 model DeadLetterEvent {
   id            String   @id @default(uuid())
   outboxEventId String   @unique

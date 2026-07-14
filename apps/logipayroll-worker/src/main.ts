@@ -1,6 +1,7 @@
 import { createPlatformLogger } from '@logipeople/logger';
 import { Redis } from 'ioredis';
 import { Pool } from 'pg';
+import { LogiPeopleEmployeeHiredConsumer } from './logipeople-consumer';
 import { LogiPayrollOutboxDispatcher } from './outbox-dispatcher';
 
 const logger = createPlatformLogger('logipayroll-worker');
@@ -12,6 +13,9 @@ const retryBaseDelaySeconds = Number(process.env.LOGIPAYROLL_OUTBOX_RETRY_BASE_D
 const retryMaxDelaySeconds = Number(process.env.LOGIPAYROLL_OUTBOX_RETRY_MAX_DELAY_SECONDS ?? 900);
 const eventStreamName = process.env.LOGIPAYROLL_EVENT_STREAM ?? 'logipayroll.events';
 const eventStreamMaxLen = Math.max(100, Number(process.env.EVENT_STREAM_MAXLEN ?? 10000));
+const logiPeopleEventStreamName = process.env.LOGIPEOPLE_EVENT_STREAM ?? 'logipeople.events';
+const logiPeopleConsumerBatchSize = Number(process.env.LOGIPAYROLL_LOGIPEOPLE_CONSUMER_BATCH_SIZE ?? 10);
+const logiPeopleConsumerBlockMs = Number(process.env.LOGIPAYROLL_LOGIPEOPLE_CONSUMER_BLOCK_MS ?? 100);
 const streamPublisher = new Redis(redisUrl, { maxRetriesPerRequest: null });
 const pool = databaseUrl ? new Pool({ connectionString: databaseUrl }) : null;
 const dispatcher = new LogiPayrollOutboxDispatcher(pool, streamPublisher, logger, {
@@ -21,9 +25,16 @@ const dispatcher = new LogiPayrollOutboxDispatcher(pool, streamPublisher, logger
   eventStreamName,
   eventStreamMaxLen,
 });
+const logiPeopleConsumer = new LogiPeopleEmployeeHiredConsumer(pool, streamPublisher, logger, {
+  consumerName: 'logipayroll.logipeople.employee_hired',
+  streamName: logiPeopleEventStreamName,
+  batchSize: logiPeopleConsumerBatchSize,
+  blockMs: logiPeopleConsumerBlockMs,
+});
 
 const poller = setInterval(() => {
   void dispatcher.dispatchPendingOutboxBatch();
+  void logiPeopleConsumer.consumeNextBatch();
 }, pollIntervalMs);
 
 logger.info(
@@ -35,6 +46,7 @@ logger.info(
     retryBaseDelaySeconds,
     retryMaxDelaySeconds,
     eventStreamName,
+    logiPeopleEventStreamName,
     status: 'ready',
   },
   'LogiPayroll worker ready',

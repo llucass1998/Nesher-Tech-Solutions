@@ -10,11 +10,10 @@ WORKDIR /app
 ENV NODE_ENV=production
 ARG WORKSPACE
 ENV WORKSPACE=${WORKSPACE}
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/apps/${WORKSPACE} ./apps/${WORKSPACE}
-COPY --from=builder /app/packages ./packages
-RUN addgroup -S worker && adduser -S worker -G worker \
-  && chown -R worker:worker /app
+RUN addgroup -S worker && adduser -S worker -G worker
+COPY --chown=worker:worker --from=builder /app/node_modules ./node_modules
+COPY --chown=worker:worker --from=builder /app/package*.json ./
+COPY --chown=worker:worker --from=builder /app/apps/${WORKSPACE} ./apps/${WORKSPACE}
+COPY --chown=worker:worker --from=builder /app/packages ./packages
 USER worker
 CMD ["sh", "-c", "node apps/${WORKSPACE}/dist/apps/${WORKSPACE}/src/main.js"]

@@ -65,12 +65,18 @@ O payload do evento e validado pelo schema Zod compartilhado `logipayrollContrac
 - marca sucesso como `PROCESSED`;
 - marca falha temporaria como `FAILED`;
 - envia evento permanente ou esgotado para `DEAD_LETTER` e registra `DeadLetterEvent`.
+- consome `logipeople.employee.hired` de `LOGIPEOPLE_EVENT_STREAM`;
+- registra `InboxMessage` por `eventId` para idempotencia;
+- mantem `ConsumerCheckpoint` para nao reprocessar o stream inteiro;
+- cria ou atualiza `PayrollEmployeeReference` minima sem salario, documento bruto ou dados bancarios.
 
 ## Integracao LogiPeople
 
 LogiPeople agora grava `OutboxEvent` `logipeople.employee.hired` quando um colaborador e criado. O evento contem apenas `employeeId`, `personId` e `startDate`, validado pelo contrato compartilhado.
 
-O worker do LogiPeople publica esse evento no Redis Stream `LOGIPEOPLE_EVENT_STREAM` com retry/backoff e DLQ. Ele ainda nao e consumido automaticamente pelo LogiPayroll; o consumidor idempotente e o mapeamento para contrato ficam como proxima etapa.
+O worker do LogiPeople publica esse evento no Redis Stream `LOGIPEOPLE_EVENT_STREAM` com retry/backoff e DLQ. O worker do LogiPayroll consome o evento, aplica Inbox/idempotencia, avanca checkpoint e cria a referencia minima do colaborador.
+
+O mapeamento automatico para contrato ainda fica como proxima etapa, porque o evento de contratacao atual nao transporta dados contratuais suficientes para criar um `Contract` com validade juridica.
 
 ## Banco
 
@@ -82,6 +88,7 @@ Schema inicial:
 - `PayrollItem`
 - `OutboxEvent`
 - `InboxMessage`
+- `ConsumerCheckpoint`
 
 Nao existem relacoes Prisma com bancos de LogiPeople, LogiFlow ou LogiDesk.
 
@@ -111,6 +118,6 @@ Nao existem relacoes Prisma com bancos de LogiPeople, LogiFlow ou LogiDesk.
 - Testes de integracao com banco real para contratos.
 - Consumidores reais das mensagens publicadas em `logipayroll.events`.
 - Eventos adicionais `logipayroll.*` para folha, holerites, desligamentos e disponibilidade.
-- Consumidor idempotente no LogiPayroll para concluir a integracao LogiPeople -> LogiPayroll.
+- Criacao automatica de contrato a partir de evento LogiPeople quando houver contrato compartilhado com dados contratuais minimos.
 - Integracao LogiPayroll -> LogiFlow para indisponibilidade operacional.
 - Testes unitarios, integracao e contrato.
