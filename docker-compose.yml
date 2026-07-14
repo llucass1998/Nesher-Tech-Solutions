@@ -321,7 +321,107 @@ services:
       retries: 5
     restart: unless-stopped
 
+  logipayroll-db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${LOGIPAYROLL_DB_NAME:-logipayroll}
+      POSTGRES_USER: ${LOGIPAYROLL_DB_USER:-logipayroll}
+      POSTGRES_PASSWORD: ${LOGIPAYROLL_DB_PASSWORD:?set LOGIPAYROLL_DB_PASSWORD}
+    ports:
+      - "${LOGIPAYROLL_DB_PORT:-5438}:5432"
+    volumes:
+      - logipayroll-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  logipayroll-migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.logipayroll-api
+    command: ["npx", "prisma", "migrate", "deploy", "--config", "apps/logipayroll-api/prisma.config.ts"]
+    environment:
+      NODE_ENV: production
+      LOGIPAYROLL_DATABASE_URL: postgresql://${LOGIPAYROLL_DB_USER:-logipayroll}:${LOGIPAYROLL_DB_PASSWORD:?set LOGIPAYROLL_DB_PASSWORD}@logipayroll-db:5432/${LOGIPAYROLL_DB_NAME:-logipayroll}?schema=public
+    depends_on:
+      logipayroll-db:
+        condition: service_healthy
+    restart: "no"
+
+  logipayroll-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.logipayroll-api
+    environment:
+      NODE_ENV: production
+      LOGIPAYROLL_PORT: 3733
+      LOGIPAYROLL_WEB_ORIGIN: ${LOGIPAYROLL_WEB_ORIGIN:-http://localhost:3600}
+      LOGIPAYROLL_DATABASE_URL: postgresql://${LOGIPAYROLL_DB_USER:-logipayroll}:${LOGIPAYROLL_DB_PASSWORD:?set LOGIPAYROLL_DB_PASSWORD}@logipayroll-db:5432/${LOGIPAYROLL_DB_NAME:-logipayroll}?schema=public
+      REDIS_URL: redis://redis:6379
+      IDENTITY_JWKS_URL: ${IDENTITY_JWKS_URL:-http://identity-api:3633/.well-known/jwks.json}
+      IDENTITY_ISSUER: ${IDENTITY_ISSUER:-logiidentity}
+      IDENTITY_AUDIENCE: ${IDENTITY_LOGIPAYROLL_AUDIENCE:-logipayroll}
+    depends_on:
+      logipayroll-db:
+        condition: service_healthy
+      logipayroll-migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      identity-api:
+        condition: service_healthy
+    ports:
+      - "${LOGIPAYROLL_API_PORT:-3733}:3733"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3733/api/v1/health/live >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  logipayroll-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.workspace-worker
+      args:
+        WORKSPACE: logipayroll-worker
+    environment:
+      NODE_ENV: production
+      REDIS_URL: redis://redis:6379
+      LOGIPAYROLL_DATABASE_URL: postgresql://${LOGIPAYROLL_DB_USER:-logipayroll}:${LOGIPAYROLL_DB_PASSWORD:?set LOGIPAYROLL_DB_PASSWORD}@logipayroll-db:5432/${LOGIPAYROLL_DB_NAME:-logipayroll}?schema=public
+    depends_on:
+      redis:
+        condition: service_healthy
+      logipayroll-api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  logipayroll-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.logipayroll-web
+      args:
+        NEXT_PUBLIC_LOGIPAYROLL_API_URL: ${NEXT_PUBLIC_LOGIPAYROLL_API_URL:-http://localhost:3733/api/v1}
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_LOGIPAYROLL_API_URL: ${NEXT_PUBLIC_LOGIPAYROLL_API_URL:-http://localhost:3733/api/v1}
+    depends_on:
+      logipayroll-api:
+        condition: service_healthy
+    ports:
+      - "${LOGIPAYROLL_WEB_PORT:-3600}:3600"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3600 >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
 volumes:
   identity-db-data:
   logiflow-db-data:
   logidesk-db-data:
+  logipayroll-db-data:

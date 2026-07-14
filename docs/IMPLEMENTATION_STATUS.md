@@ -30,7 +30,7 @@ Data: 2026-07-14
 | Plataforma Fase 8 - Integração LogiFlow -> LogiDesk | Parcial implementada | `logiflow-worker` despacha Outbox HTTP para LogiDesk; `logidesk-worker` retorna eventos com `occurrenceId` para LogiFlow. Backoff progressivo por polling foi adicionado; Redis Streams, E2E e reprocessamento administrativo ainda pendentes. |
 | Plataforma Fase 9 - LogiDesk operacional ampliado | Implementada no escopo atual | Tickets manuais, status/priority, equipes, categorias, tags com UI preliminar, atribuições, notas internas editáveis, metadados de anexos, notificacoes internas com opt-out por preferencia, preferencias preliminares de notificacao, ciclo de SLA, worker de alerta/violacao de SLA, relatorio agregado, dashboard e tela de relatorios com dados agregados, tela de notificacoes com leitura pela web, arquivamento e migrations LogiDesk validados. |
 
-| Plataforma Fase 10 - LogiPayroll separado | Fundacao criada | `apps/logipayroll-api`, `apps/logipayroll-web`, `apps/logipayroll-worker`, `databases/logipayroll`; schema Prisma separado, health/capabilities, worker/web iniciais. Docker, CI, auth e APIs reais ainda pendentes. |
+| Plataforma Fase 10 - LogiPayroll separado | Fundacao criada | `apps/logipayroll-api`, `apps/logipayroll-web`, `apps/logipayroll-worker`, `databases/logipayroll`; schema Prisma separado, health/capabilities, worker/web iniciais, Docker Compose e CI dedicado. Auth e APIs reais ainda pendentes. |
 
 ### Atualizacao atual - DLQ LogiFlow e LogiDesk
 
@@ -63,7 +63,33 @@ Data: 2026-07-14
 - Criados `apps/logipayroll-api`, `apps/logipayroll-web` e `apps/logipayroll-worker`.
 - Criado banco separado `databases/logipayroll` com migration inicial.
 - API inicial expoe `GET /api/v1/health/live`, `GET /api/v1/health/ready` e `GET /api/v1/payroll/capabilities`.
+- Docker Compose agora inclui `logipayroll-db`, `logipayroll-migrate`, `logipayroll-api`, `logipayroll-worker` e `logipayroll-web`.
+- CI dedicado `logipayroll-ci.yml` criado com lint, typecheck, testes, build, Prisma validate, Compose config, Docker build e audit.
 - Nenhum dado real foi migrado do LogiPeople nesta etapa.
+
+Validacoes executadas em 2026-07-14:
+
+| Comando/verificacao | Resultado | Evidencia |
+| --- | --- | --- |
+| `npm run lint -w logipayroll-api` | PASS | Sem erros; aviso conhecido do plugin Next sobre ausencia de `pages`. |
+| `npm run lint -w logipayroll-web` | PASS | Sem erros. |
+| `npm run lint -w logipayroll-worker` | PASS | Sem erros; aviso conhecido do plugin Next sobre ausencia de `pages`. |
+| `npm run typecheck -w logipayroll-api` | PASS | TypeScript sem erros. |
+| `npm run typecheck -w logipayroll-web` | PASS | TypeScript sem erros. |
+| `npm run typecheck -w logipayroll-worker` | PASS | TypeScript sem erros. |
+| `npm run test -w logipayroll-api` | PASS | Sem testes ainda; `passWithNoTests`. |
+| `npm run test -w logipayroll-web` | PASS | Sem testes ainda; `passWithNoTests`. |
+| `npm run test -w logipayroll-worker` | PASS | Sem testes ainda; `passWithNoTests`. |
+| `npm run build -w logipayroll-api` | PASS | Build TypeScript passou. |
+| `npm run build -w logipayroll-web` | PASS | Next build passou; aviso conhecido de root/lockfiles permanece. |
+| `npm run build -w logipayroll-worker` | PASS | Build TypeScript passou. |
+| `npx prisma validate --config apps/logipayroll-api/prisma.config.ts` | PASS | Schema LogiPayroll valido. |
+| `docker compose --env-file .env.example config` | PASS | Compose renderiza services e volume LogiPayroll. |
+| `docker compose --env-file .env.example build --progress plain logipayroll-api` | PASS | Imagem API construiu apos atualizar `package-lock.json`. |
+| `docker compose --env-file .env.example build --progress plain logipayroll-web` | PASS | Imagem web construiu. |
+| `docker compose --env-file .env.example build --progress plain logipayroll-worker` | PASS | Imagem worker construiu. |
+| `docker compose --env-file .env.example build --progress plain logipayroll-migrate` | PASS | Imagem migrate construiu. |
+| `npm audit --audit-level=high` | PASS | 0 vulnerabilidades. |
 
 ## Matriz de regressao
 

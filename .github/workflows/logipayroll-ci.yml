@@ -1,0 +1,87 @@
+name: LogiPayroll CI
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/logipayroll-ci.yml"
+      - "apps/logipayroll-api/**"
+      - "apps/logipayroll-web/**"
+      - "apps/logipayroll-worker/**"
+      - "databases/logipayroll/**"
+      - "packages/auth/**"
+      - "packages/config/**"
+      - "packages/contracts/**"
+      - "packages/event-contracts/**"
+      - "packages/logger/**"
+      - "packages/eslint-config/**"
+      - "packages/typescript-config/**"
+      - "Dockerfile.logipayroll-api"
+      - "Dockerfile.logipayroll-web"
+      - "Dockerfile.workspace-worker"
+      - "docker-compose.yml"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+  push:
+    branches: [master, main]
+    paths:
+      - ".github/workflows/logipayroll-ci.yml"
+      - "apps/logipayroll-api/**"
+      - "apps/logipayroll-web/**"
+      - "apps/logipayroll-worker/**"
+      - "databases/logipayroll/**"
+      - "packages/auth/**"
+      - "packages/config/**"
+      - "packages/contracts/**"
+      - "packages/event-contracts/**"
+      - "packages/logger/**"
+      - "packages/eslint-config/**"
+      - "packages/typescript-config/**"
+      - "Dockerfile.logipayroll-api"
+      - "Dockerfile.logipayroll-web"
+      - "Dockerfile.workspace-worker"
+      - "docker-compose.yml"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+
+concurrency:
+  group: logipayroll-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: logipayroll checks
+    runs-on: ubuntu-latest
+    env:
+      LOGIPAYROLL_DATABASE_URL: postgresql://logipayroll:logipayroll@localhost:5438/logipayroll?schema=public
+      LOGIPAYROLL_WEB_ORIGIN: http://localhost:3600
+      REDIS_URL: redis://localhost:6379
+      IDENTITY_JWKS_URL: http://localhost:3633/.well-known/jwks.json
+      IDENTITY_ISSUER: logiidentity
+      IDENTITY_AUDIENCE: logipayroll
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run logipayroll:prisma:generate
+      - run: npm run lint -w logipayroll-api
+      - run: npm run lint -w logipayroll-web
+      - run: npm run lint -w logipayroll-worker
+      - run: npm run typecheck -w logipayroll-api
+      - run: npm run typecheck -w logipayroll-web
+      - run: npm run typecheck -w logipayroll-worker
+      - run: npm run test -w logipayroll-api
+      - run: npm run test -w logipayroll-web
+      - run: npm run test -w logipayroll-worker
+      - run: npm run build -w logipayroll-api
+      - run: npm run build -w logipayroll-web
+      - run: npm run build -w logipayroll-worker
+      - run: npx prisma validate --config apps/logipayroll-api/prisma.config.ts
+      - run: docker compose --env-file .env.example config
+      - run: docker build -f Dockerfile.logipayroll-api .
+      - run: docker build -f Dockerfile.logipayroll-web .
+      - run: npm audit --audit-level=high

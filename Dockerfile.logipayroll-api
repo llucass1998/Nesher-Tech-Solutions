@@ -1,0 +1,20 @@
+FROM node:24-alpine AS builder
+WORKDIR /app
+COPY . .
+RUN npm ci
+RUN npm run logipayroll:prisma:generate
+RUN npm run build -w logipayroll-api
+
+FROM node:24-alpine AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/apps/logipayroll-api ./apps/logipayroll-api
+COPY --from=builder /app/packages ./packages
+COPY --from=builder /app/databases/logipayroll ./databases/logipayroll
+RUN addgroup -S logipayroll && adduser -S logipayroll -G logipayroll \
+  && chown -R logipayroll:logipayroll /app
+USER logipayroll
+EXPOSE 3733
+CMD ["node", "apps/logipayroll-api/dist/src/main.js"]

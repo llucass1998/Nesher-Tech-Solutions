@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev -p 3600",
+    "start": "next start -p 3600",
     "lint": "eslint app --ext .ts,.tsx",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",

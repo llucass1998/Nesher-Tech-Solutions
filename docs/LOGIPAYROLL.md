@@ -10,6 +10,8 @@ LogiPayroll agora possui uma fundacao separada no monorepo:
 - `apps/logipayroll-web`: web Next.js inicial para o produto de DP/folha.
 - `apps/logipayroll-worker`: worker inicial.
 - `databases/logipayroll`: schema Prisma e migration inicial.
+- `Dockerfile.logipayroll-api`, `Dockerfile.logipayroll-web` e services Compose dedicados.
+- `.github/workflows/logipayroll-ci.yml`: CI dedicado para o produto.
 
 Esta etapa nao migra dados reais do LogiPeople. Ela cria a fronteira tecnica para a extracao gradual do dominio de Departamento Pessoal.
 
@@ -66,11 +68,14 @@ Nao existem relacoes Prisma com bancos de LogiPeople, LogiFlow ou LogiDesk.
 - `npm run build -w logipayroll-worker`: PASS.
 - `npm run build -w logipayroll-web`: PASS.
 - `npx prisma validate --config apps/logipayroll-api/prisma.config.ts`: PASS.
+- `docker compose --env-file .env.example config`: PASS.
+- `docker compose --env-file .env.example build --progress plain logipayroll-api`: PASS.
+- `docker compose --env-file .env.example build --progress plain logipayroll-web`: PASS.
+- `docker compose --env-file .env.example build --progress plain logipayroll-worker`: PASS.
+- `docker compose --env-file .env.example build --progress plain logipayroll-migrate`: PASS.
 
 ## Pendencias
 
-- Dockerfiles e Compose para API, web, worker e banco.
-- CI dedicado `logipayroll-ci.yml`.
 - Autenticacao Identity/JWKS na API.
 - APIs reais de contratos, ponto, ferias, folha e holerites.
 - Eventos `logipayroll.*` em `packages/event-contracts`.

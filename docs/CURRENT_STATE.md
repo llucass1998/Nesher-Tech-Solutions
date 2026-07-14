@@ -129,16 +129,18 @@ Implementado:
 - Health checks.
 - Endpoint `GET /api/v1/payroll/capabilities`.
 - Schema separado com referencias de colaborador, contratos, payroll runs, itens, outbox e inbox.
+- Docker Compose com `logipayroll-db`, `logipayroll-migrate`, `logipayroll-api`, `logipayroll-worker` e `logipayroll-web`.
+- CI dedicado `logipayroll-ci.yml`.
 
 Limitacoes:
 
 - Nenhum dado real foi migrado do LogiPeople.
-- Docker, CI, Identity/JWKS, APIs reais, eventos e integracoes ainda estao pendentes.
+- Identity/JWKS, APIs reais, eventos e integracoes ainda estao pendentes.
 
 ## Infraestrutura
 
-- Docker Compose existe para Identity, LogiFlow, LogiDesk, Redis e workers. LogiPayroll ainda precisa entrar no Compose.
-- GitHub Actions existem para Identity, LogiFlow, LogiDesk, LogiPeople e integracao/plataforma.
+- Docker Compose existe para Identity, LogiFlow, LogiDesk, LogiPayroll, Redis e workers.
+- GitHub Actions existem para Identity, LogiFlow, LogiDesk, LogiPeople, LogiPayroll e integracao/plataforma.
 - `.env.example` contem placeholders e nao segredos reais.
 
 ## Validacoes recentes

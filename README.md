@@ -167,7 +167,7 @@ LogiPeople possui fundacoes de organizacao, pessoas, recrutamento, onboarding, p
 
 LogiDesk possui fundacao operacional com tickets, SLA preliminar, outbox, DLQ, worker, web, login/refresh/logout Identity inicial, helper REST autenticado no browser, mutacoes client-side autenticadas para notificacoes/configuracoes/detalhe do ticket, RBAC REST de transicao por `LOGIDESK_REQUIRE_REST_AUTH` e Socket.IO autenticado com consumo inicial de notificacoes no frontend. Processamento completo de workers, ownership REST fino, leitura server-side autenticada e E2E Playwright completo ainda seguem pendentes.
 
-LogiPayroll possui fundacao separada com API, web, worker e banco Prisma proprio. Ainda nao houve migracao de dados reais do DP/folha do LogiPeople; Docker, CI, auth, eventos e APIs reais ficam como proximas etapas.
+LogiPayroll possui fundacao separada com API, web, worker, banco Prisma proprio, Docker Compose e CI dedicado. Ainda nao houve migracao de dados reais do DP/folha do LogiPeople; auth, eventos e APIs reais ficam como proximas etapas.
 
 ## Documentacao
 
