@@ -5,6 +5,7 @@ Data: 2026-07-14
 ## Estado atual
 
 A integração LogiFlow -> LogiDesk possui outbox persistida e dispatcher HTTP no `logiflow-worker`.
+O retorno LogiDesk -> LogiFlow também possui dispatcher HTTP no `logidesk-worker` para eventos vinculados a ocorrências.
 
 Componentes:
 
@@ -14,6 +15,7 @@ Componentes:
 - `apps/logiflow-worker` com polling da outbox no PostgreSQL.
 - LogiDesk `POST /api/v1/tickets/from-logiflow`.
 - `IdempotencyRecord`, `OutboxEvent`, `DeadLetterEvent` e `AuditLog` no banco LogiDesk.
+- LogiFlow `POST /api/v1/integrations/logidesk/ticket-updates`.
 - Workers `apps/logiflow-worker` e `apps/logidesk-worker`.
 - Redis no Docker Compose para filas BullMQ existentes.
 
@@ -27,6 +29,9 @@ flowchart TD
   LFWorker --> DeskAPI[LogiDesk tickets/from-logiflow]
   DeskAPI --> Ticket[Ticket LogiDesk]
   DeskAPI --> DeskOutbox[OutboxEvent LogiDesk]
+  DeskOutbox --> DeskWorker[LogiDesk worker]
+  DeskWorker --> FlowCallback[LogiFlow ticket-updates]
+  FlowCallback --> OccurrenceUpdated[Occurrence integrationStatus COMPLETED]
 ```
 
 ## Dispatcher LogiFlow
@@ -49,6 +54,28 @@ Variáveis:
 - `LOGIDESK_SERVICE_TOKEN`
 - `LOGIFLOW_OUTBOX_POLL_INTERVAL_MS`
 - `LOGIFLOW_OUTBOX_MAX_ATTEMPTS`
+
+## Dispatcher LogiDesk
+
+O `logidesk-worker`:
+
+1. busca eventos `PENDING` ou `FAILED` na tabela `OutboxEvent` do LogiDesk;
+2. bloqueia o registro com `FOR UPDATE SKIP LOCKED`;
+3. marca o evento como `PROCESSING`;
+4. ignora com sucesso eventos sem `occurrenceId`/`ticketNumber`, pois não pertencem ao LogiFlow;
+5. envia `POST /api/v1/integrations/logidesk/ticket-updates` quando o ticket tem referência logística;
+6. envia `x-service-token` e `x-correlation-id`;
+7. marca sucesso como `COMPLETED`;
+8. marca falha temporária como `FAILED`;
+9. envia falha permanente ou excesso de tentativas para `DeadLetterEvent`.
+
+Variáveis:
+
+- `LOGIDESK_DATABASE_URL`
+- `LOGIFLOW_API_URL`
+- `LOGIDESK_SERVICE_TOKEN`
+- `LOGIDESK_OUTBOX_POLL_INTERVAL_MS`
+- `LOGIDESK_OUTBOX_MAX_ATTEMPTS`
 
 ## Contratos
 
@@ -87,7 +114,6 @@ Para marcar integração como pronta, confirmar:
 
 ## Limites atuais
 
-- O retorno LogiDesk -> LogiFlow ainda não atualiza ocorrência automaticamente.
 - O dispatcher usa polling PostgreSQL; Redis Streams ainda não foi adotado para este fluxo.
 - Backoff é limitado por polling e contagem de tentativas; agendamento progressivo ainda precisa ser refinado.
 - Socket.IO distribuído ainda não foi conectado.

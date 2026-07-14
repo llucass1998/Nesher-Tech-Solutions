@@ -41,7 +41,7 @@ Phases 1-14 are in scope:
 | LogiFlow Identity validation | Partially implemented | LogiFlow accepts Identity tokens through JWKS when `IDENTITY_JWKS_URL` is configured, while local auth remains as compatibility fallback. |
 | LogiDesk Identity validation | Partially implemented | LogiDesk exposes `GET /api/v1/auth/me` backed by Identity JWKS. Full frontend SSO remains pending. |
 | Platform event contracts | Implemented in shared package | `packages/event-contracts` now defines the strict versioned event envelope and namespaced events for LogiFlow, LogiDesk, LogiPeople and LogiPayroll. Runtime producers/consumers still need migration from legacy names. |
-| LogiFlow to LogiDesk dispatch | Partially implemented | `logiflow-worker` now dispatches LogiFlow outbox records to LogiDesk over HTTP with idempotency, correlation id, retry attempts and DLQ. LogiDesk-to-LogiFlow return events remain pending. |
+| LogiFlow and LogiDesk dispatch | Partially implemented | `logiflow-worker` dispatches LogiFlow outbox records to LogiDesk. `logidesk-worker` dispatches ticket events with LogiFlow references back to LogiFlow. Redis Streams, progressive backoff and E2E remain pending. |
 
 ## Identity validation evidence
 
@@ -57,6 +57,10 @@ Phases 1-14 are in scope:
 | `npm run typecheck -w logiflow-worker` | PASS | LogiFlow worker dispatcher compiles. |
 | `npm test -- src/__tests__/logiflow-operations-v1.test.ts` | PASS | Escalation test passed with `logiflow.occurrence.escalated`. |
 | `docker compose build logiflow-worker` | PASS | Worker Docker image built. |
+| `npm run typecheck -w logidesk-worker` | PASS | LogiDesk worker dispatcher compiles. |
+| `npm run build -w logidesk-worker` | PASS | LogiDesk worker build passed. |
+| `npm test -- src/__tests__/logiflow-operations-v1.test.ts` | PASS | 11 tests, including service-token callback from LogiDesk to LogiFlow. |
+| `docker compose build logidesk-worker` | PASS | LogiDesk worker Docker image built. |
 
 ## Explicitly not complete
 

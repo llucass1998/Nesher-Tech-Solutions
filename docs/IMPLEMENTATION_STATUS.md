@@ -27,7 +27,7 @@ Data: 2026-07-13
 | Plataforma Fase 5 - Migrar auth LogiFlow | Parcial com fallback | `verificarAccessTokenV1` aceita Identity JWKS quando `IDENTITY_JWKS_URL` esta configurada; login local legado preservado. |
 | Plataforma Fase 6 - Migrar auth LogiDesk | Parcial com SSO basico | `GET /api/v1/auth/me` valida token Identity; frontend SSO completo ainda pendente. |
 | Plataforma Fase 7 - Contratos e eventos | Implementada no pacote compartilhado | `packages/event-contracts` consolidado com envelope, eventos namespaced, payloads estritos e testes de contrato. Produtores/consumidores ainda precisam migrar dos nomes legados. |
-| Plataforma Fase 8 - Integração LogiFlow -> LogiDesk | Parcial implementada | `logiflow-worker` agora despacha Outbox HTTP para LogiDesk com idempotency key, correlation id, retry por tentativas e DLQ. Retorno LogiDesk -> LogiFlow ainda pendente. |
+| Plataforma Fase 8 - Integração LogiFlow -> LogiDesk | Parcial implementada | `logiflow-worker` despacha Outbox HTTP para LogiDesk; `logidesk-worker` retorna eventos com `occurrenceId` para LogiFlow. Redis Streams, E2E e backoff progressivo ainda pendentes. |
 
 ## Matriz de regressao
 
@@ -80,6 +80,10 @@ Data: 2026-07-13
 | `npm run typecheck -w logiflow-worker` | PASS | Dispatcher LogiFlow compila. |
 | `npm test -- src/__tests__/logiflow-operations-v1.test.ts` | PASS | Escalonamento agora cria evento `logiflow.occurrence.escalated`. |
 | `docker compose build logiflow-worker` | PASS | Imagem do worker com dispatcher e dependencia `pg` construiu. |
+| `npm run typecheck -w logidesk-worker` | PASS | Dispatcher LogiDesk compila. |
+| `npm run build -w logidesk-worker` | PASS | Build do worker LogiDesk passou. |
+| `npm test -- src/__tests__/logiflow-operations-v1.test.ts` | PASS | 11 testes; inclui callback LogiDesk -> LogiFlow protegido por token de servico. |
+| `docker compose build logidesk-worker` | PASS | Imagem do worker com retorno para LogiFlow construiu. |
 
 ### Validacoes da Fase 5
 

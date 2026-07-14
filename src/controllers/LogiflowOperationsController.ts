@@ -59,6 +59,47 @@ function getCorrelationId(req: Request) {
 }
 
 export class LogiflowOperationsController {
+  async receiveLogideskTicketUpdate(req: Request, res: Response) {
+    const serviceToken = req.headers['x-service-token'];
+    const expectedToken = process.env.LOGIDESK_SERVICE_TOKEN;
+
+    if (!expectedToken || serviceToken !== expectedToken) {
+      return sendError(res, 401, 'AUTHENTICATION_REQUIRED', 'Token de servico invalido.');
+    }
+
+    const { occurrenceId, ticketNumber, status, eventType, message } = req.body as {
+      occurrenceId?: string;
+      ticketNumber?: string;
+      status?: string;
+      eventType?: string;
+      message?: string;
+    };
+
+    if (!occurrenceId || !ticketNumber) {
+      return sendError(res, 400, 'VALIDATION_ERROR', 'occurrenceId e ticketNumber sao obrigatorios.');
+    }
+
+    try {
+      const updated = await prisma.occurrence.update({
+        where: { id: occurrenceId },
+        data: {
+          ticketNumber,
+          integrationStatus: 'COMPLETED',
+          lastError: null,
+          ...(status === 'RESOLVED' || status === 'CLOSED' ? { status: 'RESOLVED' } : {}),
+        },
+      });
+
+      return res.json({
+        occurrence: updated,
+        received: { eventType, status, message },
+      });
+    } catch (error) {
+      console.error(error);
+      return sendError(res, 404, 'RESOURCE_NOT_FOUND', 'Ocorrencia vinculada ao ticket nao encontrada.');
+    }
+  }
+
   async listDeliveries(req: Request, res: Response) {
     const page = parsePositiveInt(req.query.page, 1, 10_000);
     const pageSize = parsePositiveInt(req.query.pageSize, 20, 100);

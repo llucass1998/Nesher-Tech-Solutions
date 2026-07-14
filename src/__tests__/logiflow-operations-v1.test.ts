@@ -102,6 +102,7 @@ describe('LogiFlow operacional v1', () => {
     vi.clearAllMocks();
     process.env.JWT_ISSUER = 'logiflow-identity';
     process.env.JWT_AUDIENCE = 'logiflow,logidesk';
+    process.env.LOGIDESK_SERVICE_TOKEN = 'service-token';
   });
 
   it('lista entregas com filtros e paginacao para operador', async () => {
@@ -459,5 +460,55 @@ describe('LogiFlow operacional v1', () => {
         }),
       }),
     }));
+  });
+
+  it('recebe atualizacao de ticket do LogiDesk por token de servico', async () => {
+    vi.mocked(prisma.occurrence.update).mockResolvedValue({
+      id: 'occurrence-1',
+      deliveryId: 'delivery-1',
+      title: 'Atraso critico',
+      description: 'Bloqueio na doca',
+      severity: 'CRITICAL',
+      status: 'OPEN',
+      integrationStatus: 'COMPLETED',
+      retryCount: 1,
+      lastError: null,
+      ticketNumber: 'LD-000001',
+      createdByUserId: 'operator-1',
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    });
+
+    const response = await request(app)
+      .post('/api/v1/integrations/logidesk/ticket-updates')
+      .set('x-service-token', 'service-token')
+      .send({
+        eventType: 'logidesk.ticket.created',
+        occurrenceId: 'occurrence-1',
+        ticketNumber: 'LD-000001',
+        status: 'OPEN',
+      });
+
+    expect(response.status).toBe(200);
+    expect(prisma.occurrence.update).toHaveBeenCalledWith({
+      where: { id: 'occurrence-1' },
+      data: {
+        ticketNumber: 'LD-000001',
+        integrationStatus: 'COMPLETED',
+        lastError: null,
+      },
+    });
+  });
+
+  it('rejeita atualizacao de ticket do LogiDesk sem token de servico', async () => {
+    const response = await request(app)
+      .post('/api/v1/integrations/logidesk/ticket-updates')
+      .send({
+        occurrenceId: 'occurrence-1',
+        ticketNumber: 'LD-000001',
+      });
+
+    expect(response.status).toBe(401);
+    expect(prisma.occurrence.update).not.toHaveBeenCalled();
   });
 });
