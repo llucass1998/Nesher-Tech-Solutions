@@ -35,6 +35,7 @@ Banco:
 - Notificacoes internas para atribuicao de chamados.
 - Historico.
 - SLA por prioridade com primeira resposta, pausa, retomada e conclusao operacional.
+- Worker de SLA para alerta e violacao automaticos.
 - Outbox LogiDesk.
 - Dead-letter table.
 - Auditoria.
@@ -114,13 +115,15 @@ O endpoint cria historico, auditoria e outbox. Upload binario, object storage, v
 - Socket.IO ainda nao esta emitindo eventos para browsers.
 - Worker LogiDesk despacha eventos com referencia LogiFlow de volta para o LogiFlow.
 - E2E Playwright completo LogiFlow -> LogiDesk ainda nao foi criado.
-- SLA registra primeira resposta, pausa em `WAITING_CUSTOMER`, retomada em `IN_PROGRESS` e conclusao em `RESOLVED`/`CLOSED`; calendario comercial, feriados e alertas automaticos ainda precisam evoluir.
+- SLA registra primeira resposta, pausa em `WAITING_CUSTOMER`, retomada em `IN_PROGRESS`, conclusao em `RESOLVED`/`CLOSED` e alerta/violacao automaticos pelo worker. Calendario comercial e feriados ainda precisam evoluir.
 
 ## Validacao recente
 
 - `npm run logidesk:prisma:generate`: PASS.
 - `npm run typecheck -w logidesk-api`: PASS.
 - `npm run test -w logidesk-api`: PASS, 12 testes.
+- `npm run typecheck -w logidesk-worker`: PASS.
+- `npm run build -w logidesk-worker`: PASS.
 - `npm run lint`: PASS.
 - `npm run typecheck`: PASS.
 - `npm run test:workspaces`: PASS.

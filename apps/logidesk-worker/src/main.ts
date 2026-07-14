@@ -1,4 +1,5 @@
 import { Worker } from 'bullmq';
+import { randomUUID } from 'crypto';
 import { Pool } from 'pg';
 import { createPlatformLogger } from '@logipeople/logger';
 
@@ -8,6 +9,8 @@ const databaseUrl = process.env.LOGIDESK_DATABASE_URL;
 const logiflowApiUrl = (process.env.LOGIFLOW_API_URL ?? 'http://localhost:3333/api/v1').replace(/\/$/, '');
 const serviceToken = process.env.LOGIDESK_SERVICE_TOKEN;
 const pollIntervalMs = Number(process.env.LOGIDESK_OUTBOX_POLL_INTERVAL_MS ?? 5000);
+const slaPollIntervalMs = Number(process.env.LOGIDESK_SLA_POLL_INTERVAL_MS ?? 60000);
+const slaWarningWindowMinutes = Number(process.env.LOGIDESK_SLA_WARNING_WINDOW_MINUTES ?? 30);
 const maxAttempts = Number(process.env.LOGIDESK_OUTBOX_MAX_ATTEMPTS ?? 5);
 const connection = buildRedisConnection(redisUrl);
 const pool = databaseUrl ? new Pool({ connectionString: databaseUrl }) : null;
@@ -40,6 +43,7 @@ const slaWorker = new Worker(
       },
       'Evaluating LogiDesk SLA',
     );
+    await evaluateSlaBatch();
   },
   { connection },
 );
@@ -48,11 +52,15 @@ const poller = setInterval(() => {
   void dispatchPendingOutboxBatch();
 }, pollIntervalMs);
 
+const slaPoller = setInterval(() => {
+  void evaluateSlaBatch();
+}, slaPollIntervalMs);
+
 logger.info(
   {
     module: 'worker',
     operation: 'bootstrap',
-    redisUrl,
+    redisUrl: redactUrl(redisUrl),
     logiflowApiUrl,
     hasDatabaseUrl: Boolean(databaseUrl),
     hasServiceToken: Boolean(serviceToken),
@@ -224,7 +232,7 @@ async function markCompleted(outboxEventId: string) {
   await pool.query(
     `
       UPDATE "OutboxEvent"
-      SET status = 'COMPLETED',
+      SET status = 'PROCESSED',
           "processedAt" = NOW(),
           "lastError" = NULL,
           "updatedAt" = NOW()
@@ -232,6 +240,143 @@ async function markCompleted(outboxEventId: string) {
     `,
     [outboxEventId],
   );
+}
+
+async function evaluateSlaBatch() {
+  if (!pool) {
+    logger.warn({ operation: 'sla.evaluate', status: 'skipped', reason: 'LOGIDESK_DATABASE_URL missing' }, 'SLA evaluation skipped');
+    return;
+  }
+
+  const result = await pool.query<SlaTicketRow>(
+    `
+      SELECT
+        s.id AS "slaId",
+        s."ticketId",
+        s.status AS "slaStatus",
+        s."resolutionDueAt",
+        s."warningEmittedAt",
+        s."breachedAt",
+        t.number AS "ticketNumber",
+        t.subject,
+        t.priority,
+        t.status AS "ticketStatus",
+        t."assigneeId",
+        t."teamId",
+        t."correlationId"
+      FROM "TicketSla" s
+      INNER JOIN "Ticket" t ON t.id = s."ticketId"
+      WHERE t.status NOT IN ('RESOLVED', 'CLOSED', 'CANCELED')
+        AND s.status <> 'PAUSED'
+        AND s."breachedAt" IS NULL
+        AND (
+          s."resolutionDueAt" <= NOW()
+          OR (
+            s."warningEmittedAt" IS NULL
+            AND s."resolutionDueAt" <= NOW() + ($1::int * INTERVAL '1 minute')
+          )
+        )
+      ORDER BY s."resolutionDueAt" ASC
+      LIMIT 25
+    `,
+    [slaWarningWindowMinutes],
+  );
+
+  for (const row of result.rows) {
+    await evaluateSlaRow(row);
+  }
+}
+
+async function evaluateSlaRow(row: SlaTicketRow) {
+  if (!pool) return;
+
+  const now = new Date();
+  const breached = row.resolutionDueAt.getTime() <= now.getTime();
+  const eventType = breached ? 'ticket.sla_breached' : 'ticket.sla_warning';
+  const nextStatus = breached ? 'BREACHED' : 'WARNING';
+  const notificationTitle = breached ? `SLA violado no chamado ${row.ticketNumber}` : `SLA proximo do vencimento no chamado ${row.ticketNumber}`;
+  const notificationBody = breached
+    ? 'O prazo de resolucao foi ultrapassado.'
+    : 'O prazo de resolucao esta proximo do vencimento.';
+
+  if (!breached && row.warningEmittedAt) return;
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const update = await client.query(
+      `
+        UPDATE "TicketSla"
+        SET status = $2,
+            "warningEmittedAt" = CASE WHEN $3::boolean THEN "warningEmittedAt" ELSE COALESCE("warningEmittedAt", NOW()) END,
+            "breachedAt" = CASE WHEN $3::boolean THEN NOW() ELSE "breachedAt" END,
+            "updatedAt" = NOW()
+        WHERE id = $1
+          AND "breachedAt" IS NULL
+          AND ($3::boolean OR "warningEmittedAt" IS NULL)
+      `,
+      [row.slaId, nextStatus, breached],
+    );
+
+    if (update.rowCount === 0) {
+      await client.query('COMMIT');
+      return;
+    }
+
+    await client.query(
+      `
+        INSERT INTO "Notification" (id, "ticketId", "userId", "teamId", type, title, body, "correlationId")
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `,
+      [randomUUID(), row.ticketId, row.assigneeId, row.teamId, eventType, notificationTitle, notificationBody, row.correlationId],
+    );
+
+    await client.query(
+      `
+        INSERT INTO "OutboxEvent" (id, "eventType", "eventVersion", payload, "correlationId", "causationId", "updatedAt")
+        VALUES ($1, $2, 1, $3, $4, $5, NOW())
+      `,
+      [
+        randomUUID(),
+        eventType,
+        JSON.stringify({
+          ticketId: row.ticketId,
+          ticketNumber: row.ticketNumber,
+          priority: row.priority,
+          status: row.ticketStatus,
+          resolutionDueAt: row.resolutionDueAt.toISOString(),
+        }),
+        row.correlationId,
+        row.slaId,
+      ],
+    );
+
+    await client.query('COMMIT');
+    logger.warn(
+      {
+        operation: 'sla.evaluate',
+        ticketId: row.ticketId,
+        ticketNumber: row.ticketNumber,
+        eventType,
+        correlationId: row.correlationId,
+        status: nextStatus,
+      },
+      'LogiDesk SLA state changed',
+    );
+  } catch (error) {
+    await client.query('ROLLBACK');
+    logger.error(
+      {
+        operation: 'sla.evaluate',
+        ticketId: row.ticketId,
+        correlationId: row.correlationId,
+        error: error instanceof Error ? error.message : 'Unknown SLA evaluation error',
+      },
+      'LogiDesk SLA evaluation failed',
+    );
+  } finally {
+    client.release();
+  }
 }
 
 async function markFailed(event: OutboxEventRow, error: unknown) {
@@ -287,6 +432,7 @@ async function markFailed(event: OutboxEventRow, error: unknown) {
 
 async function shutdown() {
   clearInterval(poller);
+  clearInterval(slaPoller);
   await Promise.all([outboxWorker.close(), slaWorker.close()]);
   await pool?.end();
   logger.info({ module: 'worker', operation: 'shutdown', status: 'ok' }, 'LogiDesk worker stopped');
@@ -305,6 +451,16 @@ function buildRedisConnection(value: string) {
   };
 }
 
+function redactUrl(value: string) {
+  try {
+    const url = new URL(value);
+    if (url.password) url.password = '***';
+    return url.toString();
+  } catch {
+    return '<invalid-url>';
+  }
+}
+
 function asOptionalString(value: unknown) {
   return typeof value === 'string' && value.length > 0 ? value : undefined;
 }
@@ -319,4 +475,20 @@ interface OutboxEventRow {
   attempts: number;
   correlationId: string;
   causationId: string | null;
+}
+
+interface SlaTicketRow {
+  slaId: string;
+  ticketId: string;
+  slaStatus: string;
+  resolutionDueAt: Date;
+  warningEmittedAt: Date | null;
+  breachedAt: Date | null;
+  ticketNumber: string;
+  subject: string;
+  priority: string;
+  ticketStatus: string;
+  assigneeId: string | null;
+  teamId: string | null;
+  correlationId: string;
 }
