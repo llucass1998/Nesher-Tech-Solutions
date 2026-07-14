@@ -151,6 +151,11 @@ export class TicketsController {
     return this.ticketsService.markNotificationRead(id);
   }
 
+  @Get('reports/summary')
+  getReportsSummary() {
+    return this.ticketsService.getReportsSummary();
+  }
+
   @Get('teams')
   listTeams() {
     return this.ticketsService.listTeams();

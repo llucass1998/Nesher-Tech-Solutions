@@ -36,6 +36,7 @@ Banco:
 - Historico.
 - SLA por prioridade com primeira resposta, pausa, retomada e conclusao operacional.
 - Worker de SLA para alerta e violacao automaticos.
+- Relatorio agregado operacional para dashboard.
 - Outbox LogiDesk.
 - Dead-letter table.
 - Auditoria.
@@ -72,6 +73,7 @@ Rotas:
 - `POST /tickets/:id/attachments`
 - `GET /notifications`
 - `PATCH /notifications/:id/read`
+- `GET /reports/summary`
 - `POST /tickets/:id/assign`
 - `DELETE /tickets/:id/assign`
 - `POST /tickets/:id/change-team`
@@ -109,6 +111,8 @@ O endpoint cria historico, auditoria e outbox. Upload binario, object storage, v
 
 `GET /notifications` aceita filtros `userId`, `teamId` e `unread=true`. `PATCH /notifications/:id/read` marca uma notificacao como lida. Nesta etapa, notificacoes sao criadas automaticamente quando um chamado e atribuido a usuario ou equipe.
 
+`GET /reports/summary` retorna agregados operacionais sem dados sensiveis: totais, chamados ativos, chamados sem responsavel, notificacoes nao lidas, distribuicao por status, prioridade, origem e SLA.
+
 ## Limites atuais
 
 - SSO/JWKS basico existe via `GET /api/v1/auth/me`; frontend SSO completo ainda precisa evoluir.
@@ -121,7 +125,7 @@ O endpoint cria historico, auditoria e outbox. Upload binario, object storage, v
 
 - `npm run logidesk:prisma:generate`: PASS.
 - `npm run typecheck -w logidesk-api`: PASS.
-- `npm run test -w logidesk-api`: PASS, 12 testes.
+- `npm run test -w logidesk-api`: PASS, 13 testes.
 - `npm run typecheck -w logidesk-worker`: PASS.
 - `npm run build -w logidesk-worker`: PASS.
 - `npm run lint`: PASS.

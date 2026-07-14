@@ -633,6 +633,41 @@ export class TicketsService {
     });
   }
 
+  async getReportsSummary() {
+    const [
+      totalTickets,
+      activeTickets,
+      unassignedTickets,
+      unreadNotifications,
+      ticketsByStatus,
+      ticketsByPriority,
+      ticketsBySource,
+      slaByStatus,
+    ] = await Promise.all([
+      this.prisma.ticket.count({ where: { archivedAt: null } }),
+      this.prisma.ticket.count({ where: { archivedAt: null, status: { notIn: ['RESOLVED', 'CLOSED', 'CANCELED'] } } }),
+      this.prisma.ticket.count({ where: { archivedAt: null, assigneeId: null, status: { notIn: ['RESOLVED', 'CLOSED', 'CANCELED'] } } }),
+      this.prisma.notification.count({ where: { readAt: null } }),
+      this.prisma.ticket.groupBy({ by: ['status'], _count: { _all: true }, where: { archivedAt: null } }),
+      this.prisma.ticket.groupBy({ by: ['priority'], _count: { _all: true }, where: { archivedAt: null } }),
+      this.prisma.ticket.groupBy({ by: ['source'], _count: { _all: true }, where: { archivedAt: null } }),
+      this.prisma.ticketSla.groupBy({ by: ['status'], _count: { _all: true } }),
+    ]);
+
+    return {
+      totals: {
+        tickets: totalTickets,
+        activeTickets,
+        unassignedTickets,
+        unreadNotifications,
+      },
+      ticketsByStatus: this.mapCountGroup(ticketsByStatus, 'status'),
+      ticketsByPriority: this.mapCountGroup(ticketsByPriority, 'priority'),
+      ticketsBySource: this.mapCountGroup(ticketsBySource, 'source'),
+      slaByStatus: this.mapCountGroup(slaByStatus, 'status'),
+    };
+  }
+
   async unassignTicket(ticketId: string, input: AssignTicketDto) {
     const current = await this.ensureTicket(ticketId);
 
@@ -878,6 +913,13 @@ export class TicketsService {
 
   private resolutionMinutes(priority: TicketPriority) {
     return priority === 'URGENT' ? 240 : priority === 'HIGH' ? 480 : priority === 'MEDIUM' ? 1440 : 2880;
+  }
+
+  private mapCountGroup<T extends string>(
+    rows: Array<Record<T, string> & { _count: { _all: number } }>,
+    key: T,
+  ) {
+    return rows.map((row) => ({ value: row[key], count: row._count._all }));
   }
 
   private optionalTicketCreateData(input: CreateTicketDto) {

@@ -28,7 +28,7 @@ Data: 2026-07-13
 | Plataforma Fase 6 - Migrar auth LogiDesk | Parcial com SSO basico | `GET /api/v1/auth/me` valida token Identity; frontend SSO completo ainda pendente. |
 | Plataforma Fase 7 - Contratos e eventos | Implementada no pacote compartilhado | `packages/event-contracts` consolidado com envelope, eventos namespaced, payloads estritos e testes de contrato. Produtores/consumidores ainda precisam migrar dos nomes legados. |
 | Plataforma Fase 8 - Integração LogiFlow -> LogiDesk | Parcial implementada | `logiflow-worker` despacha Outbox HTTP para LogiDesk; `logidesk-worker` retorna eventos com `occurrenceId` para LogiFlow. Redis Streams, E2E e backoff progressivo ainda pendentes. |
-| Plataforma Fase 9 - LogiDesk operacional ampliado | Implementada no escopo atual | Tickets manuais, status/priority, equipes, categorias, tags, atribuições, notas internas editáveis, metadados de anexos, notificacoes internas, ciclo de SLA, worker de alerta/violacao de SLA, arquivamento e migrations LogiDesk validados. |
+| Plataforma Fase 9 - LogiDesk operacional ampliado | Implementada no escopo atual | Tickets manuais, status/priority, equipes, categorias, tags, atribuições, notas internas editáveis, metadados de anexos, notificacoes internas, ciclo de SLA, worker de alerta/violacao de SLA, relatorio agregado, arquivamento e migrations LogiDesk validados. |
 
 ## Matriz de regressao
 
@@ -87,7 +87,7 @@ Data: 2026-07-13
 | `docker compose build logidesk-worker` | PASS | Imagem do worker com retorno para LogiFlow construiu. |
 | `npm run logidesk:prisma:generate` | PASS | Prisma Client LogiDesk gerado apos schema operacional. |
 | `npm run typecheck -w logidesk-api` | PASS | API LogiDesk operacional compila. |
-| `npm run test -w logidesk-api` | PASS | 12 testes passaram, incluindo metadados de anexos, notificacoes internas e ciclo de SLA. |
+| `npm run test -w logidesk-api` | PASS | 13 testes passaram, incluindo metadados de anexos, notificacoes internas, ciclo de SLA e relatorio agregado. |
 | `npm run typecheck -w logidesk-worker` | PASS | Worker LogiDesk compila com avaliacao automatica de SLA. |
 | `npm run build -w logidesk-worker` | PASS | Build do worker LogiDesk passou com alerta/violacao de SLA. |
 | `npm run lint` | PASS | Sem erros apos anexos de chamados. |

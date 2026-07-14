@@ -44,8 +44,13 @@ function createTicketsService() {
   const ticketFindUnique = vi.fn().mockResolvedValue(null);
   const ticketCreate = vi.fn().mockResolvedValue(ticketRecord);
   const ticketUpdate = vi.fn().mockImplementation(({ data }) => Promise.resolve({ ...ticketRecord, ...data }));
+  const ticketGroupBy = vi.fn()
+    .mockResolvedValueOnce([{ status: 'OPEN', _count: { _all: 3 } }])
+    .mockResolvedValueOnce([{ priority: 'HIGH', _count: { _all: 2 } }])
+    .mockResolvedValueOnce([{ source: 'LOGIFLOW', _count: { _all: 1 } }]);
   const ticketSlaCreate = vi.fn().mockResolvedValue({});
   const ticketSlaUpdate = vi.fn().mockResolvedValue({});
+  const ticketSlaGroupBy = vi.fn().mockResolvedValue([{ status: 'WARNING', _count: { _all: 1 } }]);
   const ticketHistoryCreate = vi.fn().mockResolvedValue({});
   const ticketAssignmentCreate = vi.fn().mockResolvedValue({});
   const ticketAssignmentFindMany = vi.fn().mockResolvedValue([]);
@@ -56,6 +61,7 @@ function createTicketsService() {
   const outboxCreate = vi.fn().mockResolvedValue({});
   const auditCreate = vi.fn().mockResolvedValue({});
   const notificationCreate = vi.fn().mockResolvedValue({ id: 'notification-1' });
+  const notificationCount = vi.fn().mockResolvedValue(4);
   const notificationFindMany = vi.fn().mockResolvedValue([]);
   const notificationFindUnique = vi.fn().mockResolvedValue({ id: 'notification-1', readAt: null });
   const notificationUpdate = vi.fn().mockResolvedValue({ id: 'notification-1', readAt: new Date('2026-07-14T00:00:00.000Z') });
@@ -120,8 +126,9 @@ function createTicketsService() {
       findUnique: ticketFindUnique,
       create: ticketCreate,
       update: ticketUpdate,
+      groupBy: ticketGroupBy,
     },
-    ticketSla: { create: ticketSlaCreate, update: ticketSlaUpdate },
+    ticketSla: { create: ticketSlaCreate, update: ticketSlaUpdate, groupBy: ticketSlaGroupBy },
     ticketHistory: { create: ticketHistoryCreate },
     ticketAssignment: { create: ticketAssignmentCreate, findMany: ticketAssignmentFindMany },
     ticketTagAssignment: { createMany: ticketTagAssignmentCreateMany, deleteMany: ticketTagAssignmentDeleteMany },
@@ -129,6 +136,7 @@ function createTicketsService() {
     outboxEvent: { create: outboxCreate },
     auditLog: { create: auditCreate },
     notification: {
+      count: notificationCount,
       create: notificationCreate,
       findMany: notificationFindMany,
       findUnique: notificationFindUnique,
@@ -174,8 +182,10 @@ function createTicketsService() {
     ticketFindUnique,
     ticketCreate,
     ticketUpdate,
+    ticketGroupBy,
     ticketSlaCreate,
     ticketSlaUpdate,
+    ticketSlaGroupBy,
     ticketHistoryCreate,
     ticketAssignmentCreate,
     ticketTagAssignmentCreateMany,
@@ -184,6 +194,7 @@ function createTicketsService() {
     outboxCreate,
     auditCreate,
     notificationCreate,
+    notificationCount,
     notificationFindMany,
     notificationFindUnique,
     notificationUpdate,
@@ -447,6 +458,28 @@ describe('TicketsService', () => {
       where: { id: 'notification-1' },
       data: expect.objectContaining({ readAt: expect.any(Date) }),
     }));
+  });
+
+  it('returns operational report summary aggregates', async () => {
+    const context = createTicketsService();
+    context.ticketCount.mockResolvedValueOnce(12).mockResolvedValueOnce(8).mockResolvedValueOnce(3);
+    context.notificationCount.mockResolvedValue(5);
+
+    await expect(context.service.getReportsSummary()).resolves.toEqual({
+      totals: {
+        tickets: 12,
+        activeTickets: 8,
+        unassignedTickets: 3,
+        unreadNotifications: 5,
+      },
+      ticketsByStatus: [{ value: 'OPEN', count: 3 }],
+      ticketsByPriority: [{ value: 'HIGH', count: 2 }],
+      ticketsBySource: [{ value: 'LOGIFLOW', count: 1 }],
+      slaByStatus: [{ value: 'WARNING', count: 1 }],
+    });
+
+    expect(context.ticketGroupBy).toHaveBeenCalledTimes(3);
+    expect(context.ticketSlaGroupBy).toHaveBeenCalledWith(expect.objectContaining({ by: ['status'] }));
   });
 
   it('creates and edits internal notes without adding them to public ticket messages', async () => {

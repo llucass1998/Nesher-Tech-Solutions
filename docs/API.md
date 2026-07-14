@@ -140,6 +140,7 @@ Base local: `http://localhost:3533/api/v1`.
 - `POST /tickets/:id/attachments`
 - `GET /notifications`
 - `PATCH /notifications/:id/read`
+- `GET /reports/summary`
 - `POST /tickets/:id/assign`
 - `DELETE /tickets/:id/assign`
 - `POST /tickets/:id/change-team`
@@ -159,6 +160,8 @@ Base local: `http://localhost:3533/api/v1`.
 `POST /tickets/:id/attachments` registra metadados auditados do anexo. Campos aceitos: `fileName`, `contentType`, `sizeBytes`, `url`, `storageKey`, `uploadedById` e `correlationId`. O upload fisico do arquivo ainda deve ser feito por storage externo ate a fase de object storage seguro.
 
 `GET /notifications` lista notificacoes internas e aceita `userId`, `teamId` e `unread=true`. `PATCH /notifications/:id/read` marca a notificacao como lida.
+
+`GET /reports/summary` retorna totais e distribuicoes agregadas de chamados, origem, prioridade e SLA para dashboards operacionais. A rota nao retorna mensagens, notas internas, anexos ou dados pessoais detalhados.
 
 Payload:
 

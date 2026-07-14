@@ -42,7 +42,7 @@ Phases 1-14 are in scope:
 | LogiDesk Identity validation | Partially implemented | LogiDesk exposes `GET /api/v1/auth/me` backed by Identity JWKS. Full frontend SSO remains pending. |
 | Platform event contracts | Implemented in shared package | `packages/event-contracts` now defines the strict versioned event envelope and namespaced events for LogiFlow, LogiDesk, LogiPeople and LogiPayroll. Runtime producers/consumers still need migration from legacy names. |
 | LogiFlow and LogiDesk dispatch | Partially implemented | `logiflow-worker` dispatches LogiFlow outbox records to LogiDesk. `logidesk-worker` dispatches ticket events with LogiFlow references back to LogiFlow. Redis Streams, progressive backoff and E2E remain pending. |
-| LogiDesk operational expansion | Implemented in current scope | Manual tickets, status and priority changes, teams, categories, tags, assignments, editable internal notes, attachment metadata, internal notifications, SLA lifecycle, automatic SLA warning/breach worker, archive/cancel actions and database migration are implemented and validated. |
+| LogiDesk operational expansion | Implemented in current scope | Manual tickets, status and priority changes, teams, categories, tags, assignments, editable internal notes, attachment metadata, internal notifications, SLA lifecycle, automatic SLA warning/breach worker, aggregate reporting, archive/cancel actions and database migration are implemented and validated. |
 
 ## Identity validation evidence
 
@@ -64,7 +64,7 @@ Phases 1-14 are in scope:
 | `docker compose build logidesk-worker` | PASS | LogiDesk worker Docker image built. |
 | `npm run logidesk:prisma:generate` | PASS | LogiDesk Prisma Client generated after operational schema. |
 | `npm run typecheck -w logidesk-api` | PASS | LogiDesk API compiles. |
-| `npm run test -w logidesk-api` | PASS | 12 tests passed, including attachment metadata, internal notifications and SLA lifecycle. |
+| `npm run test -w logidesk-api` | PASS | 13 tests passed, including attachment metadata, internal notifications, SLA lifecycle and aggregate reporting. |
 | `npm run typecheck -w logidesk-worker` | PASS | LogiDesk worker compiles with automatic SLA evaluation. |
 | `npm run build -w logidesk-worker` | PASS | LogiDesk worker build passed with SLA warning/breach handling. |
 | `npm run lint` | PASS | No errors after ticket attachment metadata. |
