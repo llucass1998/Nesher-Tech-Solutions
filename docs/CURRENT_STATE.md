@@ -105,12 +105,12 @@ Implementado:
 
 - Tickets, mensagens, notas internas, historico, SLA preliminar, outbox, DLQ, auditoria e health checks.
 - Criacao idempotente de ticket a partir do LogiFlow.
-- Web com dashboard, chamados, Kanban, SLA e configuracoes.
+- Web com dashboard, chamados, detalhe do chamado, Kanban, SLA e configuracoes.
 
 Limitacoes:
 
 - SSO/JWKS basico conectado ao LogiIdentity por `GET /api/v1/auth/me`.
-- Socket.IO autenticado ja existe no backend do LogiDesk, `ticket:join` valida acesso e o web consome notificacoes quando ha token de sessao, mas SSO frontend, tela de detalhe assinando rooms e processamento completo dos workers ainda precisam evoluir.
+- Socket.IO autenticado ja existe no backend do LogiDesk, `ticket:join` valida acesso e o web consome notificacoes/eventos de ticket quando ha token de sessao, mas SSO frontend e processamento completo dos workers ainda precisam evoluir.
 - E2E completo LogiFlow/LogiDesk ainda nao existe.
 
 ## Infraestrutura

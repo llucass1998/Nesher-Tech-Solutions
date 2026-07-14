@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { fetchLogiDesk, TicketSummary } from '@/src/lib/api';
 
 export default async function TicketsPage(props: { searchParams: Promise<{ view?: string; status?: string; priority?: string; search?: string }> }) {
@@ -39,8 +40,12 @@ export default async function TicketsPage(props: { searchParams: Promise<{ view?
             <tbody>
               {tickets.map((ticket) => (
                 <tr key={ticket.id}>
-                  <td style={cellStyle}>{ticket.number}</td>
-                  <td style={cellStyle}>{ticket.subject}</td>
+                  <td style={cellStyle}>
+                    <Link href={`/tickets/${ticket.id}`} style={linkStyle}>{ticket.number}</Link>
+                  </td>
+                  <td style={cellStyle}>
+                    <Link href={`/tickets/${ticket.id}`} style={linkStyle}>{ticket.subject}</Link>
+                  </td>
                   <td style={cellStyle}><Badge value={ticket.status} /></td>
                   <td style={cellStyle}><Badge value={ticket.priority} /></td>
                   <td style={cellStyle}>{ticket.sla?.status ?? '-'}</td>
@@ -71,7 +76,7 @@ function Kanban({ tickets, error }: { tickets: TicketSummary[]; error?: string }
             <div style={{ display: 'grid', gap: 10, marginTop: 14 }}>
               {tickets.filter((ticket) => ticket.status === column).map((ticket) => (
                 <article key={ticket.id} style={{ border: '1px solid var(--desk-border)', borderRadius: 8, padding: 12 }}>
-                  <p style={{ margin: 0, fontWeight: 800 }}>{ticket.number}</p>
+                  <Link href={`/tickets/${ticket.id}`} style={{ margin: 0, fontWeight: 800, color: 'var(--desk-brand)' }}>{ticket.number}</Link>
                   <p style={{ ...mutedStyle, marginTop: 4 }}>{ticket.subject}</p>
                   <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
                     <Badge value={ticket.priority} />
@@ -104,3 +109,4 @@ const panelStyle = { border: '1px solid var(--desk-border)', borderRadius: 8, ba
 const titleStyle = { margin: 0, fontSize: 28 };
 const mutedStyle = { margin: '6px 0 0', color: 'var(--desk-muted)', fontSize: 14 };
 const cellStyle = { borderTop: '1px solid var(--desk-border)', padding: '12px 10px' };
+const linkStyle = { color: 'var(--desk-brand)', fontWeight: 800 };

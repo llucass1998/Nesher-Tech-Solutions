@@ -44,7 +44,7 @@ Banco:
 - Dead-letter table com API administrativa inicial de listagem e reprocessamento.
 - Auditoria.
 - Health checks `GET /api/v1/health/live` e `GET /api/v1/health/ready`.
-- Web com dashboard baseado em relatorio agregado, lista de chamados, Kanban, SLA, relatorios, notificacoes, consumo inicial de Socket.IO e configuracoes com equipes, categorias e tags.
+- Web com dashboard baseado em relatorio agregado, lista de chamados, detalhe do chamado, Kanban, SLA, relatorios, notificacoes, consumo inicial de Socket.IO e configuracoes com equipes, categorias e tags.
 
 ## API principal
 
@@ -144,7 +144,7 @@ O backend ja emite notificacoes persistidas para rooms de usuario, equipe e supo
 
 Clientes podem solicitar entrada em room de ticket com `ticket:join` e payload `{ "ticketId": "uuid" }`. O backend so aceita a inscricao quando o ticket existe e o usuario e `ADMIN`/`SUPPORT`, solicitante, responsavel ou membro ativo da equipe do ticket. Notas internas nao sao emitidas em `ticket:{ticketId}` para evitar vazamento a solicitantes/clientes.
 
-SSO frontend real e telas de detalhe assinando rooms de ticket ainda precisam evoluir antes de marcar Socket.IO como completo.
+O detalhe web do chamado assina a room autorizada do ticket quando ha token de sessao e mostra eventos novos durante a sessao. SSO frontend real e validacao E2E ainda precisam evoluir antes de marcar Socket.IO como completo.
 
 `POST /tickets/:id/attachments` registra somente metadados do arquivo:
 
@@ -179,7 +179,7 @@ A pagina `/settings` tambem lista, cria e desativa equipes, categorias e tags us
 ## Limites atuais
 
 - SSO/JWKS basico existe via `GET /api/v1/auth/me`; frontend SSO completo ainda precisa evoluir.
-- Socket.IO autenticado ja existe no backend, valida `ticket:join` por ownership/RBAC e o frontend consome `notification:created` quando ha token de sessao; ainda falta SSO frontend real, tela de detalhe assinando rooms de ticket e validacao E2E em browser.
+- Socket.IO autenticado ja existe no backend, valida `ticket:join` por ownership/RBAC e o frontend consome `notification:created` e eventos de ticket quando ha token de sessao; ainda falta SSO frontend real e validacao E2E em browser.
 - Preferencias de notificacao existem como persistencia/API/web preliminar e filtram criacao de notificacoes internas por usuario, mas ainda nao filtram entrega em tempo real por usuario autenticado.
 - Catalogos de equipes, categorias e tags ja possuem API e UI administrativa preliminar, mas ainda precisam de RBAC frontend real.
 - Worker LogiDesk despacha eventos com referencia LogiFlow de volta para o LogiFlow e publica espelho operacional em Redis Stream; DLQ do LogiDesk ja pode ser listada e reprocessada pela API, mas ainda falta validacao fim a fim com containers.
@@ -195,8 +195,8 @@ A pagina `/settings` tambem lista, cria e desativa equipes, categorias e tags us
 - `npm run typecheck -w logidesk-worker`: PASS.
 - `npm run build -w logidesk-worker`: PASS.
 - `npm run typecheck -w logidesk-web`: PASS.
-- `npm run lint -w logidesk-web`: PASS apos consumo inicial de Socket.IO.
-- `npm run build -w logidesk-web`: PASS, incluindo consumo inicial de Socket.IO.
+- `npm run lint -w logidesk-web`: PASS apos detalhe realtime do chamado.
+- `npm run build -w logidesk-web`: PASS, incluindo `/tickets/[id]`.
 - `npm run lint`: PASS.
 - `npm run typecheck`: PASS.
 - `npm run test:workspaces`: PASS.
