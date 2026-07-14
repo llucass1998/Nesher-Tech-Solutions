@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import { fetchLogiDesk, TicketSummary } from '@/src/lib/api';
+import { KanbanBoard } from '@/src/components/KanbanBoard';
+import { TicketStatusBadge, PriorityBadge } from '@logipeople/ui';
 
 export default async function TicketsPage(props: { searchParams: Promise<{ view?: string; status?: string; priority?: string; search?: string }> }) {
   const searchParams = await props.searchParams;
@@ -12,15 +14,93 @@ export default async function TicketsPage(props: { searchParams: Promise<{ view?
   const tickets = result.data ?? [];
 
   if (searchParams.view === 'kanban') {
-    return <Kanban tickets={tickets} {...(result.error ? { error: result.error } : {})} />;
+    return (
+      <div style={{ display: 'grid', gap: 20 }}>
+        <section style={panelStyle}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <h2 style={titleStyle}>Kanban</h2>
+              <p style={mutedStyle}>Chamados por status com contexto de prioridade e origem.</p>
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <Link href="/tickets?view=list" style={buttonStyle(false)}>Lista</Link>
+              <Link href="/tickets?view=kanban" style={buttonStyle(true)}>Kanban</Link>
+            </div>
+          </div>
+          <form action="/tickets" method="GET" style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+            <input type="hidden" name="view" value="kanban" />
+            <input type="text" name="search" placeholder="Buscar chamado..." defaultValue={searchParams.search} style={inputStyle} />
+            <select name="status" defaultValue={searchParams.status} style={inputStyle}>
+              <option value="">Todos os status</option>
+              <option value="OPEN">Aberto</option>
+              <option value="IN_PROGRESS">Em andamento</option>
+              <option value="WAITING_CUSTOMER">Aguardando cliente</option>
+              <option value="WAITING_INTERNAL">Aguardando equipe</option>
+              <option value="RESOLVED">Resolvido</option>
+              <option value="CLOSED">Fechado</option>
+              <option value="CANCELED">Cancelado</option>
+            </select>
+            <select name="priority" defaultValue={searchParams.priority} style={inputStyle}>
+              <option value="">Qualquer prioridade</option>
+              <option value="LOW">Baixa</option>
+              <option value="NORMAL">Normal</option>
+              <option value="HIGH">Alta</option>
+              <option value="URGENT">Urgente</option>
+            </select>
+            <button type="submit" style={submitStyle}>Filtrar</button>
+          </form>
+        </section>
+        {result.error && <StateCard title="API indisponivel" message={result.error} />}
+        <KanbanBoard initialTickets={tickets} />
+      </div>
+    );
   }
 
+  
   return (
     <div style={{ display: 'grid', gap: 20 }}>
       <section style={panelStyle}>
-        <h2 style={titleStyle}>Chamados</h2>
-        <p style={mutedStyle}>Busca, filtros e leitura operacional dos tickets.</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <h2 style={titleStyle}>Chamados</h2>
+            <p style={mutedStyle}>Busca, filtros e leitura operacional dos tickets.</p>
+          </div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <Link href="/tickets?view=list" style={buttonStyle(searchParams.view !== 'kanban')}>Lista</Link>
+            <Link href="/tickets?view=kanban" style={buttonStyle(searchParams.view === 'kanban')}>Kanban</Link>
+          </div>
+        </div>
+        
+        <form action="/tickets" method="GET" style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+          {searchParams.view === 'kanban' && <input type="hidden" name="view" value="kanban" />}
+          <input 
+            type="text" 
+            name="search" 
+            placeholder="Buscar chamado..." 
+            defaultValue={searchParams.search}
+            style={inputStyle}
+          />
+          <select name="status" defaultValue={searchParams.status} style={inputStyle}>
+            <option value="">Todos os status</option>
+            <option value="OPEN">Aberto</option>
+            <option value="IN_PROGRESS">Em andamento</option>
+            <option value="WAITING_CUSTOMER">Aguardando cliente</option>
+            <option value="WAITING_INTERNAL">Aguardando equipe</option>
+            <option value="RESOLVED">Resolvido</option>
+            <option value="CLOSED">Fechado</option>
+            <option value="CANCELED">Cancelado</option>
+          </select>
+          <select name="priority" defaultValue={searchParams.priority} style={inputStyle}>
+            <option value="">Qualquer prioridade</option>
+            <option value="LOW">Baixa</option>
+            <option value="NORMAL">Normal</option>
+            <option value="HIGH">Alta</option>
+            <option value="URGENT">Urgente</option>
+          </select>
+          <button type="submit" style={submitStyle}>Filtrar</button>
+        </form>
       </section>
+
       {result.error ? <StateCard title="API indisponivel" message={result.error} /> : null}
       <section style={panelStyle}>
         {tickets.length === 0 ? (
@@ -46,8 +126,8 @@ export default async function TicketsPage(props: { searchParams: Promise<{ view?
                   <td style={cellStyle}>
                     <Link href={`/tickets/${ticket.id}`} style={linkStyle}>{ticket.subject}</Link>
                   </td>
-                  <td style={cellStyle}><Badge value={ticket.status} /></td>
-                  <td style={cellStyle}><Badge value={ticket.priority} /></td>
+                  <td style={cellStyle}><TicketStatusBadge status={ticket.status} /></td>
+                  <td style={cellStyle}><PriorityBadge priority={ticket.priority} /></td>
                   <td style={cellStyle}>{ticket.sla?.status ?? '-'}</td>
                   <td style={cellStyle}>{ticket.occurrenceId ?? ticket.deliveryId ?? '-'}</td>
                 </tr>
@@ -60,37 +140,7 @@ export default async function TicketsPage(props: { searchParams: Promise<{ view?
   );
 }
 
-function Kanban({ tickets, error }: { tickets: TicketSummary[]; error?: string }) {
-  const columns = ['OPEN', 'IN_PROGRESS', 'WAITING_CUSTOMER', 'RESOLVED', 'CLOSED'];
-  return (
-    <div style={{ display: 'grid', gap: 20 }}>
-      <section style={panelStyle}>
-        <h2 style={titleStyle}>Kanban</h2>
-        <p style={mutedStyle}>Chamados por status com contexto de prioridade e origem.</p>
-      </section>
-      {error ? <StateCard title="API indisponivel" message={error} /> : null}
-      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(180px, 1fr))', gap: 14 }}>
-        {columns.map((column) => (
-          <div key={column} style={panelStyle}>
-            <h3 style={{ margin: 0, fontSize: 15 }}>{column}</h3>
-            <div style={{ display: 'grid', gap: 10, marginTop: 14 }}>
-              {tickets.filter((ticket) => ticket.status === column).map((ticket) => (
-                <article key={ticket.id} style={{ border: '1px solid var(--desk-border)', borderRadius: 8, padding: 12 }}>
-                  <Link href={`/tickets/${ticket.id}`} style={{ margin: 0, fontWeight: 800, color: 'var(--desk-brand)' }}>{ticket.number}</Link>
-                  <p style={{ ...mutedStyle, marginTop: 4 }}>{ticket.subject}</p>
-                  <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
-                    <Badge value={ticket.priority} />
-                    <Badge value={ticket.source} />
-                  </div>
-                </article>
-              ))}
-            </div>
-          </div>
-        ))}
-      </section>
-    </div>
-  );
-}
+
 
 function StateCard({ title, message }: { title: string; message: string }) {
   return (
@@ -101,9 +151,35 @@ function StateCard({ title, message }: { title: string; message: string }) {
   );
 }
 
-function Badge({ value }: { value: string }) {
-  return <span style={{ borderRadius: 999, background: 'var(--desk-surface-muted)', padding: '4px 8px', fontSize: 12, fontWeight: 800 }}>{value}</span>;
-}
+
+
+
+const inputStyle = {
+  border: '1px solid var(--desk-border)',
+  borderRadius: 6,
+  padding: '8px 12px',
+  fontSize: 14,
+  outline: 'none',
+  minWidth: 150
+};
+const submitStyle = {
+  background: 'var(--desk-brand)',
+  color: 'white',
+  border: 'none',
+  borderRadius: 6,
+  padding: '8px 16px',
+  fontWeight: 600,
+  cursor: 'pointer'
+};
+const buttonStyle = (active: boolean) => ({
+  background: active ? 'var(--desk-brand)' : 'var(--desk-surface-muted)',
+  color: active ? 'white' : 'var(--desk-muted)',
+  padding: '6px 12px',
+  borderRadius: 6,
+  fontSize: 13,
+  fontWeight: 600,
+  textDecoration: 'none'
+});
 
 const panelStyle = { border: '1px solid var(--desk-border)', borderRadius: 8, background: 'var(--desk-surface)', padding: 20 };
 const titleStyle = { margin: 0, fontSize: 28 };

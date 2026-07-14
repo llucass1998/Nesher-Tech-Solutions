@@ -2,24 +2,32 @@ import Link from 'next/link';
 import { fetchLogiDesk, TicketSummary } from '@/src/lib/api';
 import { TicketActionsClient } from './ticket-actions-client';
 import { TicketRealtimePanel } from './ticket-realtime-panel';
+import { TicketStatusBadge, PriorityBadge } from '@logipeople/ui';
+
+type Note = { id: string; authorId?: string | null; body: string; createdAt: string; editedAt?: string | null };
 
 export default async function TicketDetailPage(props: { params: Promise<{ id: string }> }) {
   const { id } = await props.params;
-  const result = await fetchLogiDesk<TicketSummary>(`/tickets/${id}`);
 
-  if (result.error || !result.data) {
+  const [ticketResult, notesResult] = await Promise.all([
+    fetchLogiDesk<TicketSummary>(`/tickets/${id}`),
+    fetchLogiDesk<Note[]>(`/tickets/${id}/internal-notes`),
+  ]);
+
+  if (ticketResult.error || !ticketResult.data) {
     return (
       <div style={{ display: 'grid', gap: 20 }}>
         <Link href="/tickets" style={linkStyle}>Voltar para chamados</Link>
         <section style={panelStyle}>
           <h2 style={{ margin: 0, color: 'var(--desk-danger)' }}>Chamado indisponivel</h2>
-          <p style={mutedStyle}>{result.error ?? 'Chamado nao encontrado.'}</p>
+          <p style={mutedStyle}>{ticketResult.error ?? 'Chamado nao encontrado.'}</p>
         </section>
       </div>
     );
   }
 
-  const ticket = result.data;
+  const ticket = ticketResult.data;
+  const notes = notesResult.data ?? [];
 
   return (
     <div style={{ display: 'grid', gap: 20 }}>
@@ -31,10 +39,10 @@ export default async function TicketDetailPage(props: { params: Promise<{ id: st
             <h2 style={{ margin: '6px 0 0', fontSize: 28 }}>{ticket.subject}</h2>
             <p style={mutedStyle}>{ticket.description}</p>
           </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <Badge value={ticket.status} />
-            <Badge value={ticket.priority} />
-            <Badge value={ticket.source} />
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <TicketStatusBadge status={ticket.status} />
+            <PriorityBadge priority={ticket.priority} />
+            <span style={sourceBadgeStyle}>{ticket.source}</span>
           </div>
         </div>
       </section>
@@ -46,12 +54,14 @@ export default async function TicketDetailPage(props: { params: Promise<{ id: st
           <section style={panelStyle}>
             <h3 style={sectionTitleStyle}>Mensagens</h3>
             {ticket.messages?.length ? (
-              <div style={{ display: 'grid', gap: 10 }}>
+              <div style={{ display: 'grid', gap: 12 }}>
                 {ticket.messages.map((message) => (
-                  <article key={message.id} style={itemStyle}>
-                    <p style={{ margin: 0, fontWeight: 800 }}>{message.authorRole}</p>
-                    <p style={mutedStyle}>{message.body}</p>
-                    <p style={dateStyle}>{formatDate(message.createdAt)}</p>
+                  <article key={message.id} style={messageStyle}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <p style={{ margin: 0, fontWeight: 800, color: 'var(--desk-text)' }}>{message.authorRole}</p>
+                      <p style={{ margin: 0, fontSize: 12, color: 'var(--desk-muted)' }}>{formatDate(message.createdAt)}</p>
+                    </div>
+                    <p style={{ margin: '8px 0 0', lineHeight: 1.5 }}>{message.body}</p>
                   </article>
                 ))}
               </div>
@@ -97,7 +107,21 @@ export default async function TicketDetailPage(props: { params: Promise<{ id: st
 
           <section style={panelStyle}>
             <h3 style={sectionTitleStyle}>Notas internas</h3>
-            <p style={mutedStyle}>{ticket.notes?.length ?? 0} notas visiveis somente para suporte.</p>
+            {notes.length ? (
+              <div style={{ display: 'grid', gap: 12, marginTop: 12 }}>
+                {notes.map((note) => (
+                  <article key={note.id} style={noteStyle}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <p style={{ margin: 0, fontWeight: 800, color: 'var(--desk-text)', fontSize: 13 }}>{note.authorId ?? 'Suporte'}</p>
+                      <p style={{ margin: 0, fontSize: 11, color: '#92400e' }}>{formatDate(note.createdAt)}</p>
+                    </div>
+                    <p style={{ margin: '6px 0 0', fontSize: 14, lineHeight: 1.4 }}>{note.body}</p>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p style={mutedStyle}>Nenhuma nota interna registrada.</p>
+            )}
           </section>
         </aside>
       </div>
@@ -114,17 +138,16 @@ function Info({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Badge({ value }: { value: string }) {
-  return <span style={{ borderRadius: 999, background: 'var(--desk-surface-muted)', padding: '5px 9px', fontSize: 12, fontWeight: 800 }}>{value}</span>;
-}
-
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
 }
 
 const panelStyle = { border: '1px solid var(--desk-border)', borderRadius: 8, background: 'var(--desk-surface)', padding: 20 };
 const itemStyle = { border: '1px solid var(--desk-border)', borderRadius: 8, padding: 12 };
+const messageStyle = { border: '1px solid var(--desk-border)', borderRadius: 8, padding: 16, background: 'var(--desk-surface)' };
+const noteStyle = { border: '1px solid #fde68a', borderRadius: 8, padding: 12, background: '#fef3c7', color: '#92400e' };
 const mutedStyle = { margin: '6px 0 0', color: 'var(--desk-muted)', fontSize: 14 };
 const sectionTitleStyle = { margin: '0 0 12px', fontSize: 18 };
 const dateStyle = { margin: '8px 0 0', color: 'var(--desk-muted)', fontSize: 12 };
 const linkStyle = { color: 'var(--desk-brand)', fontWeight: 800 };
+const sourceBadgeStyle = { borderRadius: 999, background: 'var(--desk-surface-muted)', padding: '5px 9px', fontSize: 12, fontWeight: 800 };

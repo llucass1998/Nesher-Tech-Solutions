@@ -13,9 +13,9 @@ Data: 2026-07-14
 | JWKS | PASS |
 | Refresh token | PASS |
 | LogiFlow ↔ LogiDesk | PASS |
-| LogiDesk ↔ LogiPeople | FAIL |
-| LogiPeople ↔ LogiPayroll | FAIL |
-| LogiPayroll ↔ LogiFlow | FAIL |
+| LogiDesk ↔ LogiPeople | PASS |
+| LogiPeople ↔ LogiPayroll | PASS |
+| LogiPayroll ↔ LogiFlow | PASS |
 | Outbox | PASS |
 | Inbox | PASS |
 | Redis Streams | PASS (Operacional no Dispatcher/Worker HTTP) |
@@ -25,7 +25,7 @@ Data: 2026-07-14
 | LogiDesk operacional | PASS |
 | SLA | PASS |
 | Mensagens | PASS |
-| Kanban | FAIL (Apenas estruturado, falta drag-and-drop validador) |
+| Kanban | PASS (Drag-and-drop com validação na API operante) |
 | Chatbot | FAIL |
 | Veículos | FAIL (Ainda no formato básico v1) |
 | Rotas | FAIL |
