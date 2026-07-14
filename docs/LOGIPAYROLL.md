@@ -42,7 +42,10 @@ Endpoints iniciais:
 
 - `GET /health/live`
 - `GET /health/ready`
+- `GET /auth/me`
 - `GET /payroll/capabilities`
+
+`GET /auth/me` valida tokens RS256 emitidos pelo LogiIdentity via JWKS, exige audience `logipayroll` e retorna apenas dados publicos do usuario autenticado.
 
 ## Banco
 
@@ -67,6 +70,7 @@ Nao existem relacoes Prisma com bancos de LogiPeople, LogiFlow ou LogiDesk.
 - `npm run build -w logipayroll-api`: PASS.
 - `npm run build -w logipayroll-worker`: PASS.
 - `npm run build -w logipayroll-web`: PASS.
+- `npm run test -w logipayroll-api`: PASS, 5 testes.
 - `npx prisma validate --config apps/logipayroll-api/prisma.config.ts`: PASS.
 - `docker compose --env-file .env.example config`: PASS.
 - `docker compose --env-file .env.example build --progress plain logipayroll-api`: PASS.
@@ -76,7 +80,7 @@ Nao existem relacoes Prisma com bancos de LogiPeople, LogiFlow ou LogiDesk.
 
 ## Pendencias
 
-- Autenticacao Identity/JWKS na API.
+- Guards de autorizacao por dominio e permissoes em endpoints reais.
 - APIs reais de contratos, ponto, ferias, folha e holerites.
 - Eventos `logipayroll.*` em `packages/event-contracts`.
 - Integracao LogiPeople -> LogiPayroll.

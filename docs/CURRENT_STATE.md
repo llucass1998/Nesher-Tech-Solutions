@@ -127,6 +127,7 @@ Estrutura:
 Implementado:
 
 - Health checks.
+- `GET /api/v1/auth/me` validando JWT RS256 do LogiIdentity por JWKS e audience `logipayroll`.
 - Endpoint `GET /api/v1/payroll/capabilities`.
 - Schema separado com referencias de colaborador, contratos, payroll runs, itens, outbox e inbox.
 - Docker Compose com `logipayroll-db`, `logipayroll-migrate`, `logipayroll-api`, `logipayroll-worker` e `logipayroll-web`.
@@ -135,7 +136,7 @@ Implementado:
 Limitacoes:
 
 - Nenhum dado real foi migrado do LogiPeople.
-- Identity/JWKS, APIs reais, eventos e integracoes ainda estao pendentes.
+- Guards de autorizacao por permissao, APIs reais, eventos e integracoes ainda estao pendentes.
 
 ## Infraestrutura
 
