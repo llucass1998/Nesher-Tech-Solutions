@@ -387,6 +387,19 @@ export const logipayrollEmployeeAvailableEventSchema = platformEvent(
   }),
 );
 
+
+export const logipayrollPayrollClosedEventSchema = platformEvent(
+  'logipayroll.payroll.closed',
+  1,
+  z.object({
+    payrollRunId: uuidSchema,
+    referenceMonth: z.number().int().min(1).max(12),
+    referenceYear: z.number().int().min(2000),
+    totalEmployees: z.number().int().min(0),
+    totalAmountCents: z.number().int(),
+  }),
+);
+
 export const platformEventSchemas = [
   logiflowOccurrenceCreatedEventSchema,
   logiflowOccurrenceEscalatedEventSchema,
@@ -418,6 +431,7 @@ export const platformEventSchemas = [
   logipayrollLeaveApprovedEventSchema,
   logipayrollEmployeeUnavailableEventSchema,
   logipayrollEmployeeAvailableEventSchema,
+  logipayrollPayrollClosedEventSchema,
 ] as const;
 
 export const platformEventSchema = z.union(platformEventSchemas);
@@ -449,3 +463,4 @@ export type LogipeopleEmployeeOperationalEligibilityChangedEvent = z.infer<
 >;
 export type LogipayrollContractCreatedEvent = z.infer<typeof logipayrollContractCreatedEventSchema>;
 export type LogipayrollLeaveApprovedEvent = z.infer<typeof logipayrollLeaveApprovedEventSchema>;
+export type LogipayrollPayrollClosedEvent = z.infer<typeof logipayrollPayrollClosedEventSchema>;

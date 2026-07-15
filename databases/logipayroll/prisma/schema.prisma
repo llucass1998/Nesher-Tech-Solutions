@@ -27,6 +27,8 @@ model PayrollEmployeeReference {
   updatedAt      DateTime @updatedAt
 
   contracts Contract[]
+  timeRecords TimeRecord[]
+  leaveRequests LeaveRequest[]
 }
 
 model Contract {
@@ -114,4 +116,43 @@ model DeadLetterEvent {
   createdAt     DateTime @default(now())
 
   outboxEvent OutboxEvent @relation(fields: [outboxEventId], references: [id])
+}
+
+enum TimeRecordKind {
+  CLOCK_IN
+  CLOCK_OUT
+}
+
+model TimeRecord {
+  id         String         @id @default(uuid())
+  employeeId String
+  kind       TimeRecordKind
+  timestamp  DateTime
+  createdAt  DateTime       @default(now())
+
+  employee PayrollEmployeeReference @relation(fields: [employeeId], references: [id])
+
+  @@index([employeeId, timestamp])
+}
+
+enum LeaveRequestStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+}
+
+model LeaveRequest {
+  id         String             @id @default(uuid())
+  employeeId String
+  startDate  DateTime
+  endDate    DateTime
+  category   String
+  status     LeaveRequestStatus @default(REQUESTED)
+  reason     String?
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+
+  employee PayrollEmployeeReference @relation(fields: [employeeId], references: [id])
+
+  @@index([employeeId])
 }

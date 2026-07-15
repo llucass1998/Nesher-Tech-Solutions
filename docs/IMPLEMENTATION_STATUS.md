@@ -36,9 +36,9 @@ Data: 2026-07-14
 | Treinamentos | FAIL |
 | LogiPayroll separado | PASS (Fundação inicial criada e testada) |
 | Contratos | PASS (CRUD básico implementado) |
-| Ponto | FAIL |
-| Férias | FAIL |
-| Folha | FAIL (Demonstrativos básicos pendentes de workflow) |
+| Ponto | PASS |
+| Férias | PASS |
+| Folha | PASS (Fechamento simplificado e Event-driven implementados) |
 | RBAC | PASS |
 | ABAC | FAIL |
 | Ownership | PASS |
