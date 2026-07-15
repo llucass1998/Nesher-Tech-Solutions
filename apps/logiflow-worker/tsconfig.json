@@ -4,6 +4,7 @@
     "outDir": "dist",
     "baseUrl": ".",
     "paths": {
+      "@logipeople/event-contracts": ["../../packages/event-contracts/src/index.ts"],
       "@logipeople/logger": ["../../packages/logger/src/index.ts"]
     }
   },

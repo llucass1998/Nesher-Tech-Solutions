@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@logipeople/event-contracts": "0.1.0",
-    "socket.io-client": "^4.8.3"
+    "socket.io-client": "^4.8.3",
+    "@logipeople/ui": "0.1.0"
   }
 }

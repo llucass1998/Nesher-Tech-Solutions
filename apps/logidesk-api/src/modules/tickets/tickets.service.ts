@@ -372,6 +372,68 @@ export class TicketsService {
     return ticket;
   }
 
+  
+  async updateTicketStatusFromHrCase(hrCaseId: string, input: { newStatus: string, previousStatus: string }, idempotencyKey?: string, correlationId?: string) {
+    if (!correlationId) {
+      throw new UnprocessableEntityException({ error: 'Missing x-correlation-id to identify the ticket.' });
+    }
+
+    if (idempotencyKey) {
+      const existing = await this.prisma.idempotencyRecord.findUnique({ where: { key: idempotencyKey } });
+      if (existing) {
+        if (existing.responseRef) return JSON.parse(existing.responseRef);
+        return { acknowledged: true };
+      }
+    }
+
+    const ticket = await this.getTicket(correlationId);
+    if (!ticket) {
+      throw new NotFoundException({ error: 'Ticket not found by correlationId.' });
+    }
+
+    // Also link externalId if it wasn't linked yet
+    if (!ticket.externalId) {
+      await this.prisma.ticket.update({
+        where: { id: ticket.id },
+        data: { externalSystem: 'LOGIPEOPLE', externalId: hrCaseId },
+      });
+    }
+
+    let targetStatus: TicketStatus | null = null;
+    switch (input.newStatus) {
+      case 'OPEN': targetStatus = 'OPEN'; break;
+      case 'IN_REVIEW': targetStatus = 'IN_PROGRESS'; break;
+      case 'WAITING_EMPLOYEE': targetStatus = 'WAITING_CUSTOMER'; break;
+      case 'WAITING_MANAGER': targetStatus = 'WAITING_INTERNAL'; break;
+      case 'COMPLETED': targetStatus = 'RESOLVED'; break;
+      case 'CANCELED': targetStatus = 'CANCELED'; break;
+    }
+
+    if (!targetStatus) {
+      throw new UnprocessableEntityException({ error: 'Unmapped HR Case status' });
+    }
+
+    let result: any = ticket;
+    if (ticket.status !== targetStatus) {
+      await this.changeStatus(ticket.id, { status: targetStatus, correlationId: correlationId ?? 'system-update' });
+      result = await this.getTicket(ticket.id);
+    }
+
+    if (idempotencyKey) {
+      await this.prisma.idempotencyRecord.create({
+        data: {
+          key: idempotencyKey,
+          operation: 'updateTicketStatusFromHrCase',
+          requestHash: JSON.stringify(input),
+          responseRef: JSON.stringify(result),
+          correlationId: correlationId,
+        },
+      });
+    }
+
+    return result;
+  }
+
   async changeStatus(id: string, input: ChangeTicketStatusDto) {
     const current = await this.ensureTicket(id);
     const target = input.status as TicketStatus;

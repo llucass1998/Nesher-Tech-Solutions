@@ -2,6 +2,7 @@ import { createPlatformLogger } from '@logipeople/logger';
 import { Redis } from 'ioredis';
 import { Pool } from 'pg';
 import { LogiPeopleOutboxDispatcher } from './outbox-dispatcher.js';
+import { LogideskConsumer } from './logidesk-consumer.js';
 
 const logger = createPlatformLogger('logipeople-worker');
 const redisUrl = process.env.REDIS_URL ?? 'redis://localhost:6379';
@@ -12,6 +13,10 @@ const retryBaseDelaySeconds = Number(process.env.LOGIPEOPLE_OUTBOX_RETRY_BASE_DE
 const retryMaxDelaySeconds = Number(process.env.LOGIPEOPLE_OUTBOX_RETRY_MAX_DELAY_SECONDS ?? 900);
 const eventStreamName = process.env.LOGIPEOPLE_EVENT_STREAM ?? 'logipeople.events';
 const eventStreamMaxLen = Math.max(100, Number(process.env.EVENT_STREAM_MAXLEN ?? 10000));
+const logideskEventStreamName = process.env.LOGIDESK_EVENT_STREAM ?? 'logidesk.events';
+const logideskConsumerBatchSize = Number(process.env.LOGIPEOPLE_LOGIDESK_CONSUMER_BATCH_SIZE ?? 10);
+const logideskConsumerBlockMs = Number(process.env.LOGIPEOPLE_LOGIDESK_CONSUMER_BLOCK_MS ?? 100);
+
 const streamPublisher = new Redis(redisUrl, { maxRetriesPerRequest: null });
 const pool = databaseUrl ? new Pool({ connectionString: databaseUrl }) : null;
 const dispatcher = new LogiPeopleOutboxDispatcher(pool, streamPublisher, logger, {
@@ -22,8 +27,16 @@ const dispatcher = new LogiPeopleOutboxDispatcher(pool, streamPublisher, logger,
   eventStreamMaxLen,
 });
 
+const logideskConsumer = new LogideskConsumer(pool, streamPublisher, logger, {
+  consumerName: 'logipeople.logidesk.hr_cases',
+  streamName: logideskEventStreamName,
+  batchSize: logideskConsumerBatchSize,
+  blockMs: logideskConsumerBlockMs,
+});
+
 const poller = setInterval(() => {
   void dispatcher.dispatchPendingOutboxBatch();
+  void logideskConsumer.consumeNextBatch();
 }, pollIntervalMs);
 
 logger.info(

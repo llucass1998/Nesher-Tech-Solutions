@@ -53,6 +53,27 @@ export function PriorityBadge({ priority, className }: { priority: string; class
   );
 }
 
+
+const ticketStatusLabels: Record<string, { label: string; tone: Tone }> = {
+  OPEN: { label: 'Aberto', tone: 'red' },
+  IN_PROGRESS: { label: 'Em andamento', tone: 'blue' },
+  WAITING_CUSTOMER: { label: 'Aguardando cliente', tone: 'yellow' },
+  WAITING_INTERNAL: { label: 'Aguardando equipe', tone: 'yellow' },
+  RESOLVED: { label: 'Resolvido', tone: 'green' },
+  CLOSED: { label: 'Fechado', tone: 'gray' },
+  CANCELED: { label: 'Cancelado', tone: 'gray' },
+};
+
+export function TicketStatusBadge({ status, className }: { status: string; className?: string }) {
+  const config = ticketStatusLabels[status] ?? { label: status, tone: 'gray' as Tone };
+
+  return (
+    <span className={joinClasses('inline-flex h-6 items-center rounded-full px-2.5 text-xs font-medium whitespace-nowrap', toneClasses[config.tone], className)}>
+      {config.label}
+    </span>
+  );
+}
+
 export function EmptyState({
   title,
   description,

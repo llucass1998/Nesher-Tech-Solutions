@@ -48,10 +48,20 @@ Principais modelos:
 - `DeliveryProof`
 - `OutboxEvent`
 - `DeadLetterEvent`
+- `InboxMessage`
+- `ConsumerCheckpoint`
 
 ## Integracao e DLQ
 
 LogiFlow publica escalonamentos para o LogiDesk por `OutboxEvent`, processado pelo `apps/logiflow-worker`.
+
+O worker tambem consome eventos do LogiPayroll em `LOGIPAYROLL_EVENT_STREAM`:
+
+- `logipayroll.leave.approved`;
+- `logipayroll.employee.unavailable`;
+- `logipayroll.employee.available`.
+
+O consumo registra `InboxMessage`, avanca `ConsumerCheckpoint` e atualiza `DriverProfile.status`/`Driver.status` somente quando existe mapeamento local por `DriverProfile.employeeId`. O payload operacional salvo em `DriverProfile.operationalData.payrollAvailability` nao inclui salario, documento, banco, CID ou dados medicos.
 
 Rotas operacionais de recuperacao:
 
@@ -73,7 +83,8 @@ flowchart TD
 
 ## Limitacoes atuais
 
-- O worker LogiFlow existe, despacha outbox por HTTP e publica espelho operacional em Redis Stream.
+- O worker LogiFlow existe, despacha outbox por HTTP, publica espelho operacional em Redis Stream e consome indisponibilidade operacional do LogiPayroll.
 - DLQ operacional existe como endpoint inicial; falta validar reprocessamento fim a fim com containers.
+- Eventos do LogiPayroll sem `DriverProfile.employeeId` mapeado sao registrados como processados e logados para saneamento cadastral, sem alterar motoristas.
 - Nao ha mapa com ownership completo.
 - E2E completo LogiFlow -> LogiDesk ainda nao foi automatizado.

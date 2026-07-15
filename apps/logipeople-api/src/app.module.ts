@@ -15,6 +15,9 @@ import { PayslipsModule } from './modules/payslips/payslips.module';
 import { PeopleModule } from './modules/people/people.module';
 import { RecruitmentModule } from './modules/recruitment/recruitment.module';
 import { TimeAttendanceModule } from './modules/time-attendance/time-attendance.module';
+import { HrCaseModule } from './modules/hr-case/hr-case.module';
+import { PerformanceReviewModule } from './modules/performance-review/performance-review.module';
+import { TrainingModule } from './modules/training/training.module';
 
 @Module({
   imports: [
@@ -34,6 +37,9 @@ import { TimeAttendanceModule } from './modules/time-attendance/time-attendance.
     RecruitmentModule,
     TimeAttendanceModule,
     PayrollModule,
+    HrCaseModule,
+    PerformanceReviewModule,
+    TrainingModule,
   ],
 })
 export class AppModule {}

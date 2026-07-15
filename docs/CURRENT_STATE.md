@@ -139,13 +139,14 @@ Implementado:
 - Evento `logipayroll.contract.created` possui contrato Zod versionado em `packages/event-contracts` e e validado pela API antes da Outbox.
 - Worker LogiPayroll publica Outbox valida em Redis Streams, aplica retry/backoff e registra `DeadLetterEvent` para falhas permanentes ou esgotadas.
 - Worker LogiPayroll consome `logipeople.employee.hired` de `LOGIPEOPLE_EVENT_STREAM`, registra `InboxMessage`, mantem `ConsumerCheckpoint` e cria/atualiza `PayrollEmployeeReference` minima.
+- Worker LogiFlow consome eventos operacionais do LogiPayroll em `LOGIPAYROLL_EVENT_STREAM` e atualiza disponibilidade de motorista quando ha `DriverProfile.employeeId` mapeado.
 - Docker Compose com `logipayroll-db`, `logipayroll-migrate`, `logipayroll-api`, `logipayroll-worker` e `logipayroll-web`.
 - CI dedicado `logipayroll-ci.yml`.
 
 Limitacoes:
 
 - Nenhum dado real foi migrado do LogiPeople.
-- APIs reais de ponto, ferias, folha, holerites, testes de integracao com banco real, consumidores downstream dos eventos LogiPayroll, eventos adicionais e criacao automatica de contrato ainda estao pendentes.
+- APIs reais de ponto, ferias, folha, holerites, testes de integracao com banco real, eventos produtores de ferias/afastamentos e criacao automatica de contrato ainda estao pendentes.
 
 ## Infraestrutura
 

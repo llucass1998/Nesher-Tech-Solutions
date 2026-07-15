@@ -334,6 +334,28 @@ model DeadLetterEvent {
   @@index([correlationId])
 }
 
+model InboxMessage {
+  id            String   @id @default(uuid())
+  eventId       String   @unique
+  eventType     String
+  eventVersion  Int      @default(1)
+  payload       Json?
+  producer      String
+  correlationId String?
+  processedAt   DateTime?
+  createdAt     DateTime @default(now())
+
+  @@index([correlationId])
+}
+
+model ConsumerCheckpoint {
+  id            String   @id @default(uuid())
+  consumerName  String   @unique
+  streamName    String
+  lastMessageId String   @default("0-0")
+  updatedAt     DateTime @updatedAt
+}
+
 model AuditLog {
   id             String   @id @default(uuid())
   actorId        String?

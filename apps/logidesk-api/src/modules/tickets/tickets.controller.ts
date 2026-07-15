@@ -3,6 +3,7 @@ import { IdentityJwksService, LogiIdentityClaims } from '../auth/identity-jwks.s
 import { AssignTicketDto } from './dto/assign-ticket.dto';
 import { ChangeTicketPriorityDto } from './dto/change-ticket-priority.dto';
 import { ChangeTicketStatusDto } from './dto/change-ticket-status.dto';
+import { UpdateHrCaseStatusFromLogipeopleDto } from './dto/update-hr-case-status.dto';
 import { CreateAttachmentDto } from './dto/create-attachment.dto';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { CreateTicketDto } from './dto/create-ticket.dto';
@@ -49,6 +50,18 @@ export class TicketsController {
   ) {
     this.assertServiceToken(serviceToken);
     return this.ticketsService.createFromLogiflow(body, idempotencyKey);
+  }
+
+  @Patch('integrations/logipeople/hr-cases/:hrCaseId/status')
+  updateHrCaseStatus(
+    @Param('hrCaseId') hrCaseId: string,
+    @Body() body: UpdateHrCaseStatusFromLogipeopleDto,
+    @Headers('x-service-token') serviceToken: string | undefined,
+    @Headers('idempotency-key') idempotencyKey: string | undefined,
+    @Headers('x-correlation-id') correlationId: string | undefined,
+  ) {
+    this.assertServiceToken(serviceToken);
+    return this.ticketsService.updateTicketStatusFromHrCase(hrCaseId, body, idempotencyKey, correlationId);
   }
 
   @Get('tickets/:id')

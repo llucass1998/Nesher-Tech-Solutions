@@ -78,6 +78,16 @@ O worker do LogiPeople publica esse evento no Redis Stream `LOGIPEOPLE_EVENT_STR
 
 O mapeamento automatico para contrato ainda fica como proxima etapa, porque o evento de contratacao atual nao transporta dados contratuais suficientes para criar um `Contract` com validade juridica.
 
+## Integracao LogiFlow
+
+LogiFlow agora consome eventos operacionais publicados pelo LogiPayroll em `LOGIPAYROLL_EVENT_STREAM`:
+
+- `logipayroll.leave.approved`;
+- `logipayroll.employee.unavailable`;
+- `logipayroll.employee.available`.
+
+O consumo no LogiFlow usa Inbox/idempotencia e checkpoint. Ele atualiza motorista somente quando ha `DriverProfile.employeeId` mapeado para o `employeeId` do evento; caso contrario, o evento e registrado e logado sem acesso ao banco do LogiPayroll.
+
 ## Banco
 
 Schema inicial:
@@ -119,5 +129,5 @@ Nao existem relacoes Prisma com bancos de LogiPeople, LogiFlow ou LogiDesk.
 - Consumidores reais das mensagens publicadas em `logipayroll.events`.
 - Eventos adicionais `logipayroll.*` para folha, holerites, desligamentos e disponibilidade.
 - Criacao automatica de contrato a partir de evento LogiPeople quando houver contrato compartilhado com dados contratuais minimos.
-- Integracao LogiPayroll -> LogiFlow para indisponibilidade operacional.
+- Fluxo produtor real de ferias/afastamentos no LogiPayroll para publicar `logipayroll.leave.approved` a partir de APIs de DP.
 - Testes unitarios, integracao e contrato.

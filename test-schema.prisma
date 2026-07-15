@@ -1,0 +1,73 @@
+enum PerformanceReviewStatus {
+  DRAFT
+  PUBLISHED
+  ACKNOWLEDGED
+  DISPUTED
+}
+
+model PerformanceReview {
+  id              String                  @id @default(uuid())
+  employeeId      String
+  reviewerId      String?
+  reviewPeriod    String
+  score           Float
+  comments        String?
+  status          PerformanceReviewStatus @default(DRAFT)
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+  reviewer Employee? @relation("Reviewer", fields: [reviewerId], references: [id])
+}
+
+enum TrainingStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model TrainingProgram {
+  id              String                  @id @default(uuid())
+  title           String
+  description     String?
+  mandatory       Boolean                 @default(false)
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  sessions        TrainingSession[]
+}
+
+model TrainingSession {
+  id              String                  @id @default(uuid())
+  programId       String
+  instructorId    String?
+  scheduledFor    DateTime
+  status          TrainingStatus          @default(SCHEDULED)
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  program         TrainingProgram         @relation(fields: [programId], references: [id])
+  instructor      Employee?               @relation("Instructor", fields: [instructorId], references: [id])
+  enrollments     TrainingEnrollment[]
+}
+
+enum TrainingEnrollmentStatus {
+  ENROLLED
+  ATTENDED
+  ABSENT
+  FAILED
+}
+
+model TrainingEnrollment {
+  id              String                  @id @default(uuid())
+  sessionId       String
+  employeeId      String
+  status          TrainingEnrollmentStatus @default(ENROLLED)
+  score           Float?
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  session         TrainingSession         @relation(fields: [sessionId], references: [id])
+  employee        Employee                @relation(fields: [employeeId], references: [id])
+}

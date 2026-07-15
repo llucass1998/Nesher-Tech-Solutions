@@ -3,6 +3,8 @@ import { randomUUID } from 'crypto';
 import { Redis } from 'ioredis';
 import { Pool } from 'pg';
 import { createPlatformLogger } from '@logipeople/logger';
+import { LogiflowConsumer } from './logiflow-consumer.js';
+import { LogipeopleConsumer } from './logipeople-consumer.js';
 
 const logger = createPlatformLogger('logidesk-worker');
 const redisUrl = process.env.REDIS_URL ?? 'redis://localhost:6379';
@@ -17,9 +19,24 @@ const retryBaseDelaySeconds = Number(process.env.LOGIDESK_OUTBOX_RETRY_BASE_DELA
 const retryMaxDelaySeconds = Number(process.env.LOGIDESK_OUTBOX_RETRY_MAX_DELAY_SECONDS ?? 900);
 const eventStreamName = process.env.LOGIDESK_EVENT_STREAM ?? 'logidesk.events';
 const eventStreamMaxLen = Math.max(100, Number(process.env.EVENT_STREAM_MAXLEN ?? 10000));
+const logiflowEventStreamName = process.env.LOGIFLOW_EVENT_STREAM ?? 'logiflow.events';
+const logiflowConsumerBatchSize = Number(process.env.LOGIDESK_LOGIFLOW_CONSUMER_BATCH_SIZE ?? 10);
+const logiflowConsumerBlockMs = Number(process.env.LOGIDESK_LOGIFLOW_CONSUMER_BLOCK_MS ?? 100);
+
+const logipeopleEventStreamName = process.env.LOGIPEOPLE_EVENT_STREAM ?? 'logipeople.events';
+const logipeopleConsumerBatchSize = Number(process.env.LOGIDESK_LOGIPEOPLE_CONSUMER_BATCH_SIZE ?? 10);
+const logipeopleConsumerBlockMs = Number(process.env.LOGIDESK_LOGIPEOPLE_CONSUMER_BLOCK_MS ?? 100);
+
 const connection = buildRedisConnection(redisUrl);
 const streamPublisher = new Redis(redisUrl, { maxRetriesPerRequest: null });
 const pool = databaseUrl ? new Pool({ connectionString: databaseUrl }) : null;
+
+const logiflowConsumer = new LogiflowConsumer(pool, streamPublisher, logger, {
+  consumerName: 'logidesk.logiflow.escalation',
+  streamName: logiflowEventStreamName,
+  batchSize: logiflowConsumerBatchSize,
+  blockMs: logiflowConsumerBlockMs,
+});
 
 const outboxWorker = new Worker(
   'logidesk.outbox',
@@ -54,8 +71,17 @@ const slaWorker = new Worker(
   { connection },
 );
 
+const logipeopleConsumer = new LogipeopleConsumer(pool, streamPublisher, logger, {
+  consumerName: 'logidesk.logipeople.hrcase',
+  streamName: logipeopleEventStreamName,
+  batchSize: logipeopleConsumerBatchSize,
+  blockMs: logipeopleConsumerBlockMs,
+});
+
 const poller = setInterval(() => {
   void dispatchPendingOutboxBatch();
+  void logiflowConsumer.consumeNextBatch();
+  void logipeopleConsumer.consumeNextBatch();
 }, pollIntervalMs);
 
 const slaPoller = setInterval(() => {
@@ -68,6 +94,7 @@ logger.info(
     operation: 'bootstrap',
     redisUrl: redactUrl(redisUrl),
     logiflowApiUrl,
+    logiflowEventStreamName,
     hasDatabaseUrl: Boolean(databaseUrl),
     hasServiceToken: Boolean(serviceToken),
     retryBaseDelaySeconds,

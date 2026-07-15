@@ -1,4 +1,4 @@
-import { logipayrollContractCreatedDataSchema } from '@logipeople/event-contracts';
+import { logipayrollContractCreatedDataSchema, logipayrollLeaveApprovedEventSchema, logipayrollEmployeeUnavailableEventSchema, logipayrollEmployeeAvailableEventSchema } from '@logipeople/event-contracts';
 
 export interface OutboxEventRow {
   id: string;
@@ -137,12 +137,22 @@ export class LogiPayrollOutboxDispatcher {
   }
 
   private validatePayload(event: OutboxEventRow) {
-    if (event.eventType !== 'logipayroll.contract.created') {
-      throw new PermanentDispatchError(`Unsupported LogiPayroll outbox event type: ${event.eventType}`);
+    if (event.eventType === 'logipayroll.contract.created') {
+      return logipayrollContractCreatedDataSchema.parse(event.payload);
+    }
+    if (event.eventType === 'logipayroll.leave.approved') {
+      return logipayrollLeaveApprovedEventSchema.shape.data.parse(event.payload);
+    }
+    if (event.eventType === 'logipayroll.employee.unavailable') {
+      return logipayrollEmployeeUnavailableEventSchema.shape.data.parse(event.payload);
+    }
+    if (event.eventType === 'logipayroll.employee.available') {
+      return logipayrollEmployeeAvailableEventSchema.shape.data.parse(event.payload);
     }
 
-    return logipayrollContractCreatedDataSchema.parse(event.payload);
+    throw new PermanentDispatchError(`Unsupported LogiPayroll outbox event type: ${event.eventType}`);
   }
+
 
   private async publishStreamEvent(event: OutboxEventRow, payload: unknown) {
     await this.streamPublisher.xadd(

@@ -1,4 +1,4 @@
-import { logipeopleEmployeeHiredEventSchema } from '@logipeople/event-contracts';
+import { logipeopleEmployeeHiredEventSchema, logipeopleHrCaseStatusChangedEventSchema } from '@logipeople/event-contracts';
 
 export interface OutboxEventRow {
   id: string;
@@ -137,11 +137,14 @@ export class LogiPeopleOutboxDispatcher {
   }
 
   private validatePayload(event: OutboxEventRow) {
-    if (event.eventType !== 'logipeople.employee.hired') {
-      throw new PermanentDispatchError(`Unsupported LogiPeople outbox event type: ${event.eventType}`);
+    if (event.eventType === 'logipeople.employee.hired') {
+      return logipeopleEmployeeHiredEventSchema.shape.data.parse(event.payload);
+    }
+    if (event.eventType === 'logipeople.hr_case.status_changed') {
+      return logipeopleHrCaseStatusChangedEventSchema.shape.data.parse(event.payload);
     }
 
-    return logipeopleEmployeeHiredEventSchema.shape.data.parse(event.payload);
+    throw new PermanentDispatchError(`Unsupported LogiPeople outbox event type: ${event.eventType}`);
   }
 
   private async publishStreamEvent(event: OutboxEventRow, payload: unknown) {

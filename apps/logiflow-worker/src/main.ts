@@ -2,6 +2,7 @@ import { Worker } from 'bullmq';
 import { Redis } from 'ioredis';
 import { Pool } from 'pg';
 import { createPlatformLogger } from '@logipeople/logger';
+import { LogiPayrollAvailabilityConsumer } from './payroll-consumer.js';
 
 const logger = createPlatformLogger('logiflow-worker');
 const redisUrl = process.env.REDIS_URL ?? 'redis://localhost:6379';
@@ -14,9 +15,18 @@ const retryBaseDelaySeconds = Number(process.env.LOGIFLOW_OUTBOX_RETRY_BASE_DELA
 const retryMaxDelaySeconds = Number(process.env.LOGIFLOW_OUTBOX_RETRY_MAX_DELAY_SECONDS ?? 900);
 const eventStreamName = process.env.LOGIFLOW_EVENT_STREAM ?? 'logiflow.events';
 const eventStreamMaxLen = Math.max(100, Number(process.env.EVENT_STREAM_MAXLEN ?? 10000));
+const logiPayrollEventStreamName = process.env.LOGIPAYROLL_EVENT_STREAM ?? 'logipayroll.events';
+const logiPayrollConsumerBatchSize = Number(process.env.LOGIFLOW_LOGIPAYROLL_CONSUMER_BATCH_SIZE ?? 10);
+const logiPayrollConsumerBlockMs = Number(process.env.LOGIFLOW_LOGIPAYROLL_CONSUMER_BLOCK_MS ?? 100);
 const connection = buildRedisConnection(redisUrl);
 const streamPublisher = new Redis(redisUrl, { maxRetriesPerRequest: null });
 const pool = databaseUrl ? new Pool({ connectionString: databaseUrl }) : null;
+const logiPayrollConsumer = new LogiPayrollAvailabilityConsumer(pool, streamPublisher, logger, {
+  consumerName: 'logiflow.logipayroll.availability',
+  streamName: logiPayrollEventStreamName,
+  batchSize: logiPayrollConsumerBatchSize,
+  blockMs: logiPayrollConsumerBlockMs,
+});
 
 const worker = new Worker(
   'logiflow.outbox',
@@ -27,7 +37,6 @@ const worker = new Worker(
         jobId: job.id,
         eventType: job.data?.eventType,
         correlationId: job.data?.correlationId,
-        target: logideskApiUrl,
       },
       'Received LogiFlow outbox job',
     );
@@ -38,6 +47,7 @@ const worker = new Worker(
 
 const poller = setInterval(() => {
   void dispatchPendingOutboxBatch();
+  void logiPayrollConsumer.consumeNextBatch();
 }, pollIntervalMs);
 
 logger.info(
@@ -45,11 +55,10 @@ logger.info(
     module: 'worker',
     operation: 'bootstrap',
     redisUrl,
-    logideskApiUrl,
     hasDatabaseUrl: Boolean(databaseUrl),
-    hasServiceToken: Boolean(logideskServiceToken),
     retryBaseDelaySeconds,
     retryMaxDelaySeconds,
+    logiPayrollEventStreamName,
     status: 'ready',
   },
   'LogiFlow worker ready',
@@ -58,14 +67,6 @@ logger.info(
 async function dispatchPendingOutboxBatch() {
   if (!pool) {
     logger.warn({ operation: 'outbox.dispatch', status: 'skipped', reason: 'DATABASE_URL missing' }, 'Outbox dispatch skipped');
-    return;
-  }
-
-  if (!logideskServiceToken) {
-    logger.error(
-      { operation: 'outbox.dispatch', status: 'failed_configuration', reason: 'LOGIDESK_SERVICE_TOKEN missing' },
-      'Outbox dispatch cannot call LogiDesk without service token',
-    );
     return;
   }
 
@@ -136,27 +137,6 @@ async function dispatchOutboxEvent(event: OutboxEventRow) {
       throw new PermanentDispatchError(`Unsupported LogiFlow outbox event type: ${event.eventType}`);
     }
 
-    const body = mapOccurrenceEscalatedToLogideskRequest(event);
-    const response = await fetch(`${logideskApiUrl}/tickets/from-logiflow`, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-service-token': logideskServiceToken!,
-        'idempotency-key': event.idempotencyKey,
-        'x-correlation-id': event.correlationId,
-      },
-      body: JSON.stringify(body),
-    });
-
-    const responseBody = await response.text();
-    if (!response.ok) {
-      const message = `LogiDesk responded ${response.status}: ${responseBody.slice(0, 500)}`;
-      if (response.status >= 400 && response.status < 500 && response.status !== 429) {
-        throw new PermanentDispatchError(message);
-      }
-      throw new Error(message);
-    }
-
     await markCompleted(event.id);
     await publishStreamEvent(event, 'completed');
     logger.info(
@@ -168,25 +148,13 @@ async function dispatchOutboxEvent(event: OutboxEventRow) {
         attempts: event.attempts,
         status: 'completed',
       },
-      'LogiFlow outbox event dispatched to LogiDesk',
+      'LogiFlow outbox event published to Redis Stream',
     );
   } catch (error) {
     await markFailed(event, error);
   }
 }
 
-function mapOccurrenceEscalatedToLogideskRequest(event: OutboxEventRow) {
-  const payload = event.payload as Record<string, unknown>;
-  return {
-    deliveryId: asString(payload.deliveryId),
-    occurrenceId: asString(payload.occurrenceId),
-    subject: asString(payload.subject),
-    description: asString(payload.description),
-    priority: asString(payload.priority),
-    requesterEmail: asOptionalString(payload.requesterEmail),
-    correlationId: event.correlationId,
-  };
-}
 
 async function markCompleted(outboxEventId: string) {
   if (!pool) return;
