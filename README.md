@@ -1,191 +1,255 @@
-# LogiFlow Platform
+Nesher Tech Solutions
 
-Plataforma em monorepo para operacao logistica, base de suporte futura e modulos corporativos de pessoas.
+Plataforma empresarial multiempresa da Nesher Tech Solutions. O monorepo reúne o portal de atendimento, identidade centralizada, gestão de chamados (LogiDesk), pessoas (LogiPeople), folha/DP (LogiPayroll) e o domínio logístico legado (LogiFlow).
 
-O checkout atual contem:
+O produto está em desenvolvimento. O portal principal já demonstra a experiência completa, mas parte dos dados de chamados, empresas, funcionários, visitas e comunicação ainda é mantida no localStorage. Para produção, essa interface deve ser conectada às APIs de Identity e LogiDesk descritas neste repositório.
 
-- **LogiFlow legado modernizado** na raiz: Next.js App Router em `app/`, API Express em `src/`, banco Prisma em `prisma/`.
-- **LogiIdentity** em `apps/identity-*`: NestJS API, worker, JWT RS256/JWKS, sessoes e Prisma separado em `databases/identity`.
-- **LogiPeople** em `apps/logipeople-*`: NestJS API, Next.js web, worker, pacotes compartilhados e Prisma separado em `databases/logipeople`.
-- **LogiDesk** em `apps/logidesk-*`: NestJS API, Next.js web, worker BullMQ e Prisma separado em `databases/logidesk`.
-- **LogiPayroll** em `apps/logipayroll-*`: fundacao separada para DP/folha com Prisma separado em `databases/logipayroll`.
+Visão do produto
 
-## Stack
+Cadastro e aprovação de empresas clientes.
 
-- Node.js 24
-- TypeScript
-- Next.js 16 App Router
-- React 19
-- Express 5
-- NestJS 11 nos apps LogiPeople
-- Prisma 7
-- PostgreSQL
-- Docker Compose
-- Vitest
-- ESLint
-- GitHub Actions
+Usuários, funcionários e permissões por empresa.
 
-## Estrutura
+Abertura, triagem, atribuição e acompanhamento de chamados.
 
-```text
-app/                         LogiFlow web legado
-src/                         LogiFlow API Express
-prisma/                      Banco LogiFlow
-apps/logipeople-api          LogiPeople API NestJS
-apps/logipeople-web          LogiPeople web Next.js
-apps/logipeople-worker       Worker LogiPeople
-apps/logidesk-api            LogiDesk API NestJS
-apps/logidesk-web            LogiDesk web Next.js
-apps/logidesk-worker         Worker LogiDesk BullMQ
-apps/logipayroll-api         LogiPayroll API NestJS
-apps/logipayroll-web         LogiPayroll web Next.js
-apps/logipayroll-worker      Worker LogiPayroll
-apps/logiflow-worker         Worker LogiFlow BullMQ
-apps/identity-api            LogiIdentity API NestJS
-apps/identity-worker         Worker LogiIdentity
-packages/auth                Tipos e fronteiras de identidade
-packages/contracts           Contratos Zod HTTP
-packages/event-contracts     Contratos Zod de eventos
-packages/logger              Logger compartilhado
-packages/ui                  Componentes UI compartilhados LogiFlow
-databases/logipeople         Banco LogiPeople
-databases/logidesk           Banco LogiDesk
-databases/logipayroll        Banco LogiPayroll
-databases/identity           Banco Identity
-docs/                        Documentacao de arquitetura, operacao e decisoes
-```
+Mensagens públicas, notas internas, anexos, SLA e notificações.
 
-## Comandos principais
+Agenda de visitas e base para sessões de suporte remoto.
 
-```bash
-npm install
-npm run lint
-npm run typecheck
-npm test
-npm run build
-npm audit
-```
+Indicadores operacionais para clientes, técnicos e administradores.
 
-Workspaces:
+Temas, navegação lateral recolhível e preferências do dashboard.
 
-```bash
-npm run lint:workspaces
-npm run test:workspaces
-npm run build:workspaces
-npm run identity:prisma:generate
-npm run logipeople:prisma:generate
-npm run logidesk:prisma:generate
-npm run logipayroll:prisma:generate
-```
+Estado atual
 
-Prisma LogiFlow:
+Componente
 
-```bash
-npm run prisma:generate
-npm run prisma:migrate
-npm run prisma:deploy
-```
+O que já existe
 
-Prisma Identity:
+Antes de produção
 
-```bash
-npm run identity:prisma:generate
-npm run identity:prisma:migrate
-```
+Portal Nesher (app/)
 
-## Desenvolvimento local
+Dashboard amplo, responsivo, RBAC visual e fluxos de chamados
 
-Copie `.env.example` para `.env` e configure valores reais:
+Substituir localStorage por APIs e sessão segura no servidor
 
-```bash
+LogiIdentity
+
+JWT RS256/JWKS, sessões, MFA, cadastro e diretório
+
+Concluir provisionamento multiempresa e política de convites
+
+LogiDesk
+
+Tickets, mensagens, notas, atribuição, SLA, anexos, notificações, Socket.IO, outbox e DLQ
+
+Aplicar isolamento de tenant em toda leitura e integrar o portal principal
+
+LogiPeople
+
+Fundação de organização e pessoas
+
+Consolidar integrações, autorização e dados reais
+
+LogiPayroll
+
+API, web, worker e banco próprios
+
+Migrar os fluxos reais de DP/folha e concluir autenticação
+
+LogiFlow
+
+API/web legado de logística e worker
+
+Reduzir acoplamento e remover código temporário
+
+A análise técnica e o plano de evolução ficam em docs/AUDITORIA_PONTA_A_PONTA.md.
+
+Arquitetura
+
+flowchart TD
+  P[Portais Web] --> I[LogiIdentity]
+  P --> D[LogiDesk API]
+  P --> H[LogiPeople e LogiPayroll]
+  P --> F[LogiFlow API]
+  D --> DB[(PostgreSQL por domínio)]
+  H --> DB
+  F --> DB
+  I --> DB
+  D --> R[(Redis e workers)]
+  H --> R
+  F --> R
+
+Cada domínio possui banco e ciclo de deploy próprios. Redis é utilizado para filas/eventos, e o Identity emite os tokens consumidos pelos demais serviços.
+
+Tecnologias
+
+Node.js 24, pnpm 11 e TypeScript.
+
+Next.js 16 com App Router e React 19.
+
+NestJS 11 e API Express 5 legada.
+
+Prisma 7 e PostgreSQL.
+
+Redis, BullMQ e Socket.IO.
+
+Vitest, ESLint, pnpm Workspaces, Docker Compose e GitHub Actions.
+
+Estrutura do repositório
+
+app/                         Portal web principal da Nesher
+src/                         API Express do LogiFlow legado
+prisma/                      Schema do LogiFlow
+apps/identity-api            API central de identidade
+apps/identity-worker         Worker de identidade
+apps/logidesk-{api,web,worker}
+                             Central de chamados
+apps/logipeople-{api,web,worker}
+                             Gestão de pessoas
+apps/logipayroll-{api,web,worker}
+                             DP e folha
+apps/logiflow-worker         Integrações assíncronas do LogiFlow
+packages/                    Auth, contratos, eventos, logger e UI
+databases/                   Schemas Prisma por domínio
+docs/                        Arquitetura, operação, segurança e planos
+
+Pré-requisitos
+
+Node.js 24.x.
+
+pnpm 11.19.0 (Corepack recomendado).
+
+Docker e Docker Compose para a pilha completa.
+
+OpenSSL para gerar as chaves RSA do Identity.
+
+Instalação local
+
+corepack enable
+pnpm install --frozen-lockfile
 cp .env.example .env
-```
 
-LogiFlow:
+Preencha os segredos do .env. Não reutilize os valores de exemplo em produção. Gere também as chaves RSA conforme docs/AUTHENTICATION.md.
 
-```bash
-npm run dev
-npm run dev:api
-```
+Gere os clientes Prisma:
 
-LogiPeople:
+pnpm run prisma:generate
+pnpm run identity:prisma:generate
+pnpm run logidesk:prisma:generate
+pnpm run logipeople:prisma:generate
+pnpm run logipayroll:prisma:generate
 
-```bash
-npm run logipeople:dev:web
-npm run logipeople:dev:api
-npm run logipeople:dev:worker
-```
+Subir toda a pilha
 
-LogiDesk:
-
-```bash
-npm run logidesk:dev:web
-npm run logidesk:dev:api
-npm run logidesk:dev:worker
-```
-
-LogiPayroll:
-
-```bash
-npm run logipayroll:dev:web
-npm run logipayroll:dev:api
-npm run logipayroll:dev:worker
-```
-
-LogiIdentity:
-
-```bash
-npm run identity:dev:api
-npm run identity:dev:worker
-```
-
-## Docker
-
-O Compose exige segredos por variavel de ambiente. Com `.env` configurado:
-
-```bash
 docker compose config
-docker compose build
-docker compose up -d
+docker compose up -d --build
 docker compose ps
-```
 
-Health checks:
+Executar serviços separadamente
 
-```bash
-curl -i http://localhost:3333/api/v1/health/live
-curl -i http://localhost:3333/api/v1/health/ready
-curl -i http://localhost:3533/api/v1/health/live
-curl -i http://localhost:3533/api/v1/health/ready
-```
+# Portal Nesher e API LogiFlow
+pnpm dev
+pnpm run dev:api
 
-## Estado das fases
+# Identidade
+pnpm run identity:dev:api
+pnpm run identity:dev:worker
 
-LogiFlow tem auth v1, ownership de motorista, rotas legadas depreciadas, dashboard operacional, endpoints operacionais, observabilidade, Docker e CI/CD.
+# Chamados
+pnpm run logidesk:dev:web
+pnpm run logidesk:dev:api
+pnpm run logidesk:dev:worker
 
-LogiPeople possui fundacoes de organizacao, pessoas, recrutamento, onboarding, ponto, folha preliminar, beneficios, ausencias/ferias e analytics agregado.
+# Pessoas
+pnpm run logipeople:dev:web
+pnpm run logipeople:dev:api
+pnpm run logipeople:dev:worker
 
-LogiDesk possui fundacao operacional com tickets, SLA preliminar, outbox, DLQ, worker, web, login/refresh/logout Identity inicial, helper REST autenticado no browser, mutacoes client-side autenticadas para notificacoes/configuracoes/detalhe do ticket, RBAC REST de transicao por `LOGIDESK_REQUIRE_REST_AUTH` e Socket.IO autenticado com consumo inicial de notificacoes no frontend. Processamento completo de workers, ownership REST fino, leitura server-side autenticada e E2E Playwright completo ainda seguem pendentes.
+# Folha/DP
+pnpm run logipayroll:dev:web
+pnpm run logipayroll:dev:api
+pnpm run logipayroll:dev:worker
 
-LogiPayroll possui fundacao separada com API, web, worker, banco Prisma proprio, Docker Compose e CI dedicado. Ainda nao houve migracao de dados reais do DP/folha do LogiPeople; auth, eventos e APIs reais ficam como proximas etapas.
+Portas padrão
 
-## Documentacao
+Serviço
 
-Comece por:
+URL/porta
 
-- `docs/CURRENT_STATE.md`
-- `docs/ARCHITECTURE.md`
-- `docs/API.md`
-- `docs/AUTHENTICATION.md`
-- `docs/AUTHORIZATION.md`
-- `docs/DEPLOYMENT.md`
-- `docs/TESTING.md`
-- `docs/TROUBLESHOOTING.md`
+Portal Nesher
 
-## Guardrails
+http://localhost:3000
 
-- Nunca commitar segredos reais.
-- Nunca alterar contrato publico sem versionar ou documentar compatibilidade.
-- Nunca marcar integracao como pronta apenas por HTTP 200.
-- Toda mudanca relevante deve passar por lint, typecheck, testes, build e audit.
-- `npm audit` deve ficar com 0 vulnerabilidades, salvo excecao documentada e aprovada.
+LogiFlow API
+
+http://localhost:3333
+
+LogiPeople web / API
+
+3400 / 3433
+
+LogiDesk web / API
+
+3500 / 3533
+
+LogiPayroll web / API
+
+3600 / 3733
+
+LogiIdentity API
+
+3633
+
+Redis
+
+6379
+
+As portas podem ser alteradas no .env.
+
+Qualidade
+
+pnpm test
+pnpm run lint
+pnpm run typecheck
+pnpm run test:workspaces
+pnpm run typecheck:workspaces
+pnpm run build
+pnpm run build:workspaces
+
+Os testes unitários da raiz e do LogiDesk podem ser executados sem subir o Docker. Testes de integração dependem de bancos, Redis e variáveis de ambiente válidas.
+
+Segurança
+
+A API LogiDesk exige JWT por padrão; desabilitar autenticação deve ser limitado a testes de compatibilidade.
+
+O simulador de papéis do portal fica desligado. Para uma demonstração local, use NEXT_PUBLIC_ENABLE_ROLE_SIMULATOR=true; ele continua restrito a uma sessão administrativa real.
+
+O frontend nunca deve ser a autoridade final de permissões. Toda consulta e mutação deve validar usuário, papel e tenantId no backend.
+
+Tokens duradouros não devem ficar em localStorage; prefira cookie HttpOnly, Secure e SameSite com rotação de sessão.
+
+Suporte remoto deve exigir autorização explícita do usuário, expiração curta, MFA e trilha de auditoria.
+
+Consulte docs/SECURITY.md, docs/AUTHORIZATION.md e docs/LGPD.md.
+
+Documentação
+
+docs/CURRENT_STATE.md — estado técnico atual.
+
+docs/ARCHITECTURE.md — arquitetura e limites dos domínios.
+
+docs/API.md — contratos HTTP.
+
+docs/AUTHENTICATION.md — login, tokens e chaves.
+
+docs/DEPLOYMENT.md — implantação.
+
+docs/TESTING.md — estratégia de testes.
+
+docs/TROUBLESHOOTING.md — problemas comuns.
+
+Direção recomendada
+
+O próximo marco deve transformar o portal principal em cliente do LogiIdentity e LogiDesk, com cadastro por CNPJ, convite de funcionários e isolamento por empresa. Depois disso, a comunicação pode evoluir de comentários por chamado para canais e mensagens diretas no estilo Teams; por último, o suporte remoto pode ser integrado a um provedor como RustDesk ou MeshCentral com consentimento e auditoria.
