@@ -242,6 +242,53 @@ export default function ConfiguracoesPage() {
     }
   };
 
+  const [userProfilePhoto, setUserProfilePhoto] = useState<string>('');
+
+  useEffect(() => {
+    try {
+      const rawUser = window.localStorage.getItem('logiflow_user');
+      if (rawUser) {
+        const u = JSON.parse(rawUser);
+        if (u.avatarUrl) setUserProfilePhoto(u.avatarUrl);
+      }
+    } catch {}
+  }, []);
+
+  const handleUserProfilePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      setUserProfilePhoto(base64);
+      try {
+        const rawUser = window.localStorage.getItem('logiflow_user');
+        const u = rawUser ? JSON.parse(rawUser) : { name: 'Administrador Global', email: 'admin@neshertech.com.br', roles: ['ROLE_ADMIN'] };
+        u.avatarUrl = base64;
+        window.localStorage.setItem('logiflow_user', JSON.stringify(u));
+        window.dispatchEvent(new Event('nesher_avatar_changed'));
+        showToast('Foto de perfil do topo atualizada com sucesso!');
+      } catch {
+        showToast('Erro ao atualizar foto de perfil.');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeUserProfilePhoto = () => {
+    setUserProfilePhoto('');
+    try {
+      const rawUser = window.localStorage.getItem('logiflow_user');
+      if (rawUser) {
+        const u = JSON.parse(rawUser);
+        delete u.avatarUrl;
+        window.localStorage.setItem('logiflow_user', JSON.stringify(u));
+      }
+      window.dispatchEvent(new Event('nesher_avatar_changed'));
+      showToast('Foto de perfil removida com sucesso.');
+    } catch {}
+  };
+
   const applyAvatarImmediately = () => {
     try {
       window.localStorage.setItem('nesher_company_avatar', JSON.stringify(companyAvatarState));
@@ -764,12 +811,44 @@ export default function ConfiguracoesPage() {
                     <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#64748b', marginBottom: '8px' }}>
                       Carregar Imagem / Logomarca da Empresa:
                     </label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleCompanyImageUpload}
-                      style={{ fontSize: '12px' }}
-                    />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                      <label
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          padding: '8px 16px',
+                          background: '#0b68d1',
+                          color: '#ffffff',
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          boxShadow: '0 2px 6px rgba(11, 104, 209, 0.25)',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        <i className="ti ti-upload" style={{ fontSize: '15px' }} />
+                        <span>{companyAvatarState.imageUrl ? 'Alterar Imagem da Empresa...' : 'Selecionar Foto / Imagem'}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleCompanyImageUpload}
+                          style={{ display: 'none' }}
+                        />
+                      </label>
+                      {companyAvatarState.imageUrl && (
+                        <button
+                          type="button"
+                          onClick={() => updateCompanyAvatar({ imageUrl: '' })}
+                          className="nesher-btn-secondary"
+                          style={{ padding: '7px 12px', fontSize: '11px', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '8px', background: '#fef2f2', cursor: 'pointer' }}
+                        >
+                          <i className="ti ti-trash" /> Remover Imagem
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -808,6 +887,92 @@ export default function ConfiguracoesPage() {
                   >
                     <i className="ti ti-check" /> Aplicar Avatar ao Menu Lateral
                   </button>
+                </div>
+
+                {/* ========================================================= */}
+                {/* SEÇÃO: FOTO DO MEU PERFIL (AVATAR DO USUÁRIO)             */}
+                {/* ========================================================= */}
+                <div
+                  style={{
+                    marginTop: '28px',
+                    paddingTop: '20px',
+                    borderTop: '1px solid #e2e8f0',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <i className="ti ti-user-circle" style={{ color: '#7c3aed', fontSize: '20px' }} />
+                    <strong style={{ fontSize: '14px', color: '#0f172a' }}>Minha Foto de Perfil (Avatar do Usuário)</strong>
+                  </div>
+                  <p style={{ margin: '0 0 16px', fontSize: '12px', color: '#64748b' }}>
+                    Personalize a foto ou imagem circular exibida no topo do cabeçalho da sua conta (menu de perfil).
+                  </p>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                    <div
+                      style={{
+                        width: '52px',
+                        height: '52px',
+                        borderRadius: '50%',
+                        background: userProfilePhoto ? '#ffffff' : 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+                        color: '#ffffff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '16px',
+                        fontWeight: 700,
+                        boxShadow: '0 3px 10px rgba(0,0,0,0.14)',
+                        overflow: 'hidden',
+                        flexShrink: 0,
+                        border: '2px solid #e2e8f0',
+                      }}
+                    >
+                      {userProfilePhoto ? (
+                        <img src={userProfilePhoto} alt="Perfil" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        'AG'
+                      )}
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <label
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          padding: '8px 16px',
+                          background: '#7c3aed',
+                          color: '#ffffff',
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          boxShadow: '0 2px 6px rgba(124, 58, 237, 0.25)',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        <i className="ti ti-camera" style={{ fontSize: '15px' }} />
+                        <span>{userProfilePhoto ? 'Alterar Minha Foto...' : 'Carregar Minha Foto'}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleUserProfilePhotoUpload}
+                          style={{ display: 'none' }}
+                        />
+                      </label>
+
+                      {userProfilePhoto && (
+                        <button
+                          type="button"
+                          onClick={removeUserProfilePhoto}
+                          className="nesher-btn-secondary"
+                          style={{ padding: '7px 12px', fontSize: '11px', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '8px', background: '#fef2f2', cursor: 'pointer' }}
+                        >
+                          <i className="ti ti-trash" /> Remover Foto
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

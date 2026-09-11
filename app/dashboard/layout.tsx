@@ -263,12 +263,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         if (found) setActiveWorkspace(found);
       }
 
-      // Load custom company avatar
+      // Load custom company avatar and user profile
       const loadAvatar = () => {
         try {
           const rawAvatar = window.localStorage.getItem('nesher_company_avatar');
           if (rawAvatar) {
             setCompanyAvatar(JSON.parse(rawAvatar));
+          }
+          const rawUser = window.localStorage.getItem('logiflow_user');
+          if (rawUser) {
+            setCurrentUser(JSON.parse(rawUser));
           }
         } catch {}
       };

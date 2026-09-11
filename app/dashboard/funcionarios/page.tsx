@@ -563,13 +563,61 @@ export default function FuncionariosPage() {
                       )}
 
                       {avatarTab === 'image' && (
-                        <div>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageUpload}
-                            style={{ fontSize: '11px', width: '100%' }}
-                          />
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <label
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '8px',
+                              padding: '8px 16px',
+                              background: '#0b68d1',
+                              color: '#ffffff',
+                              borderRadius: '8px',
+                              fontSize: '12px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              width: 'fit-content',
+                              boxShadow: '0 2px 6px rgba(11, 104, 209, 0.25)',
+                              transition: 'all 0.15s ease',
+                            }}
+                          >
+                            <i className="ti ti-camera" style={{ fontSize: '15px' }} />
+                            <span>{customImageUrl ? 'Alterar Foto...' : 'Selecionar Foto'}</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleImageUpload}
+                              style={{ display: 'none' }}
+                            />
+                          </label>
+
+                          {customImageUrl ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: 600 }}>
+                                <i className="ti ti-check" /> Foto carregada
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setCustomImageUrl('')}
+                                style={{
+                                  background: 'transparent',
+                                  border: 'none',
+                                  color: '#dc2626',
+                                  fontSize: '11px',
+                                  cursor: 'pointer',
+                                  textDecoration: 'underline',
+                                  padding: 0,
+                                }}
+                              >
+                                Remover
+                              </button>
+                            </div>
+                          ) : (
+                            <small style={{ color: '#64748b', fontSize: '10.5px' }}>
+                              PNG, JPG ou WEBP até 5MB.
+                            </small>
+                          )}
                         </div>
                       )}
                     </div>
