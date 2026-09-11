@@ -426,7 +426,7 @@ export default function FuncionariosPage() {
                     Personalizar Avatar do Colaborador
                   </label>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '14px', flexWrap: 'wrap' }}>
                     {/* Live Avatar Preview */}
                     <div style={{ textAlign: 'center' }}>
                       {avatarTab === 'image' && customImageUrl ? (

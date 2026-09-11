@@ -350,6 +350,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const handleSelectWorkspace = (ws: Workspace) => {
     setActiveWorkspace(ws);
     setIsWorkspaceMenuOpen(false);
+    setSidebarOpen(false);
     try {
       window.localStorage.setItem('nesher_active_workspace', ws.id);
     } catch {}
@@ -600,14 +601,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
             </Link>
 
+            {/* Desktop Pin Button */}
             <button
               type="button"
-              className={'nesher-pin-btn ' + (isPinned ? 'is-active' : '')}
+              className={'nesher-pin-btn nesher-desktop-only ' + (isPinned ? 'is-active' : '')}
               onClick={togglePin}
               title={isPinned ? 'Desafixar menu (recolher para 80px)' : 'Fixar menu aberto (280px)'}
               aria-label={isPinned ? 'Desafixar menu lateral' : 'Fixar menu lateral aberto'}
             >
               <i className={'ti ' + (isPinned ? 'ti-pin-filled' : 'ti-pin')} aria-hidden="true" />
+            </button>
+
+            {/* Mobile Drawer Close Button */}
+            <button
+              type="button"
+              className="nesher-sidebar-close-btn nesher-mobile-only"
+              onClick={() => setSidebarOpen(false)}
+              aria-label="Fechar menu lateral"
+              title="Fechar menu"
+            >
+              <i className="ti ti-x" aria-hidden="true" />
             </button>
           </div>
 

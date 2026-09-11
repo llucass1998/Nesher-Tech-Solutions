@@ -59,6 +59,46 @@ div[data-nextjs-dev-tools-button],
 
 /* Nesher operations dashboard */
 .nesher-shell { min-height: 100vh; display: flex; background: var(--nesher-bg); position: relative; }
+
+/* Responsive visibility utilities */
+.nesher-mobile-only { display: none !important; }
+.nesher-desktop-only { display: inline-flex !important; }
+
+/* Mobile off-canvas backdrop */
+.nesher-sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1190;
+  background: rgba(7, 26, 54, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.nesher-sidebar-backdrop.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.nesher-sidebar-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
+  color: #adc2df;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  flex-shrink: 0;
+}
+.nesher-sidebar-close-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
 .nesher-sidebar { 
   position: fixed; 
   inset: 0 auto 0 0; 
@@ -615,8 +655,25 @@ div[data-nextjs-dev-tools-button],
 .nesher-profile-button > span:nth-child(2) { display: grid; gap: 1px; }
 .nesher-profile-button strong { font-size: 11px; color: #0f172a; }
 .nesher-profile-button small { color: #64748b; font-size: 9px; }
-.nesher-profile-button > i { margin-left: 2px; color: #94a3b8; font-size: 13px; }
-.nesher-mobile-menu { display: none; border: 0; background: none; color: var(--nesher-ink); font-size: 22px; cursor: pointer; }
+.nesher-mobile-menu {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+.nesher-mobile-menu:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
 .nesher-content { max-width: 1540px; margin: 0 auto; padding: 28px 4% 60px; }
 .nesher-dashboard { position: relative; }
 .nesher-welcome-row { 
@@ -3334,8 +3391,9 @@ div[data-nextjs-dev-tools-button],
   border-radius: 99px;
   box-shadow: 0 20px 45px rgba(0, 0, 0, 0.32), 0 0 0 1px rgba(255, 255, 255, 0.12);
   animation: nesher-dock-up 0.28s cubic-bezier(0.16, 1, 0.3, 1);
-  min-width: 460px;
-  max-width: 90vw;
+  min-width: min(460px, calc(100vw - 32px));
+  max-width: calc(100vw - 24px);
+  width: max-content;
 }
 @keyframes nesher-dock-up {
   from { opacity: 0; transform: translate(-50%, 20px); }
@@ -3604,6 +3662,515 @@ div[data-nextjs-dev-tools-button],
 @keyframes nesher-slide-left {
   from { transform: translateX(100%); }
   to { transform: translateX(0); }
+}
+
+/* ==========================================================================
+   NESHER TECH RESPONSIVE ARCHITECTURE — SENIOR UX/UI FLUID ENGINE
+   Breakpoints:
+     • Tablet / Small Laptop: (max-width: 1023px)
+     • Mobile Portrait / Landscape: (max-width: 767px)
+     • Compact Mobile: (max-width: 480px)
+   ========================================================================== */
+
+/* 1. TABLET & SMALL SCREENS (max-width: 1023px) */
+@media (max-width: 1023px) {
+  /* Visibility utilities */
+  .nesher-mobile-only {
+    display: inline-flex !important;
+  }
+  .nesher-desktop-only {
+    display: none !important;
+  }
+
+  /* Hamburger Menu Toggle */
+  .nesher-mobile-menu {
+    display: inline-flex !important;
+  }
+
+  /* Off-Canvas Sidebar Drawer */
+  .nesher-sidebar {
+    position: fixed !important;
+    inset: 0 auto 0 0 !important;
+    width: 280px !important;
+    height: 100vh !important;
+    z-index: 1200 !important;
+    transform: translateX(-100%) !important;
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.28s ease !important;
+    box-shadow: none !important;
+    overflow-y: auto !important;
+  }
+  .nesher-sidebar.is-open {
+    transform: translateX(0) !important;
+    box-shadow: 18px 0 50px rgba(0, 0, 0, 0.55) !important;
+  }
+
+  /* Force Full View inside Mobile Sidebar Drawer (never stay at 80px icon mode) */
+  .nesher-sidebar.is-collapsed {
+    width: 280px !important;
+    padding: 16px 14px 14px !important;
+  }
+  .nesher-sidebar.is-collapsed .nesher-sidebar-header {
+    justify-content: space-between !important;
+    padding: 0 4px !important;
+  }
+  .nesher-sidebar.is-collapsed .nesher-brand strong,
+  .nesher-sidebar.is-collapsed .nesher-brand span {
+    display: block !important;
+  }
+  .nesher-sidebar.is-collapsed .nesher-workspace-label {
+    display: block !important;
+  }
+  .nesher-sidebar.is-collapsed .nesher-workspace {
+    margin-top: 24px !important;
+    padding: 0 4px !important;
+  }
+  .nesher-sidebar.is-collapsed .nesher-workspace-button {
+    width: 100% !important;
+    height: auto !important;
+    padding: 8px 9px !important;
+    justify-content: flex-start !important;
+  }
+  .nesher-sidebar.is-collapsed .nesher-workspace-copy,
+  .nesher-sidebar.is-collapsed .nesher-workspace-button > i {
+    display: block !important;
+  }
+  .nesher-sidebar.is-collapsed .nesher-nav-link {
+    width: 100% !important;
+    height: 38px !important;
+    margin: 1px 0 !important;
+    padding: 0 11px !important;
+    justify-content: flex-start !important;
+  }
+  .nesher-sidebar.is-collapsed .nesher-nav-link span {
+    display: inline !important;
+  }
+  .nesher-sidebar.is-collapsed .nesher-nav-link b {
+    position: static !important;
+    min-width: auto !important;
+    height: auto !important;
+    padding: 2px 6px !important;
+    border-radius: 99px !important;
+    font-size: 10px !important;
+  }
+  .nesher-sidebar.is-collapsed .nesher-help-card {
+    display: grid !important;
+  }
+  .nesher-sidebar.is-collapsed .nesher-logout {
+    width: 100% !important;
+    height: 38px !important;
+    padding: 0 12px !important;
+    justify-content: flex-start !important;
+  }
+  .nesher-sidebar.is-collapsed .nesher-logout span {
+    display: inline !important;
+  }
+
+  /* Main Viewport fills 100% */
+  .nesher-main,
+  .nesher-main.sidebar-collapsed {
+    width: 100% !important;
+    margin-left: 0 !important;
+    min-width: 0 !important;
+  }
+
+  /* Topbar Layout */
+  .nesher-topbar {
+    padding: 0 16px !important;
+  }
+  .nesher-topbar-search-trigger kbd {
+    display: none !important;
+  }
+
+  /* Content Wrapper */
+  .nesher-content {
+    padding: 20px 16px 48px !important;
+  }
+
+  /* Grid Layouts Stacked on Tablet */
+  .nesher-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 14px !important;
+  }
+  .nesher-kpi-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+  .nesher-dashboard-grid {
+    grid-template-columns: 1fr !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 20px !important;
+  }
+  .nesher-quick-actions {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 14px !important;
+    padding: 18px 20px !important;
+  }
+  .nesher-action-list {
+    width: 100% !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+  .nesher-settings-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .nesher-chat-layout {
+    grid-template-columns: 260px 1fr !important;
+  }
+}
+
+/* 2. MOBILE VIEWPORT (max-width: 767px) */
+@media (max-width: 767px) {
+  /* Topbar Compact */
+  .nesher-topbar {
+    height: 58px !important;
+    padding: 0 12px !important;
+  }
+  .nesher-breadcrumb span,
+  .nesher-breadcrumb i.ti-chevron-right:nth-of-type(1) {
+    display: none !important;
+  }
+  .nesher-breadcrumb strong {
+    max-width: 120px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    font-size: 12.5px !important;
+  }
+  .nesher-topbar-actions {
+    gap: 6px !important;
+  }
+  .nesher-topbar-search-trigger {
+    width: 36px !important;
+    height: 36px !important;
+    padding: 0 !important;
+    justify-content: center !important;
+    border-radius: 9px !important;
+  }
+  .nesher-topbar-search-trigger span,
+  .nesher-topbar-search-trigger kbd {
+    display: none !important;
+  }
+  .nesher-role-badge {
+    padding: 3px 6px !important;
+  }
+  .nesher-role-badge span {
+    display: none !important;
+  }
+  .nesher-topbar-divider {
+    display: none !important;
+  }
+  .nesher-profile-button {
+    padding: 2px !important;
+    border-radius: 50% !important;
+  }
+  .nesher-profile-button > span:nth-child(2),
+  .nesher-profile-button > i {
+    display: none !important;
+  }
+
+  /* Page Padding */
+  .nesher-content {
+    padding: 12px 10px 36px !important;
+  }
+
+  /* Welcome & Headers */
+  .nesher-welcome-row,
+  .nesher-tickets-header,
+  .nesher-page-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    margin-bottom: 16px !important;
+  }
+  .nesher-welcome-row h1,
+  .nesher-tickets-header h1,
+  .nesher-page-header-info h1 {
+    font-size: 20px !important;
+    line-height: 1.25 !important;
+  }
+  .nesher-tickets-actions,
+  .nesher-page-header-actions {
+    width: 100% !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  .nesher-primary-button,
+  .nesher-btn-primary,
+  .nesher-btn-secondary {
+    flex: 1 1 auto !important;
+    justify-content: center !important;
+    height: 38px !important;
+    font-size: 12px !important;
+  }
+
+  /* Metric & KPI Grids */
+  .nesher-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    margin-bottom: 16px !important;
+  }
+  .nesher-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+  .nesher-metric-card,
+  .nesher-kpi-card {
+    padding: 12px !important;
+    min-height: 86px !important;
+    gap: 8px !important;
+  }
+  .nesher-metric-icon,
+  .nesher-kpi-icon {
+    width: 34px !important;
+    height: 34px !important;
+    font-size: 17px !important;
+  }
+  .nesher-metric-main strong,
+  .nesher-kpi-content strong {
+    font-size: 20px !important;
+  }
+  .nesher-metric-main span,
+  .nesher-kpi-content span {
+    font-size: 9.5px !important;
+  }
+
+  /* Quick Actions List */
+  .nesher-action-list {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  /* Ticket Row (Home Page) Card Mode on Mobile */
+  .nesher-ticket-row {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 8px 10px !important;
+    padding: 12px 14px !important;
+  }
+  .nesher-ticket-avatar {
+    flex-shrink: 0 !important;
+  }
+  .nesher-ticket-main {
+    flex: 1 1 160px !important;
+    min-width: 0 !important;
+  }
+  .nesher-ticket-main strong {
+    font-size: 12px !important;
+  }
+  .nesher-ticket-time {
+    margin-left: auto !important;
+    font-size: 9.5px !important;
+    color: #94a3b8 !important;
+  }
+  .nesher-ticket-category,
+  .nesher-ticket-arrow {
+    display: none !important;
+  }
+  .nesher-priority,
+  .nesher-status {
+    font-size: 9.5px !important;
+    padding: 2px 6px !important;
+  }
+
+  /* Filter rows */
+  .nesher-filter-row {
+    padding: 0 12px 12px !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    white-space: nowrap !important;
+  }
+  .nesher-filter-row button {
+    flex-shrink: 0 !important;
+  }
+
+  /* Chamados Toolbar */
+  .nesher-ticket-toolbar {
+    padding: 12px !important;
+    gap: 12px !important;
+  }
+  .nesher-toolbar-top {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+  .nesher-tabs-bar {
+    width: 100% !important;
+    overflow-x: auto !important;
+    padding-bottom: 4px !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  .nesher-view-switcher {
+    align-self: flex-start !important;
+  }
+  .nesher-toolbar-filters {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+  .nesher-search-box {
+    width: 100% !important;
+    min-width: 100% !important;
+  }
+  .nesher-filter-select {
+    width: 100% !important;
+  }
+
+  /* Chamados Kanban Board: Mobile Swipe Snapping */
+  .nesher-kanban-board {
+    gap: 12px !important;
+    padding-bottom: 16px !important;
+    scroll-snap-type: x mandatory !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  .nesher-kanban-column {
+    flex: 0 0 84vw !important;
+    max-width: 310px !important;
+    scroll-snap-align: center !important;
+  }
+
+  /* Chamados Split View Layout */
+  .nesher-split-layout {
+    grid-template-columns: 1fr !important;
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: auto !important;
+  }
+  .nesher-split-sidebar {
+    border-right: 0 !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    max-height: 280px !important;
+  }
+
+  /* Chat & Communication Layout */
+  .nesher-chat-layout {
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: auto !important;
+  }
+  .nesher-chat-layout > div:first-child {
+    border-right: 0 !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    max-height: 260px !important;
+  }
+
+  /* Drawers and Slide-Overs (100% width on Mobile) */
+  .nesher-drawer-panel {
+    max-width: 100vw !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    border-radius: 0 !important;
+  }
+  .nesher-drawer-header {
+    padding: 16px 18px !important;
+  }
+  .nesher-drawer-body {
+    padding: 16px 18px !important;
+  }
+  .nesher-drawer-footer {
+    padding: 12px 18px !important;
+    flex-wrap: wrap !important;
+  }
+  .nesher-drawer-footer button {
+    flex: 1 1 auto !important;
+  }
+
+  /* Modals & Dialogs */
+  .nesher-modal-overlay {
+    padding: 8px !important;
+  }
+  .nesher-modal-card,
+  .nesher-modal-dialog,
+  .nesher-preview-modal-dialog {
+    max-width: 100% !important;
+    max-height: calc(100vh - 16px) !important;
+    border-radius: 12px !important;
+    margin: 0 !important;
+  }
+  .nesher-modal-header,
+  .nesher-preview-modal-header {
+    padding: 14px 16px !important;
+  }
+  .nesher-modal-body {
+    padding: 14px 16px !important;
+    gap: 14px !important;
+  }
+  .nesher-modal-footer {
+    padding: 12px 16px !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  .nesher-modal-footer button {
+    flex: 1 1 auto !important;
+  }
+
+  /* Form Rows */
+  .nesher-form-row {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    margin-bottom: 12px !important;
+  }
+
+  /* Settings Page */
+  .nesher-settings-card {
+    padding: 16px !important;
+  }
+  .nesher-settings-card-header p {
+    margin-left: 0 !important;
+    margin-top: 6px !important;
+  }
+
+  /* Floating Save Dock */
+  .nesher-floating-save-dock {
+    bottom: 12px !important;
+    width: calc(100vw - 20px) !important;
+    border-radius: 12px !important;
+    padding: 10px 14px !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+  }
+  .nesher-dock-actions {
+    width: 100% !important;
+    justify-content: flex-end !important;
+  }
+
+  /* Master-Detail / Tabbed Mobile Toggles */
+  .nesher-mobile-hidden {
+    display: none !important;
+  }
+  .nesher-split-layout.has-selected .nesher-split-sidebar {
+    display: none !important;
+  }
+  .nesher-split-layout:not(.has-selected) .nesher-split-detail {
+    display: none !important;
+  }
+
+  /* Responsive Horizontal Scroll for all Tables */
+  .nesher-table-container,
+  .nesher-table-responsive,
+  div[style*="overflowX: auto"],
+  div[style*="overflow-x: auto"] {
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+}
+
+/* 3. ULTRA COMPACT MOBILE (max-width: 479px) */
+@media (max-width: 479px) {
+  .nesher-metric-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .nesher-kpi-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .nesher-tickets-actions button,
+  .nesher-page-header-actions button {
+    width: 100% !important;
+  }
 }
 
 

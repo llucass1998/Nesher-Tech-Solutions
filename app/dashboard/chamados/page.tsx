@@ -1624,7 +1624,7 @@ export default function TicketCenterPage() {
       {/* 3. VIEW MODE: SPLIT INBOX (LISTA + CHAT / DETALHES AO LADO)              */}
       {/* ========================================================================= */}
       {viewMode === 'split' && (
-        <section className="nesher-split-layout">
+        <section className={`nesher-split-layout ${selectedTicketId ? 'has-selected' : ''}`}>
           {/* Left Column: Tickets List */}
           <aside className="nesher-split-sidebar">
             <div style={{ padding: '12px 16px', borderBottom: '1px solid #e2e8f0', background: '#ffffff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1663,24 +1663,36 @@ export default function TicketCenterPage() {
             {selectedTicket ? (
               <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                 {/* Header */}
-                <div style={{ padding: '18px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', background: '#f8fafc' }}>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                      <span className="nesher-code-badge">{selectedTicket.code}</span>
-                      <span className={`nesher-status-badge ${selectedTicket.status.toLowerCase().replace(/\s+/g, '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '')}`}>
-                        {selectedTicket.status}
-                      </span>
-                      <span className={`nesher-priority-badge ${selectedTicket.priority.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')}`}>
-                        Prioridade {selectedTicket.priority}
-                      </span>
+                <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', background: '#f8fafc', flexWrap: 'wrap', gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                    <button
+                      type="button"
+                      className="nesher-btn-secondary nesher-mobile-only"
+                      onClick={() => setSelectedTicketId(null)}
+                      title="Voltar para a lista de chamados"
+                      style={{ padding: '0 8px', height: '32px', fontSize: '11px', flexShrink: 0 }}
+                    >
+                      <i className="ti ti-arrow-left" />
+                      <span>Lista</span>
+                    </button>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+                        <span className="nesher-code-badge">{selectedTicket.code}</span>
+                        <span className={`nesher-status-badge ${selectedTicket.status.toLowerCase().replace(/\s+/g, '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '')}`}>
+                          {selectedTicket.status}
+                        </span>
+                        <span className={`nesher-priority-badge ${selectedTicket.priority.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')}`}>
+                          {selectedTicket.priority}
+                        </span>
+                      </div>
+                      <h2 style={{ margin: 0, fontSize: 16, color: '#0f172a' }}>{selectedTicket.subject}</h2>
+                      <p style={{ margin: '4px 0 0', fontSize: 11.5, color: '#64748b' }}>
+                        <strong>{selectedTicket.company}</strong> · {selectedTicket.requester} · {selectedTicket.serviceType}
+                      </p>
                     </div>
-                    <h2 style={{ margin: 0, fontSize: 17, color: '#0f172a' }}>{selectedTicket.subject}</h2>
-                    <p style={{ margin: '4px 0 0', fontSize: 12, color: '#64748b' }}>
-                      Cliente: <strong>{selectedTicket.company}</strong> · Solicitante: {selectedTicket.requester} · {selectedTicket.serviceType}
-                    </p>
                   </div>
 
-                  <div style={{ display: 'flex', gap: 8 }}>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     <select
                       className="nesher-filter-select"
                       value={selectedTicket.status}

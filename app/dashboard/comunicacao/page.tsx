@@ -41,6 +41,7 @@ const defaultConversations: ConversationItem[] = [
 export default function ComunicacaoPage() {
   const [conversations, setConversations] = useState<ConversationItem[]>(defaultConversations);
   const [selectedConversationId, setSelectedConversationId] = useState<string | number>('conv-default-1');
+  const [mobileTab, setMobileTab] = useState<'list' | 'chat'>('list');
   const [newMessage, setNewMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -183,17 +184,12 @@ export default function ComunicacaoPage() {
         </Link>
       </div>
 
-      <div
-        className="nesher-panel"
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(280px, 340px) 1fr',
-          minHeight: '620px',
-          overflow: 'hidden',
-        }}
-      >
+      <div className="nesher-panel nesher-chat-layout">
         {/* Conversations Sidebar */}
-        <div style={{ borderRight: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', flexDirection: 'column' }}>
+        <div
+          className={`nesher-chat-sidebar ${mobileTab === 'chat' ? 'nesher-mobile-hidden' : ''}`}
+          style={{ borderRight: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', flexDirection: 'column' }}
+        >
           <div style={{ padding: '14px', borderBottom: '1px solid #e2e8f0' }}>
             <div style={{ position: 'relative' }}>
               <input
@@ -215,7 +211,10 @@ export default function ComunicacaoPage() {
             {filteredConversations.map((c) => (
               <div
                 key={c.id}
-                onClick={() => setSelectedConversationId(c.id)}
+                onClick={() => {
+                  setSelectedConversationId(c.id);
+                  setMobileTab('chat');
+                }}
                 style={{
                   padding: '14px',
                   borderBottom: '1px solid #edf2f7',
@@ -250,21 +249,38 @@ export default function ComunicacaoPage() {
 
         {/* Chat Conversation Area */}
         {activeConv ? (
-          <div style={{ display: 'flex', flexDirection: 'column', background: '#ffffff' }}>
+          <div
+            className={`nesher-chat-area ${mobileTab === 'list' ? 'nesher-mobile-hidden' : ''}`}
+            style={{ display: 'flex', flexDirection: 'column', background: '#ffffff', height: '100%' }}
+          >
             <div
               style={{
-                padding: '14px 20px',
+                padding: '12px 18px',
                 borderBottom: '1px solid #e2e8f0',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '8px',
               }}
             >
-              <div>
-                <strong style={{ fontSize: '14px', color: '#0f172a', display: 'block' }}>{activeConv.clientName}</strong>
-                <span style={{ fontSize: '11px', color: '#64748b' }}>
-                  Chamado <strong>{activeConv.ticketProtocol}</strong> • {activeConv.subject}
-                </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <button
+                  type="button"
+                  className="nesher-btn-secondary nesher-mobile-only"
+                  onClick={() => setMobileTab('list')}
+                  style={{ padding: '0 8px', height: '30px', fontSize: '11px' }}
+                  title="Voltar para a lista de conversas"
+                >
+                  <i className="ti ti-arrow-left" />
+                  <span>Conversas</span>
+                </button>
+                <div>
+                  <strong style={{ fontSize: '13.5px', color: '#0f172a', display: 'block' }}>{activeConv.clientName}</strong>
+                  <span style={{ fontSize: '11px', color: '#64748b' }}>
+                    Chamado <strong>{activeConv.ticketProtocol}</strong> • {activeConv.subject}
+                  </span>
+                </div>
               </div>
 
               <div style={{ display: 'flex', gap: '8px' }}>
