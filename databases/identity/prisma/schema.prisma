@@ -32,6 +32,11 @@ model User {
   name               String
   email              String                      @unique
   status             IdentityStatus              @default(ACTIVE)
+  failedLoginAttempts Int                         @default(0)
+  lockedUntil        DateTime?
+  mfaEnabled         Boolean                     @default(false)
+  mfaSecret          String?
+
   credentials        Credential[]
   roles              UserRole[]
   applicationAccess  ApplicationAccess[]
@@ -42,6 +47,22 @@ model User {
   externalReferences IdentityExternalReference[]
   createdAt          DateTime                    @default(now())
   updatedAt          DateTime                    @updatedAt
+}
+
+model RegistrationRequest {
+  id           String   @id @default(uuid())
+  companyName  String
+  contactName  String
+  email        String   @unique
+  phone        String
+  passwordHash String
+  status       String   @default("PENDING")
+  reviewedAt   DateTime?
+  reviewedById String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([status, createdAt])
 }
 
 model Credential {
@@ -261,4 +282,16 @@ model IdentityExternalReference {
 
   @@unique([system, legacyUserId])
   @@index([identityUserId])
+}
+
+model IdentityKey {
+  id         String    @id @default(uuid())
+  kid        String    @unique
+  use        String    @default("sig")
+  alg        String    @default("RS256")
+  publicKey  String
+  privateKey String
+  active     Boolean   @default(true)
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
 }

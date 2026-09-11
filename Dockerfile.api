@@ -1,8 +1,8 @@
 FROM node:24-alpine AS deps
 WORKDIR /app
 COPY . .
-RUN npm ci
-RUN npm run prisma:generate
+RUN npm install -g pnpm && pnpm install -g pnpm && pnpm install --frozen-lockfile
+RUN pnpm run prisma:generate
 
 FROM node:24-alpine AS runtime
 WORKDIR /app

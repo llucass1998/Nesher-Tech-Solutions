@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, ForbiddenException, Get, Headers, Param, Patch, Post, Query, UnauthorizedException } from '@nestjs/common';
+import { Body, Controller, Delete, ForbiddenException, Get, Headers, Param, Patch, Post, Query, UnauthorizedException, UsePipes, ValidationPipe } from '@nestjs/common';
 import { IdentityJwksService, LogiIdentityClaims } from '../auth/identity-jwks.service';
 import { AssignTicketDto } from './dto/assign-ticket.dto';
 import { ChangeTicketPriorityDto } from './dto/change-ticket-priority.dto';
@@ -17,6 +17,7 @@ import { UpdateTicketDto } from './dto/update-ticket.dto';
 import { TicketsService } from './tickets.service';
 
 @Controller()
+@UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }))
 export class TicketsController {
   constructor(
     private readonly ticketsService: TicketsService,

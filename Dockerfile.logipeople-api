@@ -1,9 +1,9 @@
 FROM node:24-alpine AS builder
 WORKDIR /app
 COPY . .
-RUN npm ci
-RUN npm run logipeople:prisma:generate
-RUN npm run build -w logipeople-api
+RUN npm install -g pnpm && pnpm install -g pnpm && pnpm install --frozen-lockfile
+RUN pnpm run logipeople:prisma:generate
+RUN pnpm run build -w logipeople-api
 
 FROM node:24-alpine AS runtime
 WORKDIR /app

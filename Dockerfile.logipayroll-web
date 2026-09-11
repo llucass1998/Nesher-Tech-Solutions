@@ -4,8 +4,8 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ARG NEXT_PUBLIC_LOGIPAYROLL_API_URL=http://localhost:3733/api/v1
 ENV NEXT_PUBLIC_LOGIPAYROLL_API_URL=$NEXT_PUBLIC_LOGIPAYROLL_API_URL
 COPY . .
-RUN npm ci
-RUN npm run build -w logipayroll-web
+RUN npm install -g pnpm && pnpm install -g pnpm && pnpm install --frozen-lockfile
+RUN pnpm run build -w logipayroll-web
 
 FROM node:24-alpine AS runtime
 WORKDIR /app

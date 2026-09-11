@@ -10,7 +10,7 @@ on:
       - "packages/auth/**"
       - "packages/logger/**"
       - "package.json"
-      - "package-lock.json"
+      - "pnpm-lock.yaml"
       - "tsconfig.json"
   push:
     branches: [master, main]
@@ -22,7 +22,7 @@ on:
       - "packages/auth/**"
       - "packages/logger/**"
       - "package.json"
-      - "package-lock.json"
+      - "pnpm-lock.yaml"
       - "tsconfig.json"
 
 concurrency:
@@ -43,12 +43,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: npm
-      - run: npm ci
-      - run: npm run identity:prisma:generate
-      - run: npm run typecheck -w identity-api
-      - run: npm run typecheck -w identity-worker
-      - run: npm run test -w identity-api
-      - run: npm run build -w identity-api
-      - run: npm run build -w identity-worker
-      - run: npm audit
+      - run: npm i -g pnpm
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run identity:prisma:generate
+      - run: pnpm run typecheck -w identity-api
+      - run: pnpm run typecheck -w identity-worker
+      - run: pnpm run test -w identity-api
+      - run: pnpm run build -w identity-api
+      - run: pnpm run build -w identity-worker
+      - run: pnpm audit

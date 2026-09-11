@@ -1,4 +1,6 @@
-import 'dotenv/config';
+import path from 'path';
+import dotenv from 'dotenv';
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 import { defineConfig } from 'prisma/config';
 
 export default defineConfig({
@@ -7,6 +9,6 @@ export default defineConfig({
     path: '../../databases/identity/prisma/migrations',
   },
   datasource: {
-    url: process.env.IDENTITY_DATABASE_URL as string,
+    url: process.env.IDENTITY_DATABASE_URL || 'postgresql://identity:change-me-identity-db-password@localhost:5437/identity?schema=public',
   },
 });

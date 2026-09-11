@@ -1,4 +1,8 @@
 import 'reflect-metadata';
+import path from 'path';
+import dotenv from 'dotenv';
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+dotenv.config();
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import helmet from 'helmet';
@@ -12,7 +16,12 @@ async function bootstrap() {
     origin: identityCorsOrigins(),
     credentials: true,
   });
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
+    transformOptions: { enableImplicitConversion: false },
+  }));
 
   await app.listen(Number(process.env.IDENTITY_PORT ?? 3633));
 }

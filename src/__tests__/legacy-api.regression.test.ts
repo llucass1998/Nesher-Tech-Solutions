@@ -64,16 +64,8 @@ describe('regressao da API legada LogiFlow', () => {
       password: 'secret123',
     });
 
-    expect(response.status).toBe(201);
-    expect(response.body).toMatchObject({
-      id: 'driver-1',
-      email: 'driver@example.com',
-    });
-    expect(response.body).not.toHaveProperty('password');
-    expect(response.headers.deprecation).toBe('true');
-    expect(response.headers.sunset).toBe('2026-10-31');
-    expect(response.headers.link).toBe('</api/v1/auth/register>; rel="successor-version"');
-    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('"event":"legacy_route_used"'));
+    expect(response.status).toBe(410);
+    expect(response.body).toMatchObject({ error: 'GONE' });
   });
 
   it('faz login legado e retorna token', async () => {
@@ -92,14 +84,8 @@ describe('regressao da API legada LogiFlow', () => {
       password: 'secret123',
     });
 
-    expect(response.status).toBe(200);
-    expect(response.body.token).toEqual(expect.any(String));
-    expect(response.body.driver).toMatchObject({
-      id: 'driver-1',
-      email: 'driver@example.com',
-    });
-    expect(response.headers.deprecation).toBe('true');
-    expect(response.headers.link).toBe('</api/v1/auth/login>; rel="successor-version"');
+    expect(response.status).toBe(410);
+    expect(response.body).toMatchObject({ error: 'GONE' });
   });
 
   it('cria motorista pela rota legada sem retornar password', async () => {
@@ -120,9 +106,8 @@ describe('regressao da API legada LogiFlow', () => {
       phone: '11999999999',
     });
 
-    expect(response.status).toBe(201);
-    expect(response.body).toMatchObject({ id: 'driver-2' });
-    expect(response.body).not.toHaveProperty('password');
+    expect(response.status).toBe(410);
+    expect(response.body).toMatchObject({ error: 'GONE' });
   });
 
   it('cria veiculo pela rota legada', async () => {

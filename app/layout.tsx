@@ -1,32 +1,27 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
-  title: "LogiFlow",
-  description: "Plataforma empresarial de logística, chamados e automação operacional.",
+  title: "Nesher Tech Solutions | Central de chamados",
+  description: "Acompanhe chamados, suporte técnico e indicadores da sua empresa.",
+  icons: {
+    icon: [
+      { url: "/nesher-icon.png" },
+      { url: "/favicon.ico" },
+    ],
+    shortcut: ["/nesher-icon.png"],
+    apple: [
+      { url: "/nesher-icon.png" },
+    ],
+  },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
+    <html lang="pt-BR" className="h-full antialiased">
+      <head>
+        <link rel="icon" type="image/png" href="/nesher-icon.png" />
+      </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

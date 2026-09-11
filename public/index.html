@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nesher Tech Solutions — Área do cliente</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="nesher-icon.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="stage">
+
+    <!-- LEFT BRAND PANEL -->
+    <div class="brand-side">
+      <svg class="circuit-bg" viewBox="0 0 500 640" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <g fill="none" stroke="#5A93F0" stroke-width="1.2">
+          <path d="M -20 90 L 90 90 L 140 140 L 260 140" />
+          <path d="M -20 260 L 60 260 L 100 300 L 100 420 L 40 480" />
+          <path d="M 520 60 L 380 60 L 330 110 L 330 220" />
+          <path d="M 520 400 L 420 400 L 380 440 L 260 440 L 220 480 L 220 600" />
+          <path d="M -20 560 L 140 560 L 190 610" />
+          <path d="M 520 560 L 440 560 L 400 600" />
+        </g>
+        <g fill="#8FB6F7">
+          <circle cx="90" cy="90" r="4"/>
+          <circle cx="260" cy="140" r="4"/>
+          <circle cx="60" cy="260" r="4"/>
+          <circle cx="40" cy="480" r="4"/>
+          <circle cx="380" cy="60" r="4"/>
+          <circle cx="330" cy="220" r="4"/>
+          <circle cx="420" cy="400" r="4"/>
+          <circle cx="220" cy="600" r="4"/>
+          <circle cx="140" cy="560" r="4"/>
+          <circle cx="440" cy="560" r="4"/>
+        </g>
+        <circle r="3.2" fill="#FFFFFF">
+          <animateMotion dur="7s" repeatCount="indefinite"
+            path="M -20 90 L 90 90 L 140 140 L 260 140 L 330 140 L 330 220" />
+          <animate attributeName="opacity" values="0;1;1;0" dur="7s" repeatCount="indefinite"/>
+        </circle>
+      </svg>
+
+      <div class="brand-top">
+        <div class="logo-badge">
+          <img src="nesher-icon.png" alt="Nesher Tech Solutions" onerror="this.onerror=null; this.src='public/nesher-mark.png';">
+        </div>
+        <div class="brand-name">NESHER<span> TECH SOLUTIONS</span></div>
+        <div class="brand-tagline">Inovar · Conectar · Transformar</div>
+      </div>
+
+      <div class="brand-mid">
+        <p class="eyebrow">Suporte que move o seu negócio</p>
+        <h1 class="headline">Seu time técnico <em>sempre por perto</em></h1>
+        <p class="sub">Abra chamados, acompanhe atendimentos e mantenha sua operação funcionando sem surpresas.</p>
+      </div>
+
+      <div class="brand-bottom">
+        <div class="pill">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg>
+          Ambiente seguro
+        </div>
+        <div class="pill">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg>
+          Atendimento ágil
+        </div>
+        <div class="pill">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+          Suporte contínuo
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT FORM PANEL -->
+    <div class="form-side">
+      <p class="form-eyebrow">Área do cliente</p>
+      <h2 class="form-title">Bem-vindo de volta</h2>
+      <p class="form-desc">Entre para acompanhar seus chamados e falar com nosso suporte.</p>
+
+      <div class="alert" id="errorAlert">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16h.01"/></svg>
+        <span id="errorMessage">Não foi possível entrar. Confira seu e-mail e senha.</span>
+      </div>
+
+      <form id="loginForm" novalidate>
+        <div class="field">
+          <label for="email">E-mail corporativo</label>
+          <div class="input-wrap">
+            <svg class="leading" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+            <input type="email" id="email" placeholder="nome@empresa.com" autocomplete="email" required>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="password">Senha</label>
+          <div class="input-wrap">
+            <svg class="leading" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+            <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required>
+            <button type="button" class="toggle-visibility" id="toggleBtn" aria-label="Mostrar senha">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="row-between">
+          <label class="remember">
+            <input type="checkbox" id="rememberMe" checked>
+            <span>Lembrar de mim</span>
+          </label>
+          <a href="#" class="link">Esqueci minha senha</a>
+        </div>
+
+        <button type="submit" class="btn-primary">
+          <span>Entrar na plataforma</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
+        </button>
+      </form>
+
+      <div class="divider">ou</div>
+      <p class="signup">Sua empresa ainda não está cadastrada? <a href="#">Cadastre sua empresa</a></p>
+
+      <div class="footer-note">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        <span>Seus dados são protegidos com criptografia de ponta a ponta.</span>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,10 +1,17 @@
 import { PrismaClient as IdentityPrisma } from '../generated/prisma';
 import { PrismaClient as LogiflowPrisma } from '../../../../src/generated/prisma';
+import 'dotenv/config';
+import { PrismaPg as IdentityPrismaPg } from '@prisma/adapter-pg';
+import { PrismaPg as LogiflowPrismaPg } from '@prisma/adapter-pg';
 
 async function main() {
-  const identityPrisma = new IdentityPrisma();
+  const identityPrisma = new IdentityPrisma({
+    adapter: new IdentityPrismaPg({ connectionString: process.env.IDENTITY_DATABASE_URL })
+  });
 
-  const logiflowPrisma = new LogiflowPrisma();
+  const logiflowPrisma = new LogiflowPrisma({
+    adapter: new LogiflowPrismaPg({ connectionString: process.env.DATABASE_URL })
+  });
 
   console.log('Iniciando migracao de usuarios...');
 

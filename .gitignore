@@ -34,9 +34,17 @@ yarn-error.log*
 
 # env files
 .env
-.env.local
-.env.*.local
+.env*
+**/.env
+**/.env*
 !.env.example
+!**/.env.example
+
+# scratch and patch scripts
+fix-*.js
+patch-*.js
+migrate-*.js
+.planning/
 
 # generated files
 /src/generated/prisma/

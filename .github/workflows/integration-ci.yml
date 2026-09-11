@@ -14,7 +14,7 @@ on:
       - "prisma/**"
       - "src/**"
       - "package.json"
-      - "package-lock.json"
+      - "pnpm-lock.yaml"
       - "tsconfig.json"
   push:
     branches: [master, main]
@@ -30,7 +30,7 @@ on:
       - "prisma/**"
       - "src/**"
       - "package.json"
-      - "package-lock.json"
+      - "pnpm-lock.yaml"
       - "tsconfig.json"
 
 concurrency:
@@ -84,19 +84,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: npm
-      - run: npm ci
-      - run: npm run prisma:generate
-      - run: npm run identity:prisma:generate
-      - run: npm run logipeople:prisma:generate
-      - run: npm run logidesk:prisma:generate
-      - run: npm run lint
-      - run: npm run lint:workspaces
-      - run: npm run typecheck
-      - run: npm test
-      - run: npm run test:workspaces
-      - run: npm run build
-      - run: npm run build:workspaces
-      - run: npm audit
+      - run: npm i -g pnpm
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run prisma:generate
+      - run: pnpm run identity:prisma:generate
+      - run: pnpm run logipeople:prisma:generate
+      - run: pnpm run logidesk:prisma:generate
+      - run: pnpm run lint
+      - run: pnpm run lint:workspaces
+      - run: pnpm run typecheck
+      - run: pnpm test
+      - run: pnpm run test:workspaces
+      - run: pnpm run build
+      - run: pnpm run build:workspaces
+      - run: pnpm audit
       - run: docker compose config
       - run: docker compose build identity-migrate identity-api identity-worker logiflow-migrate logiflow-api logiflow-web logiflow-worker logidesk-migrate logidesk-api logidesk-web logidesk-worker

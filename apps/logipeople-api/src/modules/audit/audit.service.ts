@@ -20,7 +20,7 @@ export class AuditService {
   constructor(private readonly prisma: PrismaService) {}
 
   async record(input: AuditInput) {
-    const actorRole = input.principal?.roles[0] ?? 'SYSTEM';
+    const actorRole = input.principal?.roles?.join(',') ?? 'SYSTEM';
 
     await this.prisma.auditLog.create({
       data: {

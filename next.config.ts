@@ -5,6 +5,7 @@ import type { NextConfig } from "next";
 const nextConfigDir = path.dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
+  devIndicators: false,
   turbopack: {
     root: nextConfigDir,
   },

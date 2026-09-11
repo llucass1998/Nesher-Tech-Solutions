@@ -2,8 +2,8 @@ FROM node:24-alpine AS builder
 WORKDIR /app
 ARG WORKSPACE
 COPY . .
-RUN npm ci
-RUN npm run build -w ${WORKSPACE}
+RUN npm install -g pnpm && pnpm install -g pnpm && pnpm install --frozen-lockfile
+RUN pnpm run build -w ${WORKSPACE}
 
 FROM node:24-alpine AS runtime
 WORKDIR /app

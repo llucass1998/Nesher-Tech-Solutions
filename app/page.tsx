@@ -1,162 +1,356 @@
-"use client";
+'use client';
+import { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Image from 'next/image';
+import Link from 'next/link';
+import axios from 'axios';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { LoginInput, loginSchema } from './lib/auth-validation';
 
-import { useState, useEffect, FormEventHandler } from "react";
-import { z } from "zod";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import axios from "axios";
+const IDENTITY_API_URL = process.env.NEXT_PUBLIC_IDENTITY_API_URL || 'http://localhost:3633';
 
-// ==========================================
-// 1. SCHEMA DE VALIDAÇÃO
-// ==========================================
-const loginSchema = z.object({
-  email: z.string().email({ message: "Por favor, digite um e-mail válido." }),
-  password: z.string().min(6, { message: "A senha deve ter pelo menos 6 caracteres." }),
-});
+function RegistrationNotice() {
+  const searchParams = useSearchParams();
+  const registration = searchParams.get('registration');
 
-const IDENTITY_API_URL = process.env.NEXT_PUBLIC_IDENTITY_API_URL || "http://localhost:3537/api/v1";
+  if (!registration) return null;
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        gap: 10,
+        alignItems: 'center',
+        background: '#eafff7',
+        border: '1px solid #b8ecd9',
+        color: '#116c51',
+        fontSize: 13.5,
+        padding: '12px 14px',
+        borderRadius: 10,
+        marginBottom: 20,
+      }}
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18, flexShrink: 0 }}>
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+        <polyline points="22 4 12 14.01 9 11.01" />
+      </svg>
+      <span>Cadastro realizado com sucesso! Sua conta está liberada. Digite seus dados para entrar.</span>
+    </div>
+  );
+}
 
 export default function LoginPage() {
   const router = useRouter();
-
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
 
-  // useEffect garante que o código só rode no cliente (Browser) para não crashar o Next.js
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setError,
+    setValue,
+  } = useForm<LoginInput>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: '', password: '' },
+  });
+
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedEmail = localStorage.getItem("logiflow_email");
-      if (savedEmail) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setEmail(savedEmail);
-      }
-    }
-  }, []);
-
-  const handleLogin: FormEventHandler<HTMLFormElement> = async (e) => {
-    e.preventDefault();
-
-    const result = loginSchema.safeParse({ email, password });
-
-    if (!result.success) {
-      setErrorMsg(result.error.issues[0]?.message || "Erro de validação");
-      return;
-    }
-
-    setIsLoading(true);
-    setErrorMsg("");
-
     try {
-      const response = await axios.post(`${IDENTITY_API_URL}/auth/login`, {
-        email: result.data.email,
-        password: result.data.password,
-      });
-
-      if (response.data.accessToken) {
-        localStorage.setItem("logiflow_token", response.data.accessToken);
-        localStorage.setItem("logiflow_email", result.data.email);
-
-        if (response.data.user) {
-           localStorage.setItem("logiflow_user", JSON.stringify(response.data.user));
-        }
+      const params = new URLSearchParams(window.location.search);
+      const emailParam = params.get('email');
+      if (emailParam) {
+        setValue('email', emailParam);
+        setRememberMe(true);
+        return;
       }
+    } catch {}
 
-      router.push("/dashboard");
-    } catch (error: unknown) {
-      setErrorMsg((error as { response?: { data?: { error?: string } } }).response?.data?.error || "E-mail ou senha incorretos.");
+    const savedEmail = window.localStorage.getItem('logiflow_email');
+    if (savedEmail) {
+      setValue('email', savedEmail);
+      setRememberMe(true);
+    }
+  }, [setValue]);
+
+  async function submitLogin(values: LoginInput) {
+    setIsLoading(true);
+    try {
+      const response = await axios.post(
+        IDENTITY_API_URL + '/api/v1/auth/login',
+        values,
+        { withCredentials: true }
+      );
+      if (response.data.accessToken) {
+        window.localStorage.setItem('logiflow_token', response.data.accessToken);
+      }
+      if (rememberMe) {
+        window.localStorage.setItem('logiflow_email', values.email);
+      } else {
+        window.localStorage.removeItem('logiflow_email');
+      }
+      if (response.data.user) {
+        window.localStorage.setItem('logiflow_user', JSON.stringify(response.data.user));
+      }
+      router.push('/dashboard');
+    } catch (requestError: unknown) {
+      const message = axios.isAxiosError(requestError)
+        ? requestError.response?.data?.message ?? requestError.response?.data?.error
+        : undefined;
+      setError('root', {
+        message: message || 'Não foi possível entrar. Confira seu e-mail e senha.',
+      });
     } finally {
       setIsLoading(false);
     }
-  };
+  }
+
+  const errorMessage = errors.root?.message || errors.email?.message || errors.password?.message;
 
   return (
-    <div className="w-full max-w-4xl flex min-h-[520px] bg-white rounded-lg overflow-hidden border border-[var(--color-border-secondary)] shadow-xl">
-      {/* Lado Esquerdo (Branding) */}
-      <div className="w-[240px] shrink-0 bg-[#0C447C] p-8 flex flex-col justify-between">
-        <div>
-          <div className="flex items-center gap-3">
-            <i className="ti ti-truck-delivery text-[28px] text-[#85B7EB]"></i>
-            <span className="text-[15px] font-bold text-[#E6F1FB] leading-snug tracking-wide">
-              LogiFlow
-            </span>
-          </div>
-        </div>
-        <div className="text-[12px] text-[#378ADD]">© 2026 LogiFlow</div>
-      </div>
+    <main className="login-page-wrapper">
+      <div className="stage">
+        {/* LEFT BRAND PANEL */}
+        <div className="brand-side">
+          <svg className="circuit-bg" viewBox="0 0 500 640" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+            <g fill="none" stroke="#5A93F0" strokeWidth="1.2">
+              <path d="M -20 90 L 90 90 L 140 140 L 260 140" />
+              <path d="M -20 260 L 60 260 L 100 300 L 100 420 L 40 480" />
+              <path d="M 520 60 L 380 60 L 330 110 L 330 220" />
+              <path d="M 520 400 L 420 400 L 380 440 L 260 440 L 220 480 L 220 600" />
+              <path d="M -20 560 L 140 560 L 190 610" />
+              <path d="M 520 560 L 440 560 L 400 600" />
+            </g>
+            <g fill="#8FB6F7">
+              <circle cx="90" cy="90" r="4" />
+              <circle cx="260" cy="140" r="4" />
+              <circle cx="60" cy="260" r="4" />
+              <circle cx="40" cy="480" r="4" />
+              <circle cx="380" cy="60" r="4" />
+              <circle cx="330" cy="220" r="4" />
+              <circle cx="420" cy="400" r="4" />
+              <circle cx="220" cy="600" r="4" />
+              <circle cx="140" cy="560" r="4" />
+              <circle cx="440" cy="560" r="4" />
+            </g>
+            <circle r="3.2" fill="#FFFFFF">
+              <animateMotion
+                dur="7s"
+                repeatCount="indefinite"
+                path="M -20 90 L 90 90 L 140 140 L 260 140 L 330 140 L 330 220"
+              />
+              <animate attributeName="opacity" values="0;1;1;0" dur="7s" repeatCount="indefinite" />
+            </circle>
+          </svg>
 
-      {/* Lado Direito (Formulário) */}
-      <div className="flex-1 bg-[var(--color-background-primary)] p-10 flex flex-col justify-center">
-        <div className="mb-8">
-          <h1 className="text-xl font-semibold text-[var(--color-text-primary)]">Bem-vindo</h1>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-1">Acesse sua conta para continuar.</p>
-        </div>
-
-        {errorMsg && (
-          <div className="flex items-center gap-2 bg-red-50 text-red-600 text-[13px] px-3 py-2 rounded-md mb-4 border border-red-200">
-            <i className="ti ti-alert-circle"></i>
-            <span>{errorMsg}</span>
-          </div>
-        )}
-
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="block text-[13px] font-medium text-[var(--color-text-secondary)] mb-1.5">E-mail</label>
-            <div className="relative">
-              <i className="ti ti-mail absolute left-3 top-1/2 -translate-y-1/2 text-[17px] text-[var(--color-text-secondary)]"></i>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="seu@email.com"
-                disabled={isLoading}
-                className="w-full h-[40px] pl-10 pr-3 border border-[var(--color-border-secondary)] rounded-md bg-[var(--color-background-primary)] text-[var(--color-text-primary)] text-sm outline-none focus:border-[#185FA5] focus:ring-1 focus:ring-[#185FA5] transition-all"
+          <div className="brand-top">
+            <div className="logo-badge">
+              <Image
+                src="/nesher-icon.png"
+                alt="Nesher Tech Solutions"
+                width={64}
+                height={64}
+                priority
               />
             </div>
+            <div className="brand-name">
+              NESHER<span> TECH SOLUTIONS</span>
+            </div>
+            <div className="brand-tagline">Inovar · Conectar · Transformar</div>
           </div>
 
-          <div>
-            <label className="block text-[13px] font-medium text-[var(--color-text-secondary)] mb-1.5">Senha</label>
-            <div className="relative">
-              <i className="ti ti-lock absolute left-3 top-1/2 -translate-y-1/2 text-[17px] text-[var(--color-text-secondary)]"></i>
-              <input
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                disabled={isLoading}
-                className="w-full h-[40px] pl-10 pr-10 border border-[var(--color-border-secondary)] rounded-md bg-[var(--color-background-primary)] text-[var(--color-text-primary)] text-sm outline-none focus:border-[#185FA5] focus:ring-1 focus:ring-[#185FA5] transition-all"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)] text-[17px] hover:text-[var(--color-text-primary)]"
-              >
-                <i className={showPassword ? "ti ti-eye-off" : "ti ti-eye"}></i>
-              </button>
+          <div className="brand-mid">
+            <p className="eyebrow">Suporte que move o seu negócio</p>
+            <h1 className="headline">
+              Seu time técnico <em>sempre por perto</em>
+            </h1>
+            <p className="sub">
+              Abra chamados, acompanhe atendimentos e mantenha sua operação funcionando sem surpresas.
+            </p>
+          </div>
+
+          <div className="brand-bottom">
+            <div className="pill">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" />
+              </svg>
+              Ambiente seguro
+            </div>
+            <div className="pill">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M13 2 4 14h6l-1 8 9-12h-6z" />
+              </svg>
+              Atendimento ágil
+            </div>
+            <div className="pill">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 7v5l3 3" />
+              </svg>
+              Suporte contínuo
             </div>
           </div>
+        </div>
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full h-[42px] mt-2 bg-[#185FA5] hover:bg-[#0C447C] text-white font-medium text-[15px] rounded-md flex items-center justify-center gap-2 transition-all disabled:opacity-70"
+        {/* RIGHT FORM PANEL */}
+        <div className="form-side">
+          <p className="form-eyebrow">Área do cliente</p>
+          <h2 className="form-title">Bem-vindo de volta</h2>
+          <p className="form-desc">Entre para acompanhar seus chamados e falar com nosso suporte.</p>
+
+          <Suspense fallback={null}>
+            <RegistrationNotice />
+          </Suspense>
+
+          {errorMessage && (
+            <div className="alert" id="errorAlert" style={{ display: 'flex' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 8v5" />
+                <path d="M12 16h.01" />
+              </svg>
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
+          {/* Quick Global Admin Helper */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: '#f5f3ff',
+              border: '1px solid #ddd6fe',
+              borderRadius: '8px',
+              padding: '8px 12px',
+              marginBottom: '16px',
+              fontSize: '12px',
+            }}
           >
-            {isLoading ? <i className="ti ti-loader-2 animate-spin text-lg"></i> : <i className="ti ti-login text-lg"></i>}
-            {isLoading ? "Entrando..." : "Entrar"}
-          </button>
-        </form>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ color: '#7c3aed', fontWeight: 700 }}>👑 Admin Global:</span>
+              <code style={{ fontSize: '11px', color: '#6d28d9', background: '#ede9fe', padding: '2px 6px', borderRadius: '4px' }}>
+                admin@neshertech.com.br
+              </code>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setValue('email', 'admin@neshertech.com.br');
+                setValue('password', 'Admin@Nesher2026');
+              }}
+              style={{
+                background: '#7c3aed',
+                color: '#fff',
+                border: 0,
+                borderRadius: '6px',
+                padding: '4px 10px',
+                fontSize: '11px',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+              title="Preencher login do Administrador Global"
+            >
+              Preencher Acesso
+            </button>
+          </div>
 
-        <div className="my-6 flex items-center gap-3">
-          <hr className="flex-1 border-[var(--color-border-secondary)]" />
-          <span className="text-[12px] text-[var(--color-text-tertiary)]">ou</span>
-          <hr className="flex-1 border-[var(--color-border-secondary)]" />
+          <form id="loginForm" onSubmit={handleSubmit(submitLogin)} noValidate>
+            <div className="field">
+              <label htmlFor="email">E-mail corporativo</label>
+              <div className="input-wrap">
+                <svg className="leading" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="5" width="18" height="14" rx="2" />
+                  <path d="m3 7 9 6 9-6" />
+                </svg>
+                <input
+                  type="email"
+                  id="email"
+                  placeholder="nome@empresa.com"
+                  autoComplete="email"
+                  disabled={isLoading}
+                  {...register('email')}
+                />
+              </div>
+            </div>
+
+            <div className="field">
+              <label htmlFor="password">Senha</label>
+              <div className="input-wrap">
+                <svg className="leading" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="4" y="11" width="16" height="9" rx="2" />
+                  <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+                </svg>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  id="password"
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  disabled={isLoading}
+                  {...register('password')}
+                />
+                <button
+                  type="button"
+                  className="toggle-visibility"
+                  id="toggleBtn"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                >
+                  {showPassword ? (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="row-between">
+              <label className="remember">
+                <input
+                  type="checkbox"
+                  id="rememberMe"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                />
+                <span>Lembrar de mim</span>
+              </label>
+              <Link href="/register" className="link">
+                Esqueci minha senha
+              </Link>
+            </div>
+
+            <button type="submit" className="btn-primary" disabled={isLoading}>
+              <span>{isLoading ? 'Entrando...' : 'Entrar na plataforma'}</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+                <path d="M5 12h14" />
+                <path d="m13 6 6 6-6 6" />
+              </svg>
+            </button>
+          </form>
+
+          <div className="divider">ou</div>
+          <p className="signup">
+            Sua empresa ainda não está cadastrada? <Link href="/register">Cadastre sua empresa</Link>
+          </p>
+
+          <div className="footer-note">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="4" y="11" width="16" height="9" rx="2" />
+              <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+            </svg>
+            <span>Seus dados são protegidos com criptografia de ponta a ponta.</span>
+          </div>
         </div>
-
-        {/* Botão de Criar Conta removido (Migrado para LogiIdentity) */}
       </div>
-    </div>
+    </main>
   );
 }

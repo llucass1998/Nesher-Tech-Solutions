@@ -17,6 +17,21 @@ const eslintConfig = defineConfig([
     "src/generated/**",
     "apps/**/src/generated/**",
   ]),
+  {
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["*/apps/*", "apps/*", "../../apps/*", "../../../apps/*", "../../../../apps/*"],
+              message: "Avoid cross-app imports. Move shared code to packages/ instead."
+            }
+          ]
+        }
+      ]
+    }
+  }
 ]);
 
 export default eslintConfig;

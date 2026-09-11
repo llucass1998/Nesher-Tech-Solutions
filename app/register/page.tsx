@@ -1,186 +1,327 @@
 'use client';
 
 import { useState } from 'react';
-import { z } from 'zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
+import Image from 'next/image';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { CompanyRegistrationInput, companyRegistrationSchema } from '../lib/auth-validation';
 
-const registerSchema = z.object({
-  name: z.string().min(2, { message: 'O nome deve ter pelo menos 2 caracteres.' }),
-  email: z.string().email({ message: 'Por favor, digite um e-mail válido.' }),
-  phone: z.string().min(10, { message: 'Digite um telefone válido.' }),
-  password: z.string().min(6, { message: 'A senha deve ter pelo menos 6 caracteres.' }),
-});
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
+const IDENTITY_API_URL = process.env.NEXT_PUBLIC_IDENTITY_API_URL || 'http://localhost:3633';
 
 export default function RegisterPage() {
   const router = useRouter();
-
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+    setError,
+  } = useForm<CompanyRegistrationInput>({
+    resolver: zodResolver(companyRegistrationSchema),
+    defaultValues: { company: '', name: '', email: '', phone: '', password: '' },
+  });
 
-    const result = registerSchema.safeParse({ name, email, phone, password });
-
-    if (!result.success) {
-      setErrorMsg(result.error.issues[0]?.message || 'Erro de validação.');
-      return;
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value.replace(/\D/g, '');
+    if (val.length > 11) val = val.slice(0, 11);
+    if (val.length > 6) {
+      val = `(${val.slice(0, 2)}) ${val.slice(2, 7)}-${val.slice(7)}`;
+    } else if (val.length > 2) {
+      val = `(${val.slice(0, 2)}) ${val.slice(2)}`;
+    } else if (val.length > 0) {
+      val = `(${val}`;
     }
+    setValue('phone', val, { shouldValidate: true });
+  };
 
+  async function submitRegistration(values: CompanyRegistrationInput) {
     setIsLoading(true);
-    setErrorMsg('');
-
     try {
-      await axios.post(`${API_URL}/drivers`, {
-        name: result.data.name,
-        email: result.data.email,
-        phone: result.data.phone,
-        password: result.data.password,
-      });
-
-      router.push('/');
-    } catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        setErrorMsg(error.response?.data?.error || 'Erro ao criar conta.');
-      } else {
-        setErrorMsg('Erro inesperado ao criar conta.');
+      await axios.post(IDENTITY_API_URL + '/api/v1/auth/registration-requests', values);
+      router.push(`/?registration=success&email=${encodeURIComponent(values.email)}`);
+    } catch (requestError: unknown) {
+      let friendlyMessage = 'Não foi possível concluir o cadastro. Verifique os dados.';
+      if (axios.isAxiosError(requestError)) {
+        if (!requestError.response) {
+          friendlyMessage = 'Não foi possível conectar ao servidor de autenticação. Verifique se o serviço está ativo.';
+        } else if (
+          requestError.response.status === 409 ||
+          requestError.response.data?.code === 'EMAIL_ALREADY_REGISTERED' ||
+          (typeof requestError.response.data?.error === 'string' && requestError.response.data.error.includes('already uses this email'))
+        ) {
+          friendlyMessage = 'Já existe uma conta ou solicitação de cadastro pendente para este e-mail.';
+        } else if (requestError.response.data?.message) {
+          const msg = requestError.response.data.message;
+          friendlyMessage = Array.isArray(msg) ? msg.join(', ') : msg;
+        }
       }
+      setError('root', {
+        message: friendlyMessage,
+      });
     } finally {
       setIsLoading(false);
     }
-  };
+  }
+
+  const rootError = errors.root?.message;
 
   return (
-    <div className="w-full max-w-4xl flex min-h-[580px] bg-white rounded-lg overflow-hidden border border-[var(--color-border-secondary)] shadow-xl">
-      
-      {/* Lado Esquerdo (Branding) */}
-      <div className="w-[240px] shrink-0 bg-[#0C447C] p-8 flex flex-col justify-between">
-        <div className="flex items-center gap-3">
-          <i className="ti ti-truck-delivery text-[28px] text-[#85B7EB]"></i>
-          <span className="text-[15px] font-bold text-[#E6F1FB] leading-snug tracking-wide">
-            LogiFlow
-          </span>
+    <main className="login-page-wrapper">
+      <div className="stage stage-register">
+        {/* LEFT BRAND PANEL */}
+        <div className="brand-side">
+          <svg className="circuit-bg" viewBox="0 0 500 640" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+            <g fill="none" stroke="#5A93F0" strokeWidth="1.2">
+              <path d="M -20 90 L 90 90 L 140 140 L 260 140" />
+              <path d="M -20 260 L 60 260 L 100 300 L 100 420 L 40 480" />
+              <path d="M 520 60 L 380 60 L 330 110 L 330 220" />
+              <path d="M 520 400 L 420 400 L 380 440 L 260 440 L 220 480 L 220 600" />
+              <path d="M -20 560 L 140 560 L 190 610" />
+              <path d="M 520 560 L 440 560 L 400 600" />
+            </g>
+            <g fill="#8FB6F7">
+              <circle cx="90" cy="90" r="4" />
+              <circle cx="260" cy="140" r="4" />
+              <circle cx="60" cy="260" r="4" />
+              <circle cx="40" cy="480" r="4" />
+              <circle cx="380" cy="60" r="4" />
+              <circle cx="330" cy="220" r="4" />
+              <circle cx="420" cy="400" r="4" />
+              <circle cx="220" cy="600" r="4" />
+              <circle cx="140" cy="560" r="4" />
+              <circle cx="440" cy="560" r="4" />
+            </g>
+            <circle r="3.2" fill="#FFFFFF">
+              <animateMotion
+                dur="7s"
+                repeatCount="indefinite"
+                path="M -20 90 L 90 90 L 140 140 L 260 140 L 330 140 L 330 220"
+              />
+              <animate attributeName="opacity" values="0;1;1;0" dur="7s" repeatCount="indefinite" />
+            </circle>
+          </svg>
+
+          <div className="brand-top">
+            <div className="logo-badge">
+              <Image
+                src="/nesher-icon.png"
+                alt="Nesher Tech Solutions"
+                width={64}
+                height={64}
+                priority
+              />
+            </div>
+            <div className="brand-name">
+              NESHER<span> TECH SOLUTIONS</span>
+            </div>
+            <div className="brand-tagline">Inovar · Conectar · Transformar</div>
+          </div>
+
+          <div className="brand-mid">
+            <p className="eyebrow">COMECE COM A NESHER</p>
+            <h1 className="headline">
+              Uma operação mais <em>inteligente começa aqui.</em>
+            </h1>
+            <p className="sub">
+              Centralize chamados, conecte sua equipe e conte com suporte técnico que entende o ritmo do seu negócio.
+            </p>
+          </div>
+
+          <div className="brand-bottom">
+            <div className="pill">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" />
+              </svg>
+              Ambiente seguro
+            </div>
+            <div className="pill">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+              Atendimento humanizado
+            </div>
+            <div className="pill">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M13 2 4 14h6l-1 8 9-12h-6z" />
+              </svg>
+              Suporte dedicado
+            </div>
+          </div>
         </div>
-        <div className="text-[12px] text-[#378ADD]">© 2026 LogiFlow</div>
+
+        {/* RIGHT FORM PANEL */}
+        <div className="form-side">
+          <div className="form-header-row">
+            <p className="form-eyebrow">CADASTRO DA EMPRESA</p>
+            <Link href="/" className="link-back">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 14, height: 14 }}>
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+              </svg>
+              <span>Voltar ao login</span>
+            </Link>
+          </div>
+
+          <h2 className="form-title">Crie seu acesso</h2>
+          <p className="form-desc">Preencha os dados iniciais. Depois, seu vínculo será confirmado pela nossa equipe.</p>
+
+          {rootError && (
+            <div className="alert" style={{ display: 'flex' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 8v5" />
+                <path d="M12 16h.01" />
+              </svg>
+              <span>{rootError}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit(submitRegistration)} noValidate>
+            <div className="form-grid-2">
+              <div className="field">
+                <label htmlFor="company">Razão social</label>
+                <div className="input-wrap">
+                  <svg className="leading" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="4" y="2" width="16" height="20" rx="2" />
+                    <path d="M9 22v-4h6v4" />
+                    <path d="M8 6h.01M16 6h.01M8 10h.01M16 10h.01M8 14h.01M16 14h.01" />
+                  </svg>
+                  <input
+                    type="text"
+                    id="company"
+                    placeholder="Nome da empresa"
+                    disabled={isLoading}
+                    {...register('company')}
+                  />
+                </div>
+                {errors.company?.message && <small className="field-error">{errors.company.message}</small>}
+              </div>
+
+              <div className="field">
+                <label htmlFor="name">Responsável</label>
+                <div className="input-wrap">
+                  <svg className="leading" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                  <input
+                    type="text"
+                    id="name"
+                    placeholder="Nome completo"
+                    disabled={isLoading}
+                    {...register('name')}
+                  />
+                </div>
+                {errors.name?.message && <small className="field-error">{errors.name.message}</small>}
+              </div>
+            </div>
+
+            <div className="field">
+              <label htmlFor="email">E-mail corporativo</label>
+              <div className="input-wrap">
+                <svg className="leading" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="5" width="18" height="14" rx="2" />
+                  <path d="m3 7 9 6 9-6" />
+                </svg>
+                <input
+                  type="email"
+                  id="email"
+                  placeholder="voce@empresa.com.br"
+                  autoComplete="email"
+                  disabled={isLoading}
+                  {...register('email')}
+                />
+              </div>
+              {errors.email?.message && <small className="field-error">{errors.email.message}</small>}
+            </div>
+
+            <div className="field">
+              <label htmlFor="phone">Celular com DDD</label>
+              <div className="input-wrap">
+                <svg className="leading" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                </svg>
+                <input
+                  type="tel"
+                  id="phone"
+                  placeholder="(11) 99999-9999"
+                  disabled={isLoading}
+                  {...register('phone')}
+                  onChange={handlePhoneChange}
+                />
+              </div>
+              {errors.phone?.message && <small className="field-error">{errors.phone.message}</small>}
+            </div>
+
+            <div className="field">
+              <label htmlFor="password">Senha</label>
+              <div className="input-wrap">
+                <svg className="leading" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="4" y="11" width="16" height="9" rx="2" />
+                  <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+                </svg>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  id="password"
+                  placeholder="Ex.: Nesher@2026"
+                  autoComplete="new-password"
+                  disabled={isLoading}
+                  {...register('password')}
+                />
+                <button
+                  type="button"
+                  className="toggle-visibility"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                >
+                  {showPassword ? (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+              <small className="field-hint">8+ caracteres, maiúscula, minúscula, número e símbolo.</small>
+              {errors.password?.message && <small className="field-error">{errors.password.message}</small>}
+            </div>
+
+            <button type="submit" className="btn-primary" disabled={isLoading} style={{ marginTop: 24 }}>
+              <span>{isLoading ? 'Criando acesso...' : 'Criar acesso da empresa'}</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+                <path d="M5 12h14" />
+                <path d="m13 6 6 6-6 6" />
+              </svg>
+            </button>
+          </form>
+
+          <p className="terms-note">
+            Ao continuar, você concorda com nossos <Link href="/">Termos de uso</Link> e{' '}
+            <Link href="/">Política de privacidade</Link>.
+          </p>
+
+          <div className="footer-note">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="4" y="11" width="16" height="9" rx="2" />
+              <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+            </svg>
+            <span>Seus dados são protegidos com criptografia de ponta a ponta.</span>
+          </div>
+        </div>
       </div>
-
-      {/* Lado Direito (Formulário) */}
-      <div className="flex-1 bg-[var(--color-background-primary)] p-10 flex flex-col justify-center">
-        <div className="mb-8">
-          <h1 className="text-xl font-semibold text-[var(--color-text-primary)]">Criar nova conta</h1>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-1">Preencha os dados para se cadastrar.</p>
-        </div>
-
-        {errorMsg && (
-          <div className="flex items-center gap-2 bg-red-50 text-red-600 text-[13px] px-3 py-2 rounded-md mb-4 border border-red-200">
-            <i className="ti ti-alert-circle"></i>
-            <span>{errorMsg}</span>
-          </div>
-        )}
-
-        <form onSubmit={handleRegister} className="space-y-4">
-          <div>
-            <label className="block text-[13px] font-medium text-[var(--color-text-secondary)] mb-1.5">Nome completo</label>
-            <div className="relative">
-              <i className="ti ti-user absolute left-3 top-1/2 -translate-y-1/2 text-[17px] text-[var(--color-text-secondary)]"></i>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Seu nome completo"
-                disabled={isLoading}
-                className="w-full h-[40px] pl-10 pr-3 border border-[var(--color-border-secondary)] rounded-md bg-[var(--color-background-primary)] text-[var(--color-text-primary)] text-sm outline-none focus:border-[#185FA5] focus:ring-1 focus:ring-[#185FA5] transition-all"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-[13px] font-medium text-[var(--color-text-secondary)] mb-1.5">E-mail</label>
-            <div className="relative">
-              <i className="ti ti-mail absolute left-3 top-1/2 -translate-y-1/2 text-[17px] text-[var(--color-text-secondary)]"></i>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="seu@email.com"
-                disabled={isLoading}
-                className="w-full h-[40px] pl-10 pr-3 border border-[var(--color-border-secondary)] rounded-md bg-[var(--color-background-primary)] text-[var(--color-text-primary)] text-sm outline-none focus:border-[#185FA5] focus:ring-1 focus:ring-[#185FA5] transition-all"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-[13px] font-medium text-[var(--color-text-secondary)] mb-1.5">Telefone</label>
-            <div className="relative">
-              <i className="ti ti-phone absolute left-3 top-1/2 -translate-y-1/2 text-[17px] text-[var(--color-text-secondary)]"></i>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="(11) 99999-9999"
-                disabled={isLoading}
-                className="w-full h-[40px] pl-10 pr-3 border border-[var(--color-border-secondary)] rounded-md bg-[var(--color-background-primary)] text-[var(--color-text-primary)] text-sm outline-none focus:border-[#185FA5] focus:ring-1 focus:ring-[#185FA5] transition-all"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-[13px] font-medium text-[var(--color-text-secondary)] mb-1.5">Senha</label>
-            <div className="relative">
-              <i className="ti ti-lock absolute left-3 top-1/2 -translate-y-1/2 text-[17px] text-[var(--color-text-secondary)]"></i>
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Mínimo 6 caracteres"
-                disabled={isLoading}
-                className="w-full h-[40px] pl-10 pr-10 border border-[var(--color-border-secondary)] rounded-md bg-[var(--color-background-primary)] text-[var(--color-text-primary)] text-sm outline-none focus:border-[#185FA5] focus:ring-1 focus:ring-[#185FA5] transition-all"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)] text-[17px] hover:text-[var(--color-text-primary)]"
-              >
-                <i className={showPassword ? 'ti ti-eye-off' : 'ti ti-eye'}></i>
-              </button>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full h-[42px] mt-2 bg-[#185FA5] hover:bg-[#0C447C] text-white font-medium text-[15px] rounded-md flex items-center justify-center gap-2 transition-all disabled:opacity-70"
-          >
-            {isLoading
-              ? <><i className="ti ti-loader-2 animate-spin text-lg"></i> Criando conta...</>
-              : <><i className="ti ti-user-plus text-lg"></i> Criar conta</>
-            }
-          </button>
-        </form>
-
-        <div className="my-6 flex items-center gap-3">
-          <hr className="flex-1 border-[var(--color-border-secondary)]" />
-          <span className="text-[12px] text-[var(--color-text-tertiary)]">ou</span>
-          <hr className="flex-1 border-[var(--color-border-secondary)]" />
-        </div>
-
-        <Link
-          href="/"
-          className="w-full h-[40px] border border-[var(--color-border-secondary)] rounded-md flex items-center justify-center gap-2 text-[14px] text-[var(--color-text-primary)] hover:bg-gray-50 transition-colors"
-        >
-          <i className="ti ti-login"></i>
-          Já tenho uma conta
-        </Link>
-      </div>
-    </div>
+    </main>
   );
 }

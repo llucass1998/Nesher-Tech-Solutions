@@ -15,10 +15,10 @@
     "seed": "tsx ../../databases/logipeople/prisma/seed/seed.ts"
   },
   "dependencies": {
-    "@logipeople/auth": "0.1.0",
-    "@logipeople/config": "0.1.0",
-    "@logipeople/contracts": "0.1.0",
-    "@logipeople/event-contracts": "0.1.0",
-    "@logipeople/logger": "0.1.0"
+    "@logipeople/auth": "workspace:*",
+    "@logipeople/config": "workspace:*",
+    "@logipeople/contracts": "workspace:*",
+    "@logipeople/event-contracts": "workspace:*",
+    "@logipeople/logger": "workspace:*"
   }
 }

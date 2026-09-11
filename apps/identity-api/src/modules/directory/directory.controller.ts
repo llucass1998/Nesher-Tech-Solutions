@@ -1,8 +1,12 @@
+import { UseGuards, SetMetadata } from '@nestjs/common';
+import { AuthGuard, PermissionsGuard } from '../../shared/guards/auth.guard';
 import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import { CreateUserDto } from '../auth/dto';
 import { DirectoryService } from './directory.service';
 
 @Controller('api/v1')
+@UseGuards(AuthGuard, PermissionsGuard)
+@SetMetadata('permissions', ['identity.admin'])
 export class DirectoryController {
   constructor(private readonly directoryService: DirectoryService) {}
 

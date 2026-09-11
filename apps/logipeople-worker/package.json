@@ -11,9 +11,9 @@
     "build": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@logipeople/config": "0.1.0",
-    "@logipeople/event-contracts": "0.1.0",
-    "@logipeople/logger": "0.1.0",
+    "@logipeople/config": "workspace:*",
+    "@logipeople/event-contracts": "workspace:*",
+    "@logipeople/logger": "workspace:*",
     "ioredis": "^5.11.1",
     "pg": "^8.22.0"
   },

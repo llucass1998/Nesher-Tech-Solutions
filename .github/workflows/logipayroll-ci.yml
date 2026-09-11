@@ -20,7 +20,7 @@ on:
       - "Dockerfile.workspace-worker"
       - "docker-compose.yml"
       - "package.json"
-      - "package-lock.json"
+      - "pnpm-lock.yaml"
       - "tsconfig.json"
   push:
     branches: [master, main]
@@ -42,7 +42,7 @@ on:
       - "Dockerfile.workspace-worker"
       - "docker-compose.yml"
       - "package.json"
-      - "package-lock.json"
+      - "pnpm-lock.yaml"
       - "tsconfig.json"
 
 concurrency:
@@ -65,23 +65,24 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: npm
-      - run: npm ci
-      - run: npm run logipayroll:prisma:generate
-      - run: npm run lint -w logipayroll-api
-      - run: npm run lint -w logipayroll-web
-      - run: npm run lint -w logipayroll-worker
-      - run: npm run typecheck -w logipayroll-api
-      - run: npm run typecheck -w logipayroll-web
-      - run: npm run typecheck -w logipayroll-worker
-      - run: npm run test -w logipayroll-api
-      - run: npm run test -w logipayroll-web
-      - run: npm run test -w logipayroll-worker
-      - run: npm run build -w logipayroll-api
-      - run: npm run build -w logipayroll-web
-      - run: npm run build -w logipayroll-worker
+      - run: npm i -g pnpm
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run logipayroll:prisma:generate
+      - run: pnpm run lint -w logipayroll-api
+      - run: pnpm run lint -w logipayroll-web
+      - run: pnpm run lint -w logipayroll-worker
+      - run: pnpm run typecheck -w logipayroll-api
+      - run: pnpm run typecheck -w logipayroll-web
+      - run: pnpm run typecheck -w logipayroll-worker
+      - run: pnpm run test -w logipayroll-api
+      - run: pnpm run test -w logipayroll-web
+      - run: pnpm run test -w logipayroll-worker
+      - run: pnpm run build -w logipayroll-api
+      - run: pnpm run build -w logipayroll-web
+      - run: pnpm run build -w logipayroll-worker
       - run: npx prisma validate --config apps/logipayroll-api/prisma.config.ts
       - run: docker compose --env-file .env.example config
       - run: docker build -f Dockerfile.logipayroll-api .
       - run: docker build -f Dockerfile.logipayroll-web .
-      - run: npm audit --audit-level=high
+      - run: pnpm audit --audit-level=high

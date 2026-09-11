@@ -14,7 +14,7 @@ on:
       - "packages/eslint-config/**"
       - "packages/typescript-config/**"
       - "package.json"
-      - "package-lock.json"
+      - "pnpm-lock.yaml"
       - "tsconfig.json"
   push:
     branches: [master, main]
@@ -30,7 +30,7 @@ on:
       - "packages/eslint-config/**"
       - "packages/typescript-config/**"
       - "package.json"
-      - "package-lock.json"
+      - "pnpm-lock.yaml"
       - "tsconfig.json"
 
 concurrency:
@@ -55,11 +55,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: npm
-      - run: npm ci
-      - run: npm run logidesk:prisma:generate
-      - run: npm run lint:workspaces
-      - run: npm run typecheck
-      - run: npm run test:workspaces
-      - run: npm run build:workspaces
-      - run: npm audit
+      - run: npm i -g pnpm
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run logidesk:prisma:generate
+      - run: pnpm run lint:workspaces
+      - run: pnpm run typecheck
+      - run: pnpm run test:workspaces
+      - run: pnpm run build:workspaces
+      - run: pnpm audit

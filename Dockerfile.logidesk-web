@@ -6,8 +6,8 @@ ARG NEXT_PUBLIC_IDENTITY_API_URL=http://localhost:3633
 ENV NEXT_PUBLIC_LOGIDESK_API_URL=$NEXT_PUBLIC_LOGIDESK_API_URL
 ENV NEXT_PUBLIC_IDENTITY_API_URL=$NEXT_PUBLIC_IDENTITY_API_URL
 COPY . .
-RUN npm ci
-RUN npm run build -w logidesk-web
+RUN npm install -g pnpm && pnpm install -g pnpm && pnpm install --frozen-lockfile
+RUN pnpm run build -w logidesk-web
 
 FROM node:24-alpine AS runtime
 WORKDIR /app

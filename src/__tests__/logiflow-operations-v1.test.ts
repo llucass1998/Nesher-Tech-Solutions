@@ -3,6 +3,7 @@ import express from 'express';
 import request from 'supertest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Prisma } from '../generated/prisma';
+import { signAccessToken } from '../lib/auth-tokens';
 import { prisma } from '../lib/prisma';
 import { routes } from '../routes';
 
@@ -112,10 +113,13 @@ describe('LogiFlow operacional v1', () => {
   });
 
   it('lista entregas com filtros e paginacao para operador', async () => {
-    await mockLogin();
-    const login = await request(app).post('/api/v1/auth/login').send({
+
+    const operatorToken = signAccessToken({
+      sub: 'operator-1',
       email: 'operator@example.com',
-      password: 'secret123',
+      name: 'Operador',
+      roles: ['OPERATOR'],
+      status: 'ACTIVE',
     });
 
     vi.mocked(prisma.user.findUnique).mockResolvedValue(operatorUser);
@@ -124,7 +128,7 @@ describe('LogiFlow operacional v1', () => {
 
     const response = await request(app)
       .get('/api/v1/operations/deliveries?status=PENDING&search=Centro&page=2&pageSize=10')
-      .set('Authorization', `Bearer ${login.body.accessToken}`);
+      .set('Authorization', `Bearer ${operatorToken}`);
 
     expect(response.status).toBe(200);
     expect(response.body.pagination).toMatchObject({ page: 2, pageSize: 10, total: 1, totalPages: 1 });
@@ -139,27 +143,33 @@ describe('LogiFlow operacional v1', () => {
   });
 
   it('bloqueia motorista em endpoint operacional', async () => {
-    await mockLogin(driverUser);
-    const login = await request(app).post('/api/v1/auth/login').send({
+
+    const driverToken = signAccessToken({
+      sub: 'driver-user-1',
       email: 'driver@example.com',
-      password: 'secret123',
+      name: 'Driver',
+      roles: ['DRIVER'],
+      status: 'ACTIVE',
     });
 
     vi.mocked(prisma.user.findUnique).mockResolvedValue(driverUser);
 
     const response = await request(app)
       .get('/api/v1/operations/deliveries')
-      .set('Authorization', `Bearer ${login.body.accessToken}`);
+      .set('Authorization', `Bearer ${driverToken}`);
 
     expect(response.status).toBe(403);
     expect(response.body.error.code).toBe('ACCESS_DENIED');
   });
 
   it('atualiza status e registra historico', async () => {
-    await mockLogin();
-    const login = await request(app).post('/api/v1/auth/login').send({
+
+    const operatorToken = signAccessToken({
+      sub: 'operator-1',
       email: 'operator@example.com',
-      password: 'secret123',
+      name: 'Operador',
+      roles: ['OPERATOR'],
+      status: 'ACTIVE',
     });
 
     vi.mocked(prisma.user.findUnique).mockResolvedValue(operatorUser);
@@ -179,7 +189,7 @@ describe('LogiFlow operacional v1', () => {
 
     const response = await request(app)
       .patch('/api/v1/operations/deliveries/delivery-1/status')
-      .set('Authorization', `Bearer ${login.body.accessToken}`)
+      .set('Authorization', `Bearer ${operatorToken}`)
       .set('x-request-id', 'req-1')
       .set('x-correlation-id', 'corr-1')
       .send({ status: 'IN_TRANSIT', reason: 'Saiu para rota' });
@@ -197,10 +207,13 @@ describe('LogiFlow operacional v1', () => {
   });
 
   it('cria ocorrencia e comprovante na entrega', async () => {
-    await mockLogin();
-    const login = await request(app).post('/api/v1/auth/login').send({
+
+    const operatorToken = signAccessToken({
+      sub: 'operator-1',
       email: 'operator@example.com',
-      password: 'secret123',
+      name: 'Operador',
+      roles: ['OPERATOR'],
+      status: 'ACTIVE',
     });
 
     vi.mocked(prisma.user.findUnique).mockResolvedValue(operatorUser);
@@ -232,7 +245,7 @@ describe('LogiFlow operacional v1', () => {
 
     const occurrence = await request(app)
       .post('/api/v1/operations/deliveries/delivery-1/occurrences')
-      .set('Authorization', `Bearer ${login.body.accessToken}`)
+      .set('Authorization', `Bearer ${operatorToken}`)
       .send({
         title: 'Cliente ausente',
         description: 'Nao havia ninguem no local',
@@ -241,7 +254,7 @@ describe('LogiFlow operacional v1', () => {
 
     const proof = await request(app)
       .post('/api/v1/operations/deliveries/delivery-1/proofs')
-      .set('Authorization', `Bearer ${login.body.accessToken}`)
+      .set('Authorization', `Bearer ${operatorToken}`)
       .send({
         url: 'https://example.com/proof.jpg',
         description: 'Foto da fachada',
@@ -254,17 +267,20 @@ describe('LogiFlow operacional v1', () => {
   });
 
   it('nao cria ocorrencia com severidade invalida', async () => {
-    await mockLogin();
-    const login = await request(app).post('/api/v1/auth/login').send({
+
+    const operatorToken = signAccessToken({
+      sub: 'operator-1',
       email: 'operator@example.com',
-      password: 'secret123',
+      name: 'Operador',
+      roles: ['OPERATOR'],
+      status: 'ACTIVE',
     });
 
     vi.mocked(prisma.user.findUnique).mockResolvedValue(operatorUser);
 
     const response = await request(app)
       .post('/api/v1/operations/deliveries/delivery-1/occurrences')
-      .set('Authorization', `Bearer ${login.body.accessToken}`)
+      .set('Authorization', `Bearer ${operatorToken}`)
       .send({
         title: 'Cliente ausente',
         description: 'Nao havia ninguem no local',
@@ -277,17 +293,20 @@ describe('LogiFlow operacional v1', () => {
   });
 
   it('nao registra comprovante sem URL', async () => {
-    await mockLogin();
-    const login = await request(app).post('/api/v1/auth/login').send({
+
+    const operatorToken = signAccessToken({
+      sub: 'operator-1',
       email: 'operator@example.com',
-      password: 'secret123',
+      name: 'Operador',
+      roles: ['OPERATOR'],
+      status: 'ACTIVE',
     });
 
     vi.mocked(prisma.user.findUnique).mockResolvedValue(operatorUser);
 
     const response = await request(app)
       .post('/api/v1/operations/deliveries/delivery-1/proofs')
-      .set('Authorization', `Bearer ${login.body.accessToken}`)
+      .set('Authorization', `Bearer ${operatorToken}`)
       .send({ description: 'Sem URL' });
 
     expect(response.status).toBe(400);
@@ -296,10 +315,13 @@ describe('LogiFlow operacional v1', () => {
   });
 
   it('reprocessa apenas ocorrencia em falha permanente ou temporaria', async () => {
-    await mockLogin();
-    const login = await request(app).post('/api/v1/auth/login').send({
+
+    const operatorToken = signAccessToken({
+      sub: 'operator-1',
       email: 'operator@example.com',
-      password: 'secret123',
+      name: 'Operador',
+      roles: ['OPERATOR'],
+      status: 'ACTIVE',
     });
 
     vi.mocked(prisma.user.findUnique).mockResolvedValue(operatorUser);
@@ -336,7 +358,7 @@ describe('LogiFlow operacional v1', () => {
 
     const response = await request(app)
       .post('/api/v1/operations/occurrences/occurrence-1/reprocess')
-      .set('Authorization', `Bearer ${login.body.accessToken}`);
+      .set('Authorization', `Bearer ${operatorToken}`);
 
     expect(response.status).toBe(200);
     expect(prisma.occurrence.update).toHaveBeenCalledWith({
@@ -350,10 +372,13 @@ describe('LogiFlow operacional v1', () => {
   });
 
   it('bloqueia reprocessamento de ocorrencia que nao esta em falha', async () => {
-    await mockLogin();
-    const login = await request(app).post('/api/v1/auth/login').send({
+
+    const operatorToken = signAccessToken({
+      sub: 'operator-1',
       email: 'operator@example.com',
-      password: 'secret123',
+      name: 'Operador',
+      roles: ['OPERATOR'],
+      status: 'ACTIVE',
     });
 
     vi.mocked(prisma.user.findUnique).mockResolvedValue(operatorUser);
@@ -375,7 +400,7 @@ describe('LogiFlow operacional v1', () => {
 
     const response = await request(app)
       .post('/api/v1/operations/occurrences/occurrence-1/reprocess')
-      .set('Authorization', `Bearer ${login.body.accessToken}`);
+      .set('Authorization', `Bearer ${operatorToken}`);
 
     expect(response.status).toBe(409);
     expect(response.body.error.code).toBe('INTEGRATION_UNAVAILABLE');
@@ -383,10 +408,13 @@ describe('LogiFlow operacional v1', () => {
   });
 
   it('lista e reprocessa DLQ operacional recolocando outbox e ocorrencia na fila', async () => {
-    await mockLogin();
-    const login = await request(app).post('/api/v1/auth/login').send({
+
+    const operatorToken = signAccessToken({
+      sub: 'operator-1',
       email: 'operator@example.com',
-      password: 'secret123',
+      name: 'Operador',
+      roles: ['OPERATOR'],
+      status: 'ACTIVE',
     });
 
     vi.mocked(prisma.user.findUnique).mockResolvedValue(operatorUser);
@@ -458,10 +486,10 @@ describe('LogiFlow operacional v1', () => {
 
     const list = await request(app)
       .get('/api/v1/operations/dead-letter-events?correlationId=corr-1')
-      .set('Authorization', `Bearer ${login.body.accessToken}`);
+      .set('Authorization', `Bearer ${operatorToken}`);
     const reprocess = await request(app)
       .post('/api/v1/operations/dead-letter-events/dead-letter-1/reprocess')
-      .set('Authorization', `Bearer ${login.body.accessToken}`);
+      .set('Authorization', `Bearer ${operatorToken}`);
 
     expect(list.status).toBe(200);
     expect(list.body.data).toHaveLength(1);
@@ -490,10 +518,13 @@ describe('LogiFlow operacional v1', () => {
   });
 
   it('bloqueia reprocessamento de DLQ quando o outbox vinculado nao esta em dead-letter', async () => {
-    await mockLogin();
-    const login = await request(app).post('/api/v1/auth/login').send({
+
+    const operatorToken = signAccessToken({
+      sub: 'operator-1',
       email: 'operator@example.com',
-      password: 'secret123',
+      name: 'Operador',
+      roles: ['OPERATOR'],
+      status: 'ACTIVE',
     });
 
     vi.mocked(prisma.user.findUnique).mockResolvedValue(operatorUser);
@@ -524,7 +555,7 @@ describe('LogiFlow operacional v1', () => {
 
     const response = await request(app)
       .post('/api/v1/operations/dead-letter-events/dead-letter-1/reprocess')
-      .set('Authorization', `Bearer ${login.body.accessToken}`);
+      .set('Authorization', `Bearer ${operatorToken}`);
 
     expect(response.status).toBe(409);
     expect(response.body.error.code).toBe('INTEGRATION_UNAVAILABLE');
@@ -532,10 +563,13 @@ describe('LogiFlow operacional v1', () => {
   });
 
   it('escala ocorrencia para o LogiDesk criando outbox idempotente', async () => {
-    await mockLogin();
-    const login = await request(app).post('/api/v1/auth/login').send({
+
+    const operatorToken = signAccessToken({
+      sub: 'operator-1',
       email: 'operator@example.com',
-      password: 'secret123',
+      name: 'Operador',
+      roles: ['OPERATOR'],
+      status: 'ACTIVE',
     });
 
     vi.mocked(prisma.user.findUnique).mockResolvedValue(operatorUser);
@@ -592,7 +626,7 @@ describe('LogiFlow operacional v1', () => {
 
     const response = await request(app)
       .post('/api/v1/operations/occurrences/occurrence-1/escalate')
-      .set('Authorization', `Bearer ${login.body.accessToken}`)
+      .set('Authorization', `Bearer ${operatorToken}`)
       .set('x-correlation-id', '11111111-1111-4111-8111-111111111111');
 
     expect(response.status).toBe(202);

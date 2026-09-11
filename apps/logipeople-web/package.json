@@ -12,6 +12,6 @@
     "build": "next build"
   },
   "dependencies": {
-    "@logipeople/contracts": "0.1.0"
+    "@logipeople/contracts": "workspace:*"
   }
 }
