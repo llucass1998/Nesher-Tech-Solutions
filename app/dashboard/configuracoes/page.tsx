@@ -188,6 +188,70 @@ export default function ConfiguracoesPage() {
     { name: 'Floresta Escuro', hex: '#022c22' },
   ];
 
+  const corporateIcons = [
+    { name: 'ti-shield-lock', label: 'Segurança & NOC' },
+    { name: 'ti-cpu', label: 'Hardware & Tecnologia' },
+    { name: 'ti-bolt', label: 'Velocidade & Redes' },
+    { name: 'ti-building-skyscraper', label: 'Corporativo' },
+    { name: 'ti-cloud-computing', label: 'Nuvem' },
+    { name: 'ti-rocket', label: 'Inovação' },
+    { name: 'ti-server', label: 'Servidores & CPD' },
+    { name: 'ti-headset', label: 'Central de Suporte' },
+    { name: 'ti-device-desktop', label: 'Helpdesk' },
+    { name: 'ti-flame', label: 'Alta Performance' },
+  ];
+
+  const avatarGradients = [
+    { name: 'Azul Nesher Oficial', value: 'linear-gradient(135deg, #0871d7 0%, #034891 100%)' },
+    { name: 'Cyber Violeta', value: 'linear-gradient(135deg, #7c3aed 0%, #4c1d95 100%)' },
+    { name: 'Esmeralda Tech', value: 'linear-gradient(135deg, #059669 0%, #064e3b 100%)' },
+    { name: 'Âmbar Solar', value: 'linear-gradient(135deg, #f59e0b 0%, #b45309 100%)' },
+    { name: 'Dark Obsidian', value: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)' },
+    { name: 'Rubi Neon', value: 'linear-gradient(135deg, #e11d48 0%, #881337 100%)' },
+  ];
+
+  const [companyAvatarState, setCompanyAvatarState] = useState<{
+    type: 'icon' | 'initials' | 'image';
+    icon?: string;
+    initials?: string;
+    imageUrl?: string;
+    gradient?: string;
+  }>({
+    type: 'initials',
+    initials: 'NS',
+    gradient: 'linear-gradient(135deg, #0871d7 0%, #034891 100%)',
+  });
+
+  const updateCompanyAvatar = (val: Partial<typeof companyAvatarState>) => {
+    setCompanyAvatarState((prev) => {
+      const next = { ...prev, ...val };
+      setHasChanges(true);
+      return next;
+    });
+  };
+
+  const handleCompanyImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (uploadEv) => {
+        const base64 = uploadEv.target?.result as string;
+        updateCompanyAvatar({ type: 'image', imageUrl: base64 });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const applyAvatarImmediately = () => {
+    try {
+      window.localStorage.setItem('nesher_company_avatar', JSON.stringify(companyAvatarState));
+      window.dispatchEvent(new Event('nesher_avatar_changed'));
+      showToast('Avatar da empresa aplicado ao menu lateral com sucesso!');
+    } catch {
+      showToast('Erro ao salvar avatar.');
+    }
+  };
+
   useEffect(() => {
     try {
       const rawComp = window.localStorage.getItem('nesher_companies');
@@ -211,6 +275,11 @@ export default function ConfiguracoesPage() {
         setSettings((prev) => ({ ...prev, ...parsed }));
         setInitialSettings((prev) => ({ ...prev, ...parsed }));
       }
+
+      const rawCompanyAvatar = window.localStorage.getItem('nesher_company_avatar');
+      if (rawCompanyAvatar) {
+        setCompanyAvatarState(JSON.parse(rawCompanyAvatar));
+      }
     } catch {}
   }, []);
 
@@ -231,13 +300,15 @@ export default function ConfiguracoesPage() {
   const handleSave = () => {
     try {
       window.localStorage.setItem('nesher_custom_settings', JSON.stringify(settings));
+      window.localStorage.setItem('nesher_company_avatar', JSON.stringify(companyAvatarState));
+      window.dispatchEvent(new Event('nesher_avatar_changed'));
       setInitialSettings(settings);
       setHasChanges(false);
 
       if (settings.sidebarBg) {
         document.documentElement.style.setProperty('--company-sidebar-bg', settings.sidebarBg);
       }
-      showToast('Configurações salvas e aplicadas em tempo real com sucesso!');
+      showToast('Configurações e avatar salvos e aplicados em tempo real com sucesso!');
     } catch {
       showToast('Erro ao gravar configurações no armazenamento local.');
     }
@@ -529,6 +600,215 @@ export default function ConfiguracoesPage() {
                   value={settings.whiteLabelFooter}
                   onChange={(e) => updateSettings({ whiteLabelFooter: e.target.value })}
                 />
+              </div>
+
+              {/* ========================================================= */}
+              {/* SEÇÃO: AVATAR & ÍCONE DO WORKSPACE (EMPRESA)              */}
+              {/* ========================================================= */}
+              <div
+                style={{
+                  marginTop: '24px',
+                  paddingTop: '20px',
+                  borderTop: '1px solid #e2e8f0',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                  <i className="ti ti-badge-ad" style={{ color: '#0b68d1', fontSize: '20px' }} />
+                  <strong style={{ fontSize: '14px', color: '#0f172a' }}>Avatar do Workspace &amp; Organização</strong>
+                </div>
+                <p style={{ margin: '0 0 16px', fontSize: '12px', color: '#64748b' }}>
+                  Personalize o ícone, monograma ou logomarca que aparece no topo da barra lateral (botão do Workspace).
+                </p>
+
+                {/* Workspace Button Simulation Box */}
+                <div
+                  style={{
+                    background: '#071A36',
+                    borderRadius: '12px',
+                    padding: '16px',
+                    marginBottom: '18px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '16px',
+                  }}
+                >
+                  <div
+                    className="nesher-workspace-avatar"
+                    style={{
+                      width: '44px',
+                      height: '44px',
+                      borderRadius: '10px',
+                      background: companyAvatarState.gradient || 'linear-gradient(135deg, #0871d7 0%, #034891 100%)',
+                      color: '#ffffff',
+                      display: 'grid',
+                      placeItems: 'center',
+                      fontSize: '15px',
+                      fontWeight: 800,
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                      overflow: 'hidden',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {companyAvatarState.type === 'image' && companyAvatarState.imageUrl ? (
+                      <img src={companyAvatarState.imageUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : companyAvatarState.type === 'icon' && companyAvatarState.icon ? (
+                      <i className={`ti ${companyAvatarState.icon}`} style={{ fontSize: '22px' }} />
+                    ) : (
+                      companyAvatarState.initials || 'NS'
+                    )}
+                  </div>
+
+                  <div>
+                    <span style={{ display: 'block', fontSize: '10px', color: '#7292be', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                      Prévia no Menu Lateral:
+                    </span>
+                    <strong style={{ color: '#ffffff', fontSize: '14px' }}>
+                      {settings.companyName || 'Nesher Tech Solutions'}
+                    </strong>
+                    <small style={{ display: 'block', color: '#8ba8cf', fontSize: '11px' }}>
+                      {selectedScope === 'global' ? 'Visão Global (Todas as Empresas)' : 'Organização Selecionada'}
+                    </small>
+                  </div>
+                </div>
+
+                {/* Tabs to select avatar type: Icon vs Monogram vs Image */}
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+                  <button
+                    type="button"
+                    className={`nesher-select ${companyAvatarState.type === 'icon' ? 'is-active' : ''}`}
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      background: companyAvatarState.type === 'icon' ? '#0b68d1' : '#f1f5f9',
+                      color: companyAvatarState.type === 'icon' ? '#ffffff' : '#334155',
+                    }}
+                    onClick={() => updateCompanyAvatar({ type: 'icon', icon: companyAvatarState.icon || 'ti-shield-lock' })}
+                  >
+                    <i className="ti ti-icons" /> Ícone Tecnológico
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`nesher-select ${companyAvatarState.type === 'initials' ? 'is-active' : ''}`}
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      background: companyAvatarState.type === 'initials' ? '#0b68d1' : '#f1f5f9',
+                      color: companyAvatarState.type === 'initials' ? '#ffffff' : '#334155',
+                    }}
+                    onClick={() => updateCompanyAvatar({ type: 'initials', initials: companyAvatarState.initials || 'NS' })}
+                  >
+                    <i className="ti ti-typography" /> Monograma (Iniciais)
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`nesher-select ${companyAvatarState.type === 'image' ? 'is-active' : ''}`}
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      background: companyAvatarState.type === 'image' ? '#0b68d1' : '#f1f5f9',
+                      color: companyAvatarState.type === 'image' ? '#ffffff' : '#334155',
+                    }}
+                    onClick={() => updateCompanyAvatar({ type: 'image' })}
+                  >
+                    <i className="ti ti-photo" /> Logo / Imagem
+                  </button>
+                </div>
+
+                {/* Icon Selection Grid */}
+                {companyAvatarState.type === 'icon' && (
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#64748b', marginBottom: '8px' }}>
+                      Selecione o Ícone Corporativo:
+                    </label>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(46px, 1fr))', gap: '8px' }}>
+                      {corporateIcons.map((ic) => (
+                        <button
+                          key={ic.name}
+                          type="button"
+                          className={`nesher-avatar-choice-btn ${companyAvatarState.icon === ic.name ? 'is-selected' : ''}`}
+                          onClick={() => updateCompanyAvatar({ icon: ic.name })}
+                          title={ic.label}
+                        >
+                          <i className={`ti ${ic.name}`} />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Monogram input */}
+                {companyAvatarState.type === 'initials' && (
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#64748b', marginBottom: '8px' }}>
+                      Letras do Monograma (1 a 3 caracteres):
+                    </label>
+                    <input
+                      type="text"
+                      maxLength={3}
+                      className="nesher-form-input"
+                      style={{ width: '120px', fontWeight: 800, textTransform: 'uppercase', textAlign: 'center', fontSize: '16px' }}
+                      value={companyAvatarState.initials || ''}
+                      onChange={(e) => updateCompanyAvatar({ initials: e.target.value.toUpperCase() })}
+                    />
+                  </div>
+                )}
+
+                {/* Image upload */}
+                {companyAvatarState.type === 'image' && (
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#64748b', marginBottom: '8px' }}>
+                      Carregar Imagem / Logomarca da Empresa:
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleCompanyImageUpload}
+                      style={{ fontSize: '12px' }}
+                    />
+                  </div>
+                )}
+
+                {/* Background Gradient Palette */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#64748b', marginBottom: '8px' }}>
+                    Tonalidade / Gradiente de Fundo:
+                  </label>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {avatarGradients.map((g) => (
+                      <button
+                        key={g.name}
+                        type="button"
+                        onClick={() => updateCompanyAvatar({ gradient: g.value })}
+                        style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '8px',
+                          background: g.value,
+                          border: companyAvatarState.gradient === g.value ? '3px solid #0f172a' : '2px solid transparent',
+                          cursor: 'pointer',
+                          boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                        }}
+                        title={g.name}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ marginTop: '16px' }}>
+                  <button
+                    type="button"
+                    className="nesher-primary-button"
+                    style={{ fontSize: '12px', padding: '7px 16px' }}
+                    onClick={applyAvatarImmediately}
+                  >
+                    <i className="ti ti-check" /> Aplicar Avatar ao Menu Lateral
+                  </button>
+                </div>
               </div>
             </div>
           )}

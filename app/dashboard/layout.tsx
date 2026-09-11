@@ -163,6 +163,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace>(defaultWorkspaces[0]);
   const [pendingCompaniesCount, setPendingCompaniesCount] = useState(0);
   const [activeTicketsCount, setActiveTicketsCount] = useState(0);
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
+  const [companyAvatar, setCompanyAvatar] = useState<{
+    type: 'icon' | 'initials' | 'image';
+    icon?: string;
+    initials?: string;
+    imageUrl?: string;
+    gradient?: string;
+  } | null>(null);
   const workspaceRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
@@ -254,6 +262,40 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         const found = workspaces.find((w) => w.id === rawWorkspace);
         if (found) setActiveWorkspace(found);
       }
+
+      // Load custom company avatar
+      const loadAvatar = () => {
+        try {
+          const rawAvatar = window.localStorage.getItem('nesher_company_avatar');
+          if (rawAvatar) {
+            setCompanyAvatar(JSON.parse(rawAvatar));
+          }
+        } catch {}
+      };
+      loadAvatar();
+      window.addEventListener('nesher_avatar_changed', loadAvatar);
+
+      // Load unread notifications
+      const loadNotifs = () => {
+        try {
+          const rawNotifs = window.localStorage.getItem('nesher_notifications');
+          if (rawNotifs) {
+            const notifs = JSON.parse(rawNotifs);
+            if (Array.isArray(notifs)) {
+              setUnreadNotificationsCount(notifs.filter((n: any) => !n.read).length);
+              return;
+            }
+          }
+          setUnreadNotificationsCount(0);
+        } catch {}
+      };
+      loadNotifs();
+      window.addEventListener('nesher_notifications_changed', loadNotifs);
+
+      return () => {
+        window.removeEventListener('nesher_avatar_changed', loadAvatar);
+        window.removeEventListener('nesher_notifications_changed', loadNotifs);
+      };
     } catch {}
   }, []);
 
@@ -587,11 +629,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <span
                   className="nesher-workspace-avatar"
                   style={{
-                    background: userIsClient ? '#059669' : activeWorkspace.isGlobal ? '#0871d7' : '#a9d4ff',
-                    color: userIsClient ? '#fff' : activeWorkspace.isGlobal ? '#fff' : '#0755ad',
+                    background: companyAvatar?.gradient || (userIsClient ? '#059669' : activeWorkspace.isGlobal ? '#0871d7' : '#a9d4ff'),
+                    color: '#ffffff',
+                    display: 'grid',
+                    placeItems: 'center',
+                    overflow: 'hidden',
                   }}
                 >
-                  {userIsClient ? (currentUser?.companyName ? currentUser.companyName.slice(0, 2).toUpperCase() : 'CL') : activeWorkspace.initials}
+                  {companyAvatar?.type === 'image' && companyAvatar.imageUrl ? (
+                    <img
+                      src={companyAvatar.imageUrl}
+                      alt="Avatar"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  ) : companyAvatar?.type === 'icon' && companyAvatar.icon ? (
+                    <i className={`ti ${companyAvatar.icon}`} style={{ fontSize: '16px' }} />
+                  ) : (
+                    companyAvatar?.initials || (userIsClient ? (currentUser?.companyName ? currentUser.companyName.slice(0, 2).toUpperCase() : 'CL') : activeWorkspace.initials)
+                  )}
                 </span>
                 <span className="nesher-workspace-copy">
                   <strong>{userIsClient ? (currentUser?.companyName || 'Empresa Cliente') : activeWorkspace.name}</strong>
@@ -789,10 +844,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               href="/dashboard/notificacoes"
               className="nesher-icon-button nesher-notification"
               aria-label="Notificações"
-              title="Central de Notificações"
+              title={unreadNotificationsCount > 0 ? `${unreadNotificationsCount} notificações não lidas` : 'Central de Notificações'}
             >
               <i className="ti ti-bell" aria-hidden="true" />
-              <span />
+              {unreadNotificationsCount > 0 && <span />}
             </Link>
 
             <span className="nesher-topbar-divider" />
