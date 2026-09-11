@@ -593,7 +593,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="nesher-sidebar-header">
             <Link href="/dashboard" className="nesher-brand" title="Nesher Tech Solutions">
               <div className="nesher-brand-mark">
-                <Image src="/nesher-emblem.png" alt="Nesher Tech Solutions" width={40} height={40} priority />
+                <Image
+                  src="/nesher-emblem.png"
+                  alt="Nesher Tech Solutions"
+                  width={38}
+                  height={38}
+                  unoptimized
+                  priority
+                  className="object-contain"
+                />
               </div>
               <div>
                 <strong>NESHER</strong>
