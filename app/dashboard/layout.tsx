@@ -601,26 +601,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
             </Link>
 
-            {/* Desktop Pin Button */}
             <button
               type="button"
-              className={'nesher-pin-btn nesher-desktop-only ' + (isPinned ? 'is-active' : '')}
+              className={'nesher-pin-btn ' + (isPinned ? 'is-active' : '')}
               onClick={togglePin}
               title={isPinned ? 'Desafixar menu (recolher para 80px)' : 'Fixar menu aberto (280px)'}
               aria-label={isPinned ? 'Desafixar menu lateral' : 'Fixar menu lateral aberto'}
             >
               <i className={'ti ' + (isPinned ? 'ti-pin-filled' : 'ti-pin')} aria-hidden="true" />
-            </button>
-
-            {/* Mobile Drawer Close Button */}
-            <button
-              type="button"
-              className="nesher-sidebar-close-btn nesher-mobile-only"
-              onClick={() => setSidebarOpen(false)}
-              aria-label="Fechar menu lateral"
-              title="Fechar menu"
-            >
-              <i className="ti ti-x" aria-hidden="true" />
             </button>
           </div>
 
@@ -745,36 +733,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* 3. BOTTOM FIXED ZONE: NOC Health Status & Logout Button    */}
         {/* ========================================================= */}
         <div className="nesher-sidebar-bottom">
-          <div className="nesher-help-card">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span className="nesher-help-icon">
-                <i className="ti ti-headset" aria-hidden="true" />
-              </span>
-              <span
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  fontSize: '9px',
-                  fontWeight: 700,
-                  color: '#4ade80',
-                  background: 'rgba(74, 222, 128, 0.15)',
-                  padding: '2px 6px',
-                  borderRadius: '99px',
-                }}
-              >
-                <span className="nesher-pulse-dot" style={{ background: '#4ade80', width: '5px', height: '5px' }} />
-                NOC 24/7
-              </span>
-            </div>
-            <strong>{userIsClient ? 'Central de Apoio' : 'Suporte Nesher Tech'}</strong>
-            <span>{userIsClient ? 'SLA monitorado pela Nesher.' : 'Plantão e monitoramento contínuo.'}</span>
-            <button type="button" onClick={() => (window.location.href = '/dashboard/chamados')}>
-              {userIsClient ? 'Ver meus chamados' : 'Abrir chamado rápido'}{' '}
-              <i className="ti ti-arrow-up-right" aria-hidden="true" />
-            </button>
-          </div>
-
           <Link
             href="/"
             className="nesher-logout"

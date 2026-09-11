@@ -81,24 +81,6 @@ div[data-nextjs-dev-tools-button],
   pointer-events: auto;
 }
 
-.nesher-sidebar-close-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.08);
-  color: #adc2df;
-  cursor: pointer;
-  transition: all 0.18s ease;
-  flex-shrink: 0;
-}
-.nesher-sidebar-close-btn:hover {
-  background: rgba(255, 255, 255, 0.18);
-  color: #ffffff;
-}
 .nesher-sidebar { 
   position: fixed; 
   inset: 0 auto 0 0; 
