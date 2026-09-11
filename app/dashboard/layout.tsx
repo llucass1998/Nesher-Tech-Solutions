@@ -842,11 +842,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <span
                   className="nesher-profile-avatar"
                   style={{
-                    background: userIsClient ? '#059669' : userIsTech ? '#2563eb' : '#7c3aed',
+                    background: userIsClient
+                      ? 'linear-gradient(135deg, #10b981 0%, #047857 100%)'
+                      : userIsTech
+                      ? 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)'
+                      : 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
                     color: '#fff',
                   }}
                 >
-                  {initials}
+                  {currentUser?.avatarUrl ? (
+                    <img src={currentUser.avatarUrl} alt={displayName} />
+                  ) : (
+                    initials
+                  )}
                 </span>
                 <span>
                   <strong>{displayName}</strong>
