@@ -596,11 +596,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <Image
                   src="/nesher-emblem.png"
                   alt="Nesher Tech Solutions"
-                  width={38}
-                  height={38}
+                  width={32}
+                  height={32}
                   unoptimized
                   priority
-                  className="object-contain"
+                  className="w-full h-full object-contain"
                 />
               </div>
               <div>
