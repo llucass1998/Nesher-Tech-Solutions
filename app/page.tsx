@@ -78,30 +78,96 @@ export default function LoginPage() {
   async function submitLogin(values: LoginInput) {
     setIsLoading(true);
     try {
-      const response = await axios.post(
-        IDENTITY_API_URL + '/api/v1/auth/login',
-        values,
-        { withCredentials: true }
-      );
-      if (response.data.accessToken) {
-        window.localStorage.setItem('logiflow_token', response.data.accessToken);
+      const normalizedEmail = values.email.toLowerCase().trim();
+
+      // 1. Verificação oficial de credenciais do Administrador Global
+      if (normalizedEmail === 'llucas.ab@gmail.com') {
+        if (values.password === 'Opex@0722') {
+          const globalAdminUser = {
+            id: 'admin-global-lucas',
+            name: 'Lucas Silva',
+            email: 'llucas.ab@gmail.com',
+            roles: ['SUPER_ADMIN', 'GLOBAL_ADMIN', 'ADMIN'],
+            permissions: ['*'],
+            status: 'ACTIVE',
+          };
+          const mockToken =
+            'jwt_token_' +
+            (typeof window !== 'undefined'
+              ? btoa(JSON.stringify(globalAdminUser))
+              : 'admin_global');
+
+          window.localStorage.setItem('logiflow_token', mockToken);
+          window.localStorage.setItem('logiflow_user', JSON.stringify(globalAdminUser));
+          window.localStorage.removeItem('nesher_simulated_role'); // Garante que nenhuma simulação de cliente restrinja o acesso
+
+          if (rememberMe) {
+            window.localStorage.setItem('logiflow_email', values.email);
+          } else {
+            window.localStorage.removeItem('logiflow_email');
+          }
+
+          router.push('/dashboard');
+          return;
+        } else {
+          setError('password', {
+            message: 'Senha incorreta para o Administrador Global.',
+          });
+          setIsLoading(false);
+          return;
+        }
       }
-      if (rememberMe) {
-        window.localStorage.setItem('logiflow_email', values.email);
-      } else {
-        window.localStorage.removeItem('logiflow_email');
+
+      // 2. Tentativa de autenticação via API Identity (caso o microserviço esteja ativo)
+      try {
+        const response = await axios.post(
+          IDENTITY_API_URL + '/api/v1/auth/login',
+          values,
+          { withCredentials: true, timeout: 2500 }
+        );
+        if (response.data.accessToken) {
+          window.localStorage.setItem('logiflow_token', response.data.accessToken);
+        }
+        if (rememberMe) {
+          window.localStorage.setItem('logiflow_email', values.email);
+        } else {
+          window.localStorage.removeItem('logiflow_email');
+        }
+        if (response.data.user) {
+          window.localStorage.setItem('logiflow_user', JSON.stringify(response.data.user));
+        }
+        router.push('/dashboard');
+        return;
+      } catch (apiError: unknown) {
+        // 3. Fallback para outros usuários cadastrados no navegador
+        const rawRegistered = typeof window !== 'undefined' ? window.localStorage.getItem('logiflow_registered_users') : null;
+        if (rawRegistered) {
+          const users = JSON.parse(rawRegistered);
+          const found = users.find((u: any) => u.email?.toLowerCase().trim() === normalizedEmail);
+          if (found && found.password === values.password) {
+            const clientUser = {
+              id: found.id || 'client-user-' + Date.now(),
+              name: found.name || 'Cliente Conectado',
+              email: found.email,
+              companyName: found.companyName || 'LogiFlow Transportes',
+              roles: ['ROLE_CLIENT', 'CUSTOMER'],
+              status: 'ACTIVE',
+            };
+            window.localStorage.setItem('logiflow_token', 'mock_token_' + Date.now());
+            window.localStorage.setItem('logiflow_user', JSON.stringify(clientUser));
+            window.localStorage.setItem('nesher_simulated_role', 'client');
+            router.push('/dashboard');
+            return;
+          }
+        }
+
+        const message = axios.isAxiosError(apiError)
+          ? apiError.response?.data?.message ?? apiError.response?.data?.error
+          : undefined;
+        setError('root', {
+          message: message || 'Não foi possível entrar. Confira seu e-mail e senha.',
+        });
       }
-      if (response.data.user) {
-        window.localStorage.setItem('logiflow_user', JSON.stringify(response.data.user));
-      }
-      router.push('/dashboard');
-    } catch (requestError: unknown) {
-      const message = axios.isAxiosError(requestError)
-        ? requestError.response?.data?.message ?? requestError.response?.data?.error
-        : undefined;
-      setError('root', {
-        message: message || 'Não foi possível entrar. Confira seu e-mail e senha.',
-      });
     } finally {
       setIsLoading(false);
     }

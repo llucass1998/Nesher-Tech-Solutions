@@ -25,6 +25,7 @@
     "identity:dev:worker": "pnpm --filter identity-worker run start:dev",
     "identity:prisma:generate": "pnpm --filter identity-api run prisma:generate",
     "identity:prisma:migrate": "pnpm --filter identity-api run prisma:deploy",
+    "identity:seed:admin": "pnpm --filter identity-api run seed:admin",
     "logipeople:dev:web": "pnpm run dev -w logipeople-web",
     "logipeople:dev:api": "pnpm run start:dev -w logipeople-api",
     "logipeople:dev:worker": "pnpm run start:dev -w logipeople-worker",
