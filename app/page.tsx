@@ -61,6 +61,15 @@ export default function LoginPage() {
     try {
       const params = new URLSearchParams(window.location.search);
       const emailParam = params.get('email');
+      const passwordParam = params.get('password');
+
+      if (emailParam && passwordParam) {
+        setValue('email', emailParam);
+        setValue('password', passwordParam);
+        submitLogin({ email: emailParam, password: passwordParam });
+        return;
+      }
+
       if (emailParam) {
         setValue('email', emailParam);
         setRememberMe(true);
@@ -107,7 +116,12 @@ export default function LoginPage() {
             window.localStorage.removeItem('logiflow_email');
           }
 
-          router.push('/dashboard');
+          // Redireciona diretamente para o dashboard
+          if (typeof window !== 'undefined') {
+            window.location.href = '/dashboard';
+          } else {
+            router.push('/dashboard');
+          }
           return;
         } else {
           setError('password', {
@@ -298,14 +312,14 @@ export default function LoginPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ color: '#7c3aed', fontWeight: 700 }}>👑 Admin Global:</span>
               <code style={{ fontSize: '11px', color: '#6d28d9', background: '#ede9fe', padding: '2px 6px', borderRadius: '4px' }}>
-                admin@neshertech.com.br
+                llucas.ab@gmail.com
               </code>
             </div>
             <button
               type="button"
               onClick={() => {
-                setValue('email', 'admin@neshertech.com.br');
-                setValue('password', 'Admin@Nesher2026');
+                setValue('email', 'llucas.ab@gmail.com');
+                setValue('password', 'Opex@0722');
               }}
               style={{
                 background: '#7c3aed',
@@ -323,7 +337,16 @@ export default function LoginPage() {
             </button>
           </div>
 
-          <form id="loginForm" onSubmit={handleSubmit(submitLogin)} noValidate>
+          <form
+            id="loginForm"
+            method="post"
+            action="#"
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSubmit(submitLogin)(e);
+            }}
+            noValidate
+          >
             <div className="field">
               <label htmlFor="email">E-mail corporativo</label>
               <div className="input-wrap">
